@@ -22,3 +22,4 @@ yarn-error.log
 /.vscode
 /.zed
 -e "\n# backups (do not commit)\npublic/*.zip\npublic/backups/\n" 
+/.zip
