@@ -1,0 +1,131 @@
+body,
+html {
+  height: auto;
+  margin: 0;
+}
+* {
+  margin: 0;
+  padding: 0;
+  font-family: "Dosis", sans-serif;
+}
+
+#signUpBtn {
+  text-decoration: none;
+}
+#contentContainer {
+  width: 100%;
+}
+
+/* Background pattern */
+.bg-pattern {
+  background-size: cover;
+  background-repeat: repeat;
+}
+
+/* Centered logo and typography */
+.logo-typography-container {
+  align-items: center;
+  opacity: 0;
+  transition: all 1s ease-in-out;
+  margin-bottom: 0px;
+}
+.logo-typography-container img {
+  margin-bottom: 0px;
+}
+
+.initial-position {
+  animation: fadeIn 2s ease-in-out forwards;
+}
+a {color:hsl(251, 53%, 24%) !important}
+a:hover {color:#d0b270 !important}
+#signInForm span,#signInwithpasswordForm span {
+    width: 100%;
+    display: inline-block;
+    text-align: left;
+    padding-left: 20px;
+}#shippment_only,#shipping_purchase_only {
+    padding: 60px 20px;
+    border: #281c5c solid 2px;
+    text-align: center;
+    width: 200px;
+    border-radius: 8px;
+}
+/* Smooth move to top */
+.moved-top {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+
+  transform: translateY(-80px);
+  transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+    opacity 0.5s ease;
+}
+.input {
+  border: 2px solid hsl(251, 53%, 24%);
+  outline: 0;
+  border-radius: 10px;
+  padding: 10px;width: 280px;
+}.btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active{
+  background-color:#d0b270 !important;
+}
+
+/* Welcome text */
+.welcome-text {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+  color: hsl(251, 53%, 24%);
+}
+
+/* Button styling with fade-in effect */
+.button-container {
+  display: flex;
+  flex-direction: column; /* Ensures buttons are in a column layout */
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+#typography,
+#logo {
+  width: 120px;
+}
+.button-container button {
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+}
+
+/* Form styling */
+form {
+  max-width: 300px;
+  margin: auto;
+
+  transition: opacity 0.5s ease-in-out;
+}
+
+form.d-none {
+  display: none;
+}
+.go-btn {
+  background-color: hsl(251, 53%, 24%);width: 280px;
+}
+.go-btn:hover {
+  background-color: #d0b270;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.container {
+  text-align: center;
+}
+
+
+

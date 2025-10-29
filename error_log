@@ -1,0 +1,2 @@
+[24-Mar-2025 07:38:16 UTC] PHP Fatal error:  Cannot declare class CreateIdentitiesTable, because the name is already in use in /home/u789527441/domains/violet-meerkat-830212.hostingersite.com/public_html/database/migrations/2025_03_24_073059_create_indentities_table.php on line 7
+[24-Mar-2025 07:50:12 UTC] PHP Fatal error:  Cannot declare class CreateUserIdentitiesTable, because the name is already in use in /home/u789527441/domains/violet-meerkat-830212.hostingersite.com/public_html/database/migrations/2025_03_24_073059_create_indentities_table.php on line 7
