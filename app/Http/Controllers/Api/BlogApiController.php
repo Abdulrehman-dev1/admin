@@ -16,7 +16,6 @@ class BlogApiController extends Controller
             'blogs' => $blogs,
         ]);
     }
-
     public function show($slug)
     {
         $blog = Blog::where('slug', $slug)->firstOrFail();
