@@ -84,7 +84,9 @@ class Auction extends Model
   
     static::saving(function ($auction) {
         if (empty($auction->slug)) {
-            $auction->slug = Str::slug($auction->title, '-');
+            $slug = Str::slug($auction->title, '-');
+            // Truncate slug to 255 chars (DB limit)
+            $auction->slug = Str::limit($slug, 255, '');
         }
     });
 

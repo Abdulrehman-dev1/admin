@@ -38,6 +38,18 @@ use App\Http\Controllers\BlogController;
 use App\Models\IndividualVerification;
 use App\Mail\VerificationDeclinedMail;
 
+use App\Http\Controllers\ScraperController;
+use App\Http\Controllers\OlxScraperController;
+
+Route::get('/scraper', [ScraperController::class, 'index'])->name('scraper.index');
+Route::post('/scraper/preview', [ScraperController::class, 'preview'])->name('scraper.preview');
+Route::post('/scraper/save', [ScraperController::class, 'save'])->name('scraper.save');
+
+// OLX Scraper Routes
+Route::get('/olx-scraper', [OlxScraperController::class, 'index'])->name('olx-scraper.index');
+Route::post('/olx-scraper/preview', [OlxScraperController::class, 'preview'])->name('olx-scraper.preview');
+Route::post('/olx-scraper/save', [OlxScraperController::class, 'save'])->name('olx-scraper.save');
+
 // routes/web.php
 Route::middleware(['auth'])->group(function() {
     Route::resource('blogs', BlogController::class);
