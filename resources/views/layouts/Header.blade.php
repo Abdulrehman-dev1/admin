@@ -5,9 +5,9 @@
             <div class="col-12">
                 <!-- Dashboard Header -->
                 <div class="nftmax-header__inner">
-                    <div class="nftmax__sicon close-icon d-xl-none">
+                    <button type="button" class="nftmax__sicon close-icon d-xl-none" id="mobile-sidebar-toggle" style="cursor: pointer; background: none; border: none; padding: 0; z-index: 10000; position: relative;">
                         <img src="{{ asset('img/menu-toggle.svg') }}" alt="#">
-                    </div>
+                    </button>
                     <div class="nftmax-header__left">
                         <!-- Search Form -->
                         <!-- <div class="nftmax-header__form">

@@ -8,6 +8,82 @@
 <script src="{{ asset('js/final-countdown.min.js') }}"></script>
 <script src="{{ asset('js/circle-progress.min.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script>
+// Vanilla JavaScript fallback for mobile sidebar toggle
+(function() {
+    function toggleSidebar() {
+        var sidebar = document.querySelector('.nftmax-smenu');
+        var header = document.querySelector('.nftmax-header');
+        var dashboard = document.querySelector('.nftmax-adashboard');
+        var overlay = document.querySelector('.nftmax-sidebar-overlay');
+        
+        if (sidebar) {
+            sidebar.classList.toggle('nftmax-close');
+        }
+        if (header) {
+            header.classList.toggle('nftmax-close');
+        }
+        if (dashboard) {
+            dashboard.classList.toggle('nftmax-close');
+        }
+        if (overlay) {
+            overlay.classList.toggle('active');
+        }
+        console.log('Sidebar toggled via vanilla JS');
+    }
+    
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggleBtn = document.getElementById('mobile-sidebar-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+            }
+            
+            // Overlay click handler
+            var overlay = document.querySelector('.nftmax-sidebar-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', function(e) {
+                    var sidebar = document.querySelector('.nftmax-smenu');
+                    var header = document.querySelector('.nftmax-header');
+                    var dashboard = document.querySelector('.nftmax-adashboard');
+                    if (sidebar) sidebar.classList.remove('nftmax-close');
+                    if (header) header.classList.remove('nftmax-close');
+                    if (dashboard) dashboard.classList.remove('nftmax-close');
+                    overlay.classList.remove('active');
+                });
+            }
+        });
+    } else {
+        // DOM already ready
+        var toggleBtn = document.getElementById('mobile-sidebar-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSidebar();
+            });
+        }
+        
+        var overlay = document.querySelector('.nftmax-sidebar-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', function(e) {
+                var sidebar = document.querySelector('.nftmax-smenu');
+                var header = document.querySelector('.nftmax-header');
+                var dashboard = document.querySelector('.nftmax-adashboard');
+                if (sidebar) sidebar.classList.remove('nftmax-close');
+                if (header) header.classList.remove('nftmax-close');
+                if (dashboard) dashboard.classList.remove('nftmax-close');
+                overlay.classList.remove('active');
+            });
+        }
+    }
+})();
+</script>
 <script src="https://cdn.datatables.net/v/bs5/dt-2.2.1/datatables.min.js"></script>
 <script>
     jQuery(document).ready(function($) {

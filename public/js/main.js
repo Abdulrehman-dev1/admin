@@ -1,9 +1,29 @@
 (function($) {
     "use strict";
-     $(document).on('ready', function() {	
+     $(document).ready(function() {	
 		
-		$('.nftmax__sicon').on( "click", function(){
-			$('.nftmax-smenu ,.nftmax-header ,.nftmax-adashboard').toggleClass('nftmax-close');
+		// Sidebar toggle functionality
+		$(document).on('click', '.nftmax__sicon', function(e){
+			e.preventDefault();
+			e.stopPropagation();
+			console.log('Sidebar button clicked!'); // Debug
+			$('.nftmax-smenu, .nftmax-header, .nftmax-adashboard').toggleClass('nftmax-close');
+			$('.nftmax-sidebar-overlay').toggleClass('active');
+		});
+		
+		// Close sidebar when clicking overlay
+		$(document).on('click', '.nftmax-sidebar-overlay', function(e){
+			$('.nftmax-smenu, .nftmax-header, .nftmax-adashboard').removeClass('nftmax-close');
+			$('.nftmax-sidebar-overlay').removeClass('active');
+		});
+		
+		// Also try direct click handler as backup
+		$('.nftmax__sicon').on('click', function(e){
+			e.preventDefault();
+			e.stopPropagation();
+			console.log('Direct click handler fired!'); // Debug
+			$('.nftmax-smenu, .nftmax-header, .nftmax-adashboard').toggleClass('nftmax-close');
+			$('.nftmax-sidebar-overlay').toggleClass('active');
 		});	
 		
 		/*====================================

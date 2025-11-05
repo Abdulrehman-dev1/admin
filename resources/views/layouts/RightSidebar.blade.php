@@ -1,4 +1,6 @@
 <div class="body-bg" style="background-image:url('{{ asset('img/body-bg.jpg') }}')">
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="nftmax-sidebar-overlay"></div>
     <!-- NFTMax Admin Menu -->
     <div class="nftmax-smenu">
         <!-- Admin Menu -->
