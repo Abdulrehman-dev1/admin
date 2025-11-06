@@ -156,6 +156,10 @@ Route::get('/get-featured-realstate', [AuctionController::class, 'get_featured_r
 Route::get('/get-vehicle', [AuctionController::class, 'get_vehicle']);
 Route::get('/get-realestate', [AuctionController::class, 'get_realestate']);
 Route::get('/get-service', [AuctionController::class, 'get_service']);
+Route::get('/get-latest-vehicles', [AuctionController::class, 'get_latest_vehicles']);
+Route::get('/get-latest-properties', [AuctionController::class, 'get_latest_properties']);
+Route::get('/get-latest-normal-lists', [AuctionController::class, 'get_latest_normal_lists']);
+Route::get('/get-latest-auctions', [AuctionController::class, 'get_latest_auctions']);
 Route::get('/get-all-categories', [AuctionCategoryController::class, 'all_categories']);
 
 //Route::get('/wallet', [WalletController::class, 'balance']);

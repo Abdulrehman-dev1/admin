@@ -56,21 +56,33 @@ class AuctionController extends Controller
   public function store(Request $request)
 {
     // Base rules
+    $listType = $request->input('list_type', 'auction');
     $rules = [
         'title'             => ['required','string','min:2','max:100'],
         'user_id'           => ['required','integer','exists:users,id'],
         'category_id'       => ['required','integer','exists:auction_categories,id'],
         'sub_category_id'   => ['nullable','integer','exists:auction_categories,id'],
         'child_category_id' => ['nullable','integer','exists:auction_categories,id'],
-        'start_date'        => ['required','date'],
-        'end_date'          => ['required','date','after_or_equal:start_date'],
-        'reserve_price'     => ['required','numeric'],
-        'minimum_bid'       => ['required','numeric'],
         'description'       => ['required','string'],
-        'product_year'      => ['required'],
-        'status'            => ['required'],
-        // 'album.*'        => ['image','mimes:jpg,jpeg,png','max:2048'],
+        'list_type'         => ['required','in:auction,normal_list'],
     ];
+
+    // Auction-specific rules
+    if ($listType === 'auction') {
+        $rules['start_date'] = ['required','date'];
+        $rules['end_date'] = ['required','date','after_or_equal:start_date'];
+        $rules['reserve_price'] = ['required','numeric'];
+        $rules['minimum_bid'] = ['required','numeric'];
+        $rules['product_year'] = ['required'];
+        $rules['status'] = ['required'];
+    }
+
+    // Normal List-specific rules
+    if ($listType === 'normal_list') {
+        $rules['product_condition'] = ['required','in:new,old'];
+        $rules['product_year'] = ['required'];
+        $rules['minimum_bid'] = ['required','numeric']; // Price field
+    }
 
     // New fields (optional by default)
     $rules += [
@@ -86,8 +98,8 @@ class AuctionController extends Controller
         'facilities'           => ['nullable','string'],
     ];
 
-    // Conditional required for category 222
-    if ((int)$request->input('category_id') === 222) {
+    // Conditional required for category 222 (only for auctions)
+    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
         $rules['location_url'] = ['required','max:1024'];
     }
 
@@ -109,11 +121,30 @@ class AuctionController extends Controller
     $data = $request->only([
         'title','user_id','category_id','sub_category_id','child_category_id',
         'start_date','end_date','reserve_price','minimum_bid','description',
-        'product_year','status','featured_name','create_category',
+        'product_year','status','featured_name','create_category','list_type',
+        'product_condition',
         // NEW:
         'developer','location_url','delivery_date','sale_starts','payment_plan',
         'number_of_buildings','government_fee','nearby_location','amenities','facilities',
     ]);
+
+    // For normal_list, set default values
+    if ($listType === 'normal_list') {
+        if (empty($data['status'])) {
+            $data['status'] = 'active';
+        }
+        // Set reserve_price to minimum_bid value or 0 if not provided
+        if (empty($data['reserve_price']) || $data['reserve_price'] === null) {
+            $data['reserve_price'] = !empty($data['minimum_bid']) ? $data['minimum_bid'] : 0;
+        }
+        // Set start_date and end_date to null or default values
+        if (empty($data['start_date']) || $data['start_date'] === null) {
+            $data['start_date'] = null;
+        }
+        if (empty($data['end_date']) || $data['end_date'] === null) {
+            $data['end_date'] = null;
+        }
+    }
 
     $data['image'] = $albumsArray[0] ?? null;
     $data['album'] = json_encode($albumsArray);
@@ -195,19 +226,32 @@ class AuctionController extends Controller
 
   public function update(Request $request, Auction $auction)
 {
+    $listType = $request->input('list_type', $auction->list_type ?? 'auction');
     $rules = [
         'title'             => ['required','string','min:2','max:100'],
         'category_id'       => ['required','integer','exists:auction_categories,id'],
         'sub_category_id'   => ['nullable','integer','exists:auction_categories,id'],
         'child_category_id' => ['nullable','integer','exists:auction_categories,id'],
-        'start_date'        => ['required','date'],
-        'end_date'          => ['required','date','after_or_equal:start_date'],
-        'reserve_price'     => ['required','numeric'],
-        'minimum_bid'       => ['required','numeric'],
         'description'       => ['required','string'],
-        'product_year'      => ['required'],
-        'status'            => ['required'],
+        'list_type'         => ['required','in:auction,normal_list'],
     ];
+
+    // Auction-specific rules
+    if ($listType === 'auction') {
+        $rules['start_date'] = ['required','date'];
+        $rules['end_date'] = ['required','date','after_or_equal:start_date'];
+        $rules['reserve_price'] = ['required','numeric'];
+        $rules['minimum_bid'] = ['required','numeric'];
+        $rules['product_year'] = ['required'];
+        $rules['status'] = ['required'];
+    }
+
+    // Normal List-specific rules
+    if ($listType === 'normal_list') {
+        $rules['product_condition'] = ['required','in:new,old'];
+        $rules['product_year'] = ['required'];
+        $rules['minimum_bid'] = ['required','numeric']; // Price field
+    }
 
     // New fields (optional by default)
     $rules += [
@@ -223,8 +267,8 @@ class AuctionController extends Controller
         'facilities'           => ['nullable','string'],
     ];
 
-    // Conditional required for category 222
-    if ((int)$request->input('category_id') === 222) {
+    // Conditional required for category 222 (only for auctions)
+    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
         $rules['location_url'] = ['required','max:1024'];
     }
 
@@ -249,6 +293,26 @@ class AuctionController extends Controller
     // Extra fields you set without validation earlier:
     $validated['featured_name']   = $request->input('featured_name');
     $validated['create_category'] = $request->input('create_category');
+    $validated['list_type'] = $listType;
+    $validated['product_condition'] = $request->input('product_condition');
+
+    // For normal_list, set default values
+    if ($listType === 'normal_list') {
+        if (empty($validated['status'])) {
+            $validated['status'] = 'active';
+        }
+        // Set reserve_price to minimum_bid value or keep existing if not provided
+        if (empty($validated['reserve_price'])) {
+            $validated['reserve_price'] = $validated['minimum_bid'] ?? $auction->reserve_price ?? 0;
+        }
+        // Set start_date and end_date to null if not provided
+        if (empty($validated['start_date'])) {
+            $validated['start_date'] = null;
+        }
+        if (empty($validated['end_date'])) {
+            $validated['end_date'] = null;
+        }
+    }
 
     // NEW fields are already in $validated — just update:
     $auction->update($validated);
@@ -340,13 +404,104 @@ public function get_featured_realstate(){
         $product = Auction::whereBetween('category_id', [207, 211]) ->orWhere('category_id', 216)->where("status","active")->latest()->get();
         return response()->json(['product' => $product]);
     }
-  public function get_service(){
+    public function get_service(){
     $product = Auction::whereBetween('category_id', [201, 206]) ->orWhere('category_id', 215)
                 ->where("status", "active")
                 ->latest()
                 ->get();
     return response()->json(['product' => $product]);
 }
+
+    // Latest Vehicles API - category_id = 311, latest 12
+    public function get_latest_vehicles()
+    {
+        $products = Auction::where('category_id', 311)
+            ->where('status', 'active')
+            ->withMax('bids', 'bid_amount')
+            ->latest()
+            ->take(12)
+            ->get();
+        
+        // Add owner data for each product
+        foreach($products as $product){
+            $user = User::find($product->user_id);
+            $product->owner = [
+                "name" => $user->name ?? '',
+                "profile" => $user->profile_pic ?? ''
+            ];
+        }
+        
+        return response()->json(['product' => $products]);
+    }
+
+    // Latest Properties API - category_id = 222, latest 12
+    public function get_latest_properties()
+    {
+        $products = Auction::where('category_id', 222)
+            ->where('status', 'active')
+            ->withMax('bids', 'bid_amount')
+            ->latest()
+            ->take(12)
+            ->get();
+        
+        // Add owner data for each product
+        foreach($products as $product){
+            $user = User::find($product->user_id);
+            $product->owner = [
+                "name" => $user->name ?? '',
+                "profile" => $user->profile_pic ?? ''
+            ];
+        }
+        
+        return response()->json(['product' => $products]);
+    }
+
+    // Latest Normal Lists API - list_type = 'normal_list', latest 12
+    public function get_latest_normal_lists()
+    {
+        $products = Auction::where('list_type', 'normal_list')
+            ->where('status', 'active')
+            ->withMax('bids', 'bid_amount')
+            ->latest()
+            ->take(12)
+            ->get();
+        
+        // Add owner data for each product
+        foreach($products as $product){
+            $user = User::find($product->user_id);
+            $product->owner = [
+                "name" => $user->name ?? '',
+                "profile" => $user->profile_pic ?? ''
+            ];
+        }
+        
+        return response()->json(['product' => $products]);
+    }
+
+    // Latest Auctions API - list_type = 'auction' or null, latest 12
+    public function get_latest_auctions()
+    {
+        $products = Auction::where(function($query) {
+                $query->where('list_type', 'auction')
+                      ->orWhereNull('list_type');
+            })
+            ->where('status', 'active')
+            ->withMax('bids', 'bid_amount')
+            ->latest()
+            ->take(12)
+            ->get();
+        
+        // Add owner data for each product
+        foreach($products as $product){
+            $user = User::find($product->user_id);
+            $product->owner = [
+                "name" => $user->name ?? '',
+                "profile" => $user->profile_pic ?? ''
+            ];
+        }
+        
+        return response()->json(['product' => $products]);
+    }
     
     public function products_views($id){
         try {
@@ -496,17 +651,17 @@ public function get_featured_realstate(){
 }   
    public function api_store(Request $request)
 {
-    // 1) Validate request
-    $validatedData = $request->validate([
+    // 1) Get list_type from request
+    $listType = $request->input('list_type', 'auction');
+    
+    // 2) Base validation rules
+    $rules = [
         'title'             => 'required|min:2|max:100',
-        'category_id'       => 'required|integer|exists:auction_categories,id', // ← ADD THIS LINE
+        'category_id'       => 'required|integer|exists:auction_categories,id',
         'sub_category_id'   => 'nullable|integer|exists:auction_categories,id',
         'child_category_id' => 'nullable|integer|exists:auction_categories,id',
-        'start_date'        => 'required|date',
-        'end_date'          => 'required|date|after_or_equal:start_date',
-        'reserve_price'     => 'required|numeric',
-        'minimum_bid'       => 'required|numeric',
         'description'       => 'required',
+        'list_type'         => 'required|in:auction,normal_list',
         'product_year'      => 'required',
         'product_location'  => 'required',
         // Add new property fields
@@ -520,13 +675,38 @@ public function get_featured_realstate(){
         'nearby_location'   => 'nullable|string',
         'amenities'         => 'nullable|string',
         'facilities'        => 'nullable|string',
-    ], [
+    ];
+
+    // Auction-specific rules
+    if ($listType === 'auction') {
+        $rules['start_date'] = 'required|date';
+        $rules['end_date'] = 'required|date|after_or_equal:start_date';
+        $rules['reserve_price'] = 'required|numeric';
+        $rules['minimum_bid'] = 'required|numeric';
+    }
+
+    // Normal List-specific rules
+    if ($listType === 'normal_list') {
+        $rules['product_condition'] = 'required|in:new,old';
+        $rules['minimum_bid'] = 'required|numeric'; // Price field
+        $rules['start_date'] = 'nullable|date';
+        $rules['end_date'] = 'nullable|date';
+        $rules['reserve_price'] = 'nullable|numeric';
+    }
+
+    // Conditional required for category 222 (only for auctions)
+    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
+        $rules['location_url'] = 'required|max:1024';
+    }
+
+    // Custom error messages
+    $messages = [
         'title.required'             => 'Please enter a title for your listing.',
         'title.min'                  => 'Title must be at least :min characters.',
         'title.max'                  => 'Title may not exceed :max characters.',
-        'category_id.required'       => 'Please select a category.', // ← ADD THIS LINE
-        'category_id.integer'        => 'Category must be a valid selection.', // ← ADD THIS LINE
-        'category_id.exists'         => 'Selected category does not exist.', // ← ADD THIS LINE
+        'category_id.required'       => 'Please select a category.',
+        'category_id.integer'        => 'Category must be a valid selection.',
+        'category_id.exists'         => 'Selected category does not exist.',
         'start_date.required'        => 'Please select a start date.',
         'start_date.date'            => 'Start date must be a valid date.',
         'end_date.required'          => 'Please select an end date.',
@@ -539,11 +719,17 @@ public function get_featured_realstate(){
         'description.required'       => 'Please provide a description of your product.',
         'product_year.required'      => 'Please specify the products year.',
         'product_location.required'  => 'Please enter the product location.',
+        'product_condition.required' => 'Please select product condition (new or old).',
+        'product_condition.in'        => 'Product condition must be either new or old.',
+        'list_type.required'         => 'Please select a list type.',
+        'list_type.in'               => 'List type must be either auction or normal_list.',
         // Add custom error messages for new fields
         'location_url.url'           => 'Please enter a valid URL.',
         'number_of_buildings.integer' => 'Number of buildings must be a whole number.',
         'number_of_buildings.min'    => 'Number of buildings cannot be negative.',
-    ]);
+    ];
+
+    $validatedData = $request->validate($rules, $messages);
 
     // ------------------------------------------------------------
     // 2) Verification gate: allow if EITHER Individual OR Corporate is approved
@@ -653,9 +839,22 @@ public function get_featured_realstate(){
         'user_id'         => auth()->user()->id,
         'status'          => 'inactive', // default status
         'create_category' => $request->input('create_category'),
+        'list_type'       => $listType,
         // The new property fields and category_id are already included in $validatedData
         // They will be automatically added to the auction record
     ]);
+
+    // For normal_list, set default values
+    if ($listType === 'normal_list') {
+        // Status remains 'inactive' for normal_list (as set above)
+        // Set reserve_price to minimum_bid value or 0 if not provided
+        if (empty($auctionData['reserve_price']) || $auctionData['reserve_price'] === null) {
+            $auctionData['reserve_price'] = !empty($auctionData['minimum_bid']) ? $auctionData['minimum_bid'] : 0;
+        }
+        // Set start_date and end_date to null
+        $auctionData['start_date'] = null;
+        $auctionData['end_date'] = null;
+    }
 
     $auction = Auction::create($auctionData);
 
@@ -665,7 +864,8 @@ public function get_featured_realstate(){
     $user        = auth()->user();
     $firstName   = $user->name;
     $listingTitle= $auction->title;
-    $auctionEnds = \Carbon\Carbon::parse($auction->end_date)->toDayDateTimeString();
+    // Only parse end_date if it exists (for normal_list it might be null)
+    $auctionEnds = $auction->end_date ? \Carbon\Carbon::parse($auction->end_date)->toDayDateTimeString() : 'N/A';
 
     try {
         Mail::to($user->email)->send(

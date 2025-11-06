@@ -35,6 +35,16 @@
         <!-- Hidden User -->
         <input type="hidden" name="user_id" value="{{ Auth::id() }}">
 
+        <!-- List Type -->
+        <div class="form-group">
+            <label for="list_type">List Type</label>
+            <select name="list_type" id="list_type" class="form-control" required>
+                <option value="auction" {{ old('list_type', $auction->list_type ?? 'auction') == 'auction' ? 'selected' : '' }}>Auction</option>
+                <option value="normal_list" {{ old('list_type', $auction->list_type ?? '') == 'normal_list' ? 'selected' : '' }}>Normal List</option>
+            </select>
+            @error('list_type') <small class="text-danger">{{ $message }}</small> @enderror
+        </div>
+
         <!-- Category / Sub / Child -->
         <div class="row">
             <div class="form-group col-md-4">
@@ -89,8 +99,8 @@
             </div>
         @endif
 
-        <!-- Album Upload -->
-        <div class="form-group">
+        <!-- Album Upload (Auction Only) -->
+        <div class="form-group" id="albumContainer">
             <label for="album">Album</label>
             <input  type="file"
                     name="album[]"
@@ -107,8 +117,8 @@
             @endif
         </div>
 
-        <!-- Dates -->
-        <div class="row">
+        <!-- Dates (Auction Only) -->
+        <div class="row" id="datesContainer">
             <div class="form-group col-md-6">
                 <label for="start_date">Start Date</label>
                 <input  type="date"
@@ -116,8 +126,7 @@
                         id="start_date"
                         class="form-control @error('start_date') is-invalid @enderror"
                         value="{{ old('start_date', $auction->start_date ?? '') }}"
-                        min="{{ date('Y-m-d') }}"
-                        required>
+                        min="{{ date('Y-m-d') }}">
                 @error('start_date') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
             <div class="form-group col-md-6">
@@ -127,14 +136,13 @@
                         id="end_date"
                         class="form-control @error('end_date') is-invalid @enderror"
                         value="{{ old('end_date', $auction->end_date ?? '') }}"
-                        min="{{ date('Y-m-d') }}"
-                        required>
+                        min="{{ date('Y-m-d') }}">
                 @error('end_date') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
         </div>
 
-        <!-- Pricing & Year -->
-        <div class="row">
+        <!-- Pricing & Year (Auction Only) -->
+        <div class="row" id="auctionPricingContainer">
             <div class="form-group col-md-4">
                 <label for="reserve_price">Reserve Price</label>
                 <input  type="number"
@@ -142,8 +150,7 @@
                         name="reserve_price"
                         id="reserve_price"
                         class="form-control @error('reserve_price') is-invalid @enderror"
-                        value="{{ old('reserve_price', $auction->reserve_price ?? '') }}"
-                        required>
+                        value="{{ old('reserve_price', $auction->reserve_price ?? '') }}">
                 @error('reserve_price') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
             <div class="form-group col-md-4">
@@ -153,8 +160,7 @@
                         name="minimum_bid"
                         id="minimum_bid"
                         class="form-control @error('minimum_bid') is-invalid @enderror"
-                        value="{{ old('minimum_bid', $auction->minimum_bid ?? '') }}"
-                        required>
+                        value="{{ old('minimum_bid', $auction->minimum_bid ?? '') }}">
                 @error('minimum_bid') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
             <div class="form-group col-md-4">
@@ -163,9 +169,63 @@
                         name="product_year"
                         id="product_year"
                         class="form-control @error('product_year') is-invalid @enderror"
-                        value="{{ old('product_year', $auction->product_year ?? '') }}"
-                        required>
+                        value="{{ old('product_year', $auction->product_year ?? '') }}">
                 @error('product_year') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+        </div>
+
+        <!-- Normal List Specific Fields -->
+        <div id="normalListFields" style="display:none;">
+            <!-- Album Upload (Normal List) -->
+            <div class="form-group">
+                <label for="album_normal">Images</label>
+                <input  type="file"
+                        name="album[]"
+                        id="album_normal"
+                        class="form-control @error('album') is-invalid @enderror"
+                        multiple>
+                @error('album') <small class="text-danger">{{ $message }}</small> @enderror
+                @if($errors->has('album.*'))
+                    @foreach($errors->get('album.*') as $errs)
+                        @foreach($errs as $err)
+                            <small class="text-danger d-block">{{ $err }}</small>
+                        @endforeach
+                    @endforeach
+                @endif
+            </div>
+
+            <!-- Product Condition -->
+            <div class="form-group">
+                <label for="product_condition">Product Condition</label>
+                <select name="product_condition" id="product_condition" class="form-control">
+                    <option value="">Select Condition</option>
+                    <option value="new" {{ old('product_condition', $auction->product_condition ?? '') == 'new' ? 'selected' : '' }}>New</option>
+                    <option value="old" {{ old('product_condition', $auction->product_condition ?? '') == 'old' ? 'selected' : '' }}>Old</option>
+                </select>
+                @error('product_condition') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+
+            <!-- Product Year (Normal List) -->
+            <div class="form-group">
+                <label for="product_year_normal">Product Year</label>
+                <input  type="text"
+                        name="product_year"
+                        id="product_year_normal"
+                        class="form-control @error('product_year') is-invalid @enderror"
+                        value="{{ old('product_year', $auction->product_year ?? '') }}">
+                @error('product_year') <small class="text-danger">{{ $message }}</small> @enderror
+            </div>
+
+            <!-- Price (saves to minimum_bid) -->
+            <div class="form-group">
+                <label for="price">Price</label>
+                <input  type="number"
+                        step="0.01"
+                        name="minimum_bid"
+                        id="price"
+                        class="form-control @error('minimum_bid') is-invalid @enderror"
+                        value="{{ old('minimum_bid', $auction->minimum_bid ?? '') }}">
+                @error('minimum_bid') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
         </div>
 
@@ -182,10 +242,10 @@
 
 
 
-        <!-- Status & Featured -->
+        <!-- Status & Featured (Both Auction and Normal List) -->
         <div class="row">
             <div class="form-group col-md-6">
-                <label for="status">Auction Status</label>
+                <label for="status">Status</label>
                 <select name="status" id="status" class="form-control">
                     <option value="active"   {{ old('status', $auction->status)=='active'? 'selected':'' }}>Active</option>
                     <option value="inactive" {{ old('status', $auction->status)=='inactive'? 'selected':'' }}>Inactive</option>
@@ -298,6 +358,80 @@
 
 
 <script>
+// List Type Toggle Function
+function toggleListTypeFields() {
+    const listType = document.getElementById('list_type').value;
+    const isAuction = listType === 'auction';
+    const isNormalList = listType === 'normal_list';
+
+    // Auction fields
+    const albumContainer = document.getElementById('albumContainer');
+    const datesContainer = document.getElementById('datesContainer');
+    const auctionPricingContainer = document.getElementById('auctionPricingContainer');
+    const cat222Fields = document.getElementById('cat-222-fields');
+
+    // Normal List fields
+    const normalListFields = document.getElementById('normalListFields');
+
+    // Show/Hide Auction fields
+    if (albumContainer) albumContainer.style.display = isAuction ? 'block' : 'none';
+    if (datesContainer) datesContainer.style.display = isAuction ? 'flex' : 'none';
+    if (auctionPricingContainer) auctionPricingContainer.style.display = isAuction ? 'flex' : 'none';
+    if (cat222Fields) cat222Fields.style.display = (isAuction && parseInt(document.getElementById('category_id').value) === 222) ? 'block' : 'none';
+
+    // Show/Hide Normal List fields
+    if (normalListFields) normalListFields.style.display = isNormalList ? 'block' : 'none';
+    
+    // Hide auction album field when normal list is selected (normal list has its own)
+    const albumNormal = document.getElementById('album_normal');
+    if (albumNormal && albumContainer) {
+        // Both fields exist, just control visibility
+    }
+
+    // Handle required attributes
+    const startDate = document.getElementById('start_date');
+    const endDate = document.getElementById('end_date');
+    const reservePrice = document.getElementById('reserve_price');
+    const minimumBidAuction = document.getElementById('minimum_bid');
+    const productYearAuction = document.getElementById('product_year');
+    const priceNormal = document.getElementById('price');
+    const productYearNormal = document.getElementById('product_year_normal');
+    const productCondition = document.getElementById('product_condition');
+    const statusField = document.getElementById('status');
+
+    if (isAuction) {
+        if (startDate) startDate.setAttribute('required', 'required');
+        if (endDate) endDate.setAttribute('required', 'required');
+        if (reservePrice) reservePrice.setAttribute('required', 'required');
+        if (minimumBidAuction) minimumBidAuction.setAttribute('required', 'required');
+        if (productYearAuction) productYearAuction.setAttribute('required', 'required');
+        if (priceNormal) priceNormal.removeAttribute('required');
+        if (productYearNormal) productYearNormal.removeAttribute('required');
+        if (productCondition) productCondition.removeAttribute('required');
+        if (statusField) statusField.setAttribute('required', 'required');
+    } else if (isNormalList) {
+        if (startDate) startDate.removeAttribute('required');
+        if (endDate) endDate.removeAttribute('required');
+        if (reservePrice) reservePrice.removeAttribute('required');
+        if (minimumBidAuction) minimumBidAuction.removeAttribute('required');
+        if (productYearAuction) productYearAuction.removeAttribute('required');
+        if (priceNormal) priceNormal.setAttribute('required', 'required');
+        if (productYearNormal) productYearNormal.setAttribute('required', 'required');
+        if (productCondition) productCondition.setAttribute('required', 'required');
+        // Status is optional for normal_list (will be set to active by default if not provided)
+        if (statusField) statusField.removeAttribute('required');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const listTypeSelect = document.getElementById('list_type');
+    if (listTypeSelect) {
+        listTypeSelect.addEventListener('change', toggleListTypeFields);
+        toggleListTypeFields(); // Initial call
+    }
+});
+
 // Category toggle
 const CAT_222 = 222;
 const catSelect   = document.getElementById('category_id');
@@ -309,7 +443,8 @@ if (locationUrl) locationUrl.removeAttribute('required');
 
 function applyCategoryUI() {
   const val  = parseInt(catSelect?.value || '0', 10);
-  const show = (val === CAT_222);
+  const listType = document.getElementById('list_type').value;
+  const show = (val === CAT_222 && listType === 'auction');
 
   if (catSection) catSection.style.display = show ? '' : 'none';
 
@@ -318,7 +453,13 @@ function applyCategoryUI() {
 }
 
 if (catSelect) {
-  catSelect.addEventListener('change', applyCategoryUI);
+  catSelect.addEventListener('change', function() {
+    applyCategoryUI();
+    // Also trigger list type toggle if needed
+    if (document.getElementById('list_type').value === 'auction') {
+      toggleListTypeFields();
+    }
+  });
   // initial load
   applyCategoryUI();
 }
@@ -332,12 +473,20 @@ $(function() {
 
   function toggleCreateCategory() {
     var cid = Number($('#category_id').val());
+    var listType = $('#list_type').val();
+    // Show create category for both auction and normal_list when category is 213,214,215,216
     if ([213,214,215,216].includes(cid)) {
       $('#createCategoryContainer').show();
     } else {
       $('#createCategoryContainer').hide().find('input').val('');
     }
   }
+
+  // Also trigger on list_type change
+  $('#list_type').on('change', function(){
+    toggleCreateCategory();
+    toggleListTypeFields();
+  });
 
   $('#category_id').on('change', function(){
     toggleCreateCategory();
