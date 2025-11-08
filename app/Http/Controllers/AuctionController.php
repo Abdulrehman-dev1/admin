@@ -528,7 +528,7 @@ public function get_featured_realstate(){
     
     $pro = Auction::find($id);
     // Eager load user relationship to get profile_pic
-    $bids = Bid::where('auction_id', $id)->with('user')->latest()->limit(5)->get();
+    $bids = Bid::where('auction_id', $id)->with('user')->latest()->get();
     $user = User::find(optional($pro)->user_id);
 
     $product['product'] = [$pro];
