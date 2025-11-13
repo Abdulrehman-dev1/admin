@@ -21,9 +21,9 @@ class Kernel extends ConsoleKernel
         ->withoutOverlapping()
         ->onOneServer();
 
-        // Auto Bidder - Run every 4 hours
+        // Auto Bidder - Run every 12 hours
         $schedule->command('auto:bid')
-            ->everyFourHours()
+            ->twiceDaily(0, 12)
             ->withoutOverlapping()
             ->onOneServer()
             ->appendOutputTo(storage_path('logs/auto-bid.log'));

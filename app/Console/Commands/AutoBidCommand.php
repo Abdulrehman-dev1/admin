@@ -44,18 +44,19 @@ class AutoBidCommand extends Command
 
         $this->info("✅ Found {$dummyUsers->count()} dummy users");
 
-        // Get all active auctions that haven't ended
+        // Get all active auctions that have auto bidder enabled and haven't ended
         $activeAuctions = Auction::where('status', 'active')
+            ->where('is_autobidder_on', true)
             ->where('end_date', '>', now())
             ->orderBy('id', 'asc')
             ->get();
 
         if ($activeAuctions->isEmpty()) {
-            $this->warn('⚠️  No active auctions found.');
+            $this->warn('⚠️  No active auto-bid enabled auctions found.');
             return 0;
         }
 
-        $this->info("🎯 Found {$activeAuctions->count()} active auctions");
+        $this->info("🎯 Found {$activeAuctions->count()} active auto-bid enabled auctions");
 
         $bidsPlaced = 0;
         $errors = 0;
