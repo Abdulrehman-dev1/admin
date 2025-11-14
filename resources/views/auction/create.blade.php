@@ -388,7 +388,7 @@ function toggleListTypeFields() {
         // Both fields exist, just control visibility
     }
 
-    // Handle required attributes
+    // Handle required attributes and disable hidden fields to prevent duplicate submission
     const startDate = document.getElementById('start_date');
     const endDate = document.getElementById('end_date');
     const reservePrice = document.getElementById('reserve_price');
@@ -398,26 +398,86 @@ function toggleListTypeFields() {
     const productYearNormal = document.getElementById('product_year_normal');
     const productCondition = document.getElementById('product_condition');
     const statusField = document.getElementById('status');
+    const albumAuction = document.getElementById('album');
+    const albumNormalFile = document.getElementById('album_normal');
 
     if (isAuction) {
-        if (startDate) startDate.setAttribute('required', 'required');
-        if (endDate) endDate.setAttribute('required', 'required');
-        if (reservePrice) reservePrice.setAttribute('required', 'required');
-        if (minimumBidAuction) minimumBidAuction.setAttribute('required', 'required');
-        if (productYearAuction) productYearAuction.setAttribute('required', 'required');
-        if (priceNormal) priceNormal.removeAttribute('required');
-        if (productYearNormal) productYearNormal.removeAttribute('required');
-        if (productCondition) productCondition.removeAttribute('required');
+        // Enable and require auction fields
+        if (startDate) {
+            startDate.setAttribute('required', 'required');
+            startDate.disabled = false;
+        }
+        if (endDate) {
+            endDate.setAttribute('required', 'required');
+            endDate.disabled = false;
+        }
+        if (reservePrice) {
+            reservePrice.setAttribute('required', 'required');
+            reservePrice.disabled = false;
+        }
+        if (minimumBidAuction) {
+            minimumBidAuction.setAttribute('required', 'required');
+            minimumBidAuction.disabled = false;
+        }
+        if (productYearAuction) {
+            productYearAuction.setAttribute('required', 'required');
+            productYearAuction.disabled = false;
+        }
+        if (albumAuction) albumAuction.disabled = false;
+        
+        // Disable normal list fields to prevent duplicate submission
+        if (priceNormal) {
+            priceNormal.removeAttribute('required');
+            priceNormal.disabled = true;
+        }
+        if (productYearNormal) {
+            productYearNormal.removeAttribute('required');
+            productYearNormal.disabled = true;
+        }
+        if (productCondition) {
+            productCondition.removeAttribute('required');
+            productCondition.disabled = true;
+        }
+        if (albumNormalFile) albumNormalFile.disabled = true;
         if (statusField) statusField.setAttribute('required', 'required');
     } else if (isNormalList) {
-        if (startDate) startDate.removeAttribute('required');
-        if (endDate) endDate.removeAttribute('required');
-        if (reservePrice) reservePrice.removeAttribute('required');
-        if (minimumBidAuction) minimumBidAuction.removeAttribute('required');
-        if (productYearAuction) productYearAuction.removeAttribute('required');
-        if (priceNormal) priceNormal.setAttribute('required', 'required');
-        if (productYearNormal) productYearNormal.setAttribute('required', 'required');
-        if (productCondition) productCondition.setAttribute('required', 'required');
+        // Disable auction fields to prevent duplicate submission
+        if (startDate) {
+            startDate.removeAttribute('required');
+            startDate.disabled = true;
+        }
+        if (endDate) {
+            endDate.removeAttribute('required');
+            endDate.disabled = true;
+        }
+        if (reservePrice) {
+            reservePrice.removeAttribute('required');
+            reservePrice.disabled = true;
+        }
+        if (minimumBidAuction) {
+            minimumBidAuction.removeAttribute('required');
+            minimumBidAuction.disabled = true;
+        }
+        if (productYearAuction) {
+            productYearAuction.removeAttribute('required');
+            productYearAuction.disabled = true;
+        }
+        if (albumAuction) albumAuction.disabled = true;
+        
+        // Enable and require normal list fields
+        if (priceNormal) {
+            priceNormal.setAttribute('required', 'required');
+            priceNormal.disabled = false;
+        }
+        if (productYearNormal) {
+            productYearNormal.setAttribute('required', 'required');
+            productYearNormal.disabled = false;
+        }
+        if (productCondition) {
+            productCondition.setAttribute('required', 'required');
+            productCondition.disabled = false;
+        }
+        if (albumNormalFile) albumNormalFile.disabled = false;
         // Status is optional for normal_list (will be set to active by default if not provided)
         if (statusField) statusField.removeAttribute('required');
     }
