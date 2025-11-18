@@ -98,11 +98,6 @@ class AuctionController extends Controller
         'facilities'           => ['nullable','string'],
     ];
 
-    // Conditional required for category 222 (only for auctions)
-    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
-        $rules['location_url'] = ['required','max:1024'];
-    }
-
     $validated = $request->validate($rules);
 
     // Album upload (same as your logic)
@@ -266,11 +261,6 @@ class AuctionController extends Controller
         'amenities'            => ['nullable','string'],
         'facilities'           => ['nullable','string'],
     ];
-
-    // Conditional required for category 222 (only for auctions)
-    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
-        $rules['location_url'] = ['required','max:1024'];
-    }
 
     $validated = $request->validate($rules);
 
@@ -663,7 +653,7 @@ public function get_featured_realstate(){
         'description'       => 'required',
         'list_type'         => 'required|in:auction,normal_list',
         'product_year'      => 'required',
-        'product_location'  => 'required',
+        'product_location'  => 'nullable',
         // Add new property fields
         'developer'         => 'nullable|string|max:255',
         'location_url'      => 'nullable|max:1024',
@@ -694,11 +684,6 @@ public function get_featured_realstate(){
         $rules['reserve_price'] = 'nullable|numeric';
     }
 
-    // Conditional required for category 222 (only for auctions)
-    if ($listType === 'auction' && (int)$request->input('category_id') === 222) {
-        $rules['location_url'] = 'required|max:1024';
-    }
-
     // Custom error messages
     $messages = [
         'title.required'             => 'Please enter a title for your listing.',
@@ -718,7 +703,6 @@ public function get_featured_realstate(){
         'minimum_bid.numeric'        => 'Minimum bid must be a number.',
         'description.required'       => 'Please provide a description of your product.',
         'product_year.required'      => 'Please specify the products year.',
-        'product_location.required'  => 'Please enter the product location.',
         'product_condition.required' => 'Please select product condition (new or old).',
         'product_condition.in'        => 'Product condition must be either new or old.',
         'list_type.required'         => 'Please select a list type.',
@@ -898,7 +882,7 @@ public function api_update(Request $request, $id)
         'minimum_bid'         => 'required|numeric',
         'description'         => 'required',
         'product_year'        => 'required',
-        'product_location'    => 'required',
+        'product_location'    => 'nullable',
         'sub_category_id'     => 'nullable',
         'child_category_id'   => 'nullable',
         // New property fields

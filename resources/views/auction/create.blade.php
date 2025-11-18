@@ -274,7 +274,7 @@
   </div>
 
   <div class="form-group">
-    <label for="location_url">Location URL <span class="text-danger">*</span></label>
+    <label for="location_url">Location URL</label>
     <input type="text" name="location_url" id="location_url" class="form-control"
            value="{{ old('location_url', $auction->location_url ?? '') }}"
            placeholder="https://maps.google.com/?q=..." />
