@@ -173,11 +173,25 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 
                 page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 
-                # Check if page is still alive
+                # Immediately check if browser and page are still alive
+                if not browser.is_connected():
+                    raise Exception("Browser disconnected immediately after navigation")
+                
                 if page.is_closed():
-                    raise Exception("Page closed after navigation")
+                    raise Exception("Page closed immediately after navigation")
+                
+                # Small wait to let browser stabilize
+                time.sleep(1)
+                
+                # Check again before continuing
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed during stabilization")
                 
                 page.wait_for_timeout(4000)  # Wait for dynamic content
+                
+                # Final check before proceeding
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed after waiting for content")
                 
                 # Wait for key elements to load
                 try:
@@ -205,8 +219,21 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 print(f"Page loaded, URL: {page.url}", file=sys.stderr)
             
             # Check if page loaded correctly
-            page_title = page.title()
-            current_url = page.url
+            # Verify browser and page are still alive before accessing properties
+            if not browser.is_connected():
+                raise Exception("Browser disconnected after navigation")
+            
+            if page.is_closed():
+                raise Exception("Page closed after navigation")
+            
+            try:
+                page_title = page.title()
+                current_url = page.url
+            except Exception as title_error:
+                # Browser might have closed, check again
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception(f"Browser/page closed while getting title: {title_error}")
+                raise
             
             if debug:
                 print(f"Page title: {page_title}", file=sys.stderr)
