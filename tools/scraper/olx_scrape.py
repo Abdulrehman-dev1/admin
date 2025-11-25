@@ -91,19 +91,58 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Debug: Save HTML to file for inspection (optional)
         if debug:
             # Check if page has OLX structure
             has_olx_structure = bool(soup.find('body') and ('olx' in response.text.lower() or 'olx.com.pk' in response.text.lower()))
             print(f"Page has OLX structure: {has_olx_structure}", file=sys.stderr)
-        
-        if debug:
+            
             # Debug: Check if page loaded correctly
             page_title_tag = soup.find('title')
             if page_title_tag:
                 print(f"Page title tag: {page_title_tag.get_text(strip=True)[:100]}", file=sys.stderr)
+            
+            # Debug: Check for common OLX elements
+            body = soup.find('body')
+            if body:
+                body_text = body.get_text(strip=True)
+                print(f"Body text length: {len(body_text)}, First 200 chars: {body_text[:200]}", file=sys.stderr)
+            
+            # Debug: Check for script tags (might be React/JS app)
+            scripts = soup.find_all('script')
+            print(f"Found {len(scripts)} script tags", file=sys.stderr)
+            
+            # Debug: Save HTML snippet for inspection
+            html_snippet = response.text[:2000]  # First 2000 chars
+            print(f"HTML snippet (first 2000 chars): {html_snippet}", file=sys.stderr)
+            
+            # Debug: Check for JSON data in script tags
+            for script in scripts:
+                if script.string:
+                    if 'window.__APOLLO_STATE__' in script.string:
+                        print("Found Apollo State (React app detected)", file=sys.stderr)
+                    if 'window.__INITIAL_STATE__' in script.string:
+                        print("Found Initial State (React app detected)", file=sys.stderr)
+                    if 'itemTitle' in script.string or 'price' in script.string.lower():
+                        print("Found itemTitle or price in script tag", file=sys.stderr)
         
         # Extract data using BeautifulSoup with multiple fallback selectors
+        # Check if page is a React/JS app (content might be in script tags)
+        json_data = None
+        for script in soup.find_all('script'):
+            if script.string:
+                # Try to find JSON data in script tags
+                if 'window.__APOLLO_STATE__' in script.string:
+                    try:
+                        # Extract JSON from script
+                        json_match = re.search(r'window\.__APOLLO_STATE__\s*=\s*({.+?});', script.string, re.DOTALL)
+                        if json_match:
+                            import json as json_lib
+                            json_data = json_lib.loads(json_match.group(1))
+                            if debug:
+                                print("Found Apollo State JSON data", file=sys.stderr)
+                    except:
+                        pass
+        
         # Title - try multiple selectors including data attributes
         title_el = None
         # Try class-based selectors first
@@ -121,7 +160,16 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
                     title_el = h1
                     break
         
-        result["title"] = title_el.get_text(strip=True) if title_el else None
+        # If still not found, try meta tags
+        if not title_el:
+            meta_title = soup.find('meta', property='og:title') or soup.find('meta', {'name': 'title'})
+            if meta_title:
+                title_el = meta_title
+                result["title"] = meta_title.get('content') or meta_title.get('value')
+            else:
+                result["title"] = title_el.get_text(strip=True) if title_el else None
+        else:
+            result["title"] = title_el.get_text(strip=True) if title_el else None
         
         if debug:
             print(f"Title extracted: {result['title']}", file=sys.stderr)
