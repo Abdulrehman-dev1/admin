@@ -161,6 +161,17 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             # Navigate to URL
             if debug:
                 print("Navigating to URL...", file=sys.stderr)
+            
+            # Additional wait and check before navigation
+            time.sleep(2)  # Wait before navigation
+            
+            # Final check before navigation
+            if not browser.is_connected():
+                raise Exception("Browser disconnected before navigation")
+            
+            if page.is_closed():
+                raise Exception("Page closed before navigation")
+            
             # Navigate with retry logic and better error handling
             try:
                 if debug:
