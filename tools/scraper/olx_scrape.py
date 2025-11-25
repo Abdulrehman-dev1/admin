@@ -295,97 +295,96 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if debug:
                 print("Extracting data...", file=sys.stderr)
             
-            # Extract OLX data - using step-by-step extraction to avoid browser closing
-            # Extract each field separately to minimize memory usage
+            # Extract OLX data - using page.content() instead of page.evaluate() to avoid browser closing
+            # Get HTML content and parse with BeautifulSoup
+            from bs4 import BeautifulSoup
+            
+            if not browser.is_connected() or page.is_closed():
+                raise Exception("Browser/page closed before content extraction")
+            
+            if debug:
+                print("Getting page content...", file=sys.stderr)
+            
+            # Get page HTML content (safer than evaluate)
+            try:
+                html_content = page.content()
+            except Exception as content_error:
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception(f"Browser/page closed while getting content: {content_error}")
+                raise
+            
+            if debug:
+                print("Parsing HTML with BeautifulSoup...", file=sys.stderr)
+            
+            # Parse HTML with BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Extract data using BeautifulSoup
             page_data = {}
             
-            try:
-                # Step 1: Extract title (simplest, fastest)
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception("Browser/page closed before title extraction")
-                
-                title_data = page.evaluate(r"""() => {
-                    const titleEl = document.querySelector('h1._75bce902') || document.querySelector('h1');
-                    return titleEl ? titleEl.textContent.trim() : null;
-                }""")
-                page_data["title"] = title_data
-                
-                # Step 2: Extract price
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception("Browser/page closed before price extraction")
-                
-                price_data = page.evaluate(r"""() => {
-                    const priceEl = document.querySelector('span._24469da7[aria-label="Price"]') ||
-                                   document.querySelector('span._24469da7') ||
-                                   document.querySelector('[aria-label="Price"]');
-                    if (!priceEl) return null;
-                    const priceText = priceEl.textContent.trim();
-                    let priceMatch = priceText.match(/Rs\s+([\d.]+)\s*Lac/i);
-                    if (priceMatch) {
-                        const lacValue = parseFloat(priceMatch[1]);
-                        return Math.round(lacValue * 100000).toString();
-                    }
-                    priceMatch = priceText.match(/Rs\s+([\d,.]+)/i);
-                    return priceMatch ? priceMatch[1].replace(/,/g, '') : null;
-                }""")
-                page_data["price"] = price_data
-                
-                # Step 3: Extract images (most memory intensive, do last)
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception("Browser/page closed before image extraction")
-                
-                images_data = page.evaluate(r"""() => {
-                    const images = [];
-                    const seenUrls = new Set();
-                    const gallerySlides = document.querySelectorAll('.image-gallery-slide');
-                    gallerySlides.forEach(slide => {
-                        const img = slide.querySelector('picture img');
-                        if (img) {
-                            const src = img.getAttribute('src');
-                            if (src && !seenUrls.has(src) && src.startsWith('http')) {
-                                seenUrls.add(src);
-                                images.push(src);
-                            }
-                        }
-                    });
-                    if (images.length === 0) {
-                        const galleryImgs = document.querySelectorAll('.image-gallery img');
-                        galleryImgs.forEach(img => {
-                            const src = img.getAttribute('src') || img.getAttribute('data-src');
-                            if (src && !seenUrls.has(src) && src.startsWith('http') && 
-                                src.includes('olx.com.pk') && !src.includes('logo') && !src.includes('icon')) {
-                                seenUrls.add(src);
-                                images.push(src);
-                            }
-                        });
-                    }
-                    return images;
-                }""")
-                page_data["images"] = images_data
-                
-                # Step 4: Extract description
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception("Browser/page closed before description extraction")
-                
-                desc_data = page.evaluate(r"""() => {
-                    const descEl = document.querySelector('div[aria-label="Description"] ._7a99ad24 span') ||
-                                   document.querySelector('div._7a99ad24 span');
-                    return descEl ? descEl.textContent.trim() : null;
-                }""")
-                page_data["description"] = desc_data
-                
-                # Step 5: Extract location
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception("Browser/page closed before location extraction")
-                
-                loc_data = page.evaluate(r"""() => {
-                    const locEl = document.querySelector('span._8206696c[aria-label="Location"]') ||
-                                  document.querySelector('span._8206696c');
-                    if (!locEl) return null;
-                    const locText = locEl.textContent.trim();
-                    return locText.replace(/\s+/g, ' ').trim();
-                }""")
-                page_data["location_text"] = loc_data
+            # Title
+            title_el = soup.select_one('h1._75bce902') or soup.select_one('h1')
+            page_data["title"] = title_el.get_text(strip=True) if title_el else None
+            
+            # Price
+            price_el = (soup.select_one('span._24469da7[aria-label="Price"]') or 
+                       soup.select_one('span._24469da7') or
+                       soup.select_one('[aria-label="Price"]'))
+            if price_el:
+                price_text = price_el.get_text(strip=True)
+                import re
+                # Handle "Rs 3.38 Lac" format
+                lac_match = re.search(r'Rs\s+([\d.]+)\s*Lac', price_text, re.IGNORECASE)
+                if lac_match:
+                    lac_value = float(lac_match.group(1))
+                    page_data["price"] = str(int(lac_value * 100000))
+                else:
+                    # Handle normal format: Rs 1,234,567
+                    price_match = re.search(r'Rs\s+([\d,.]+)', price_text, re.IGNORECASE)
+                    if price_match:
+                        page_data["price"] = price_match.group(1).replace(',', '')
+                    else:
+                        page_data["price"] = None
+            else:
+                page_data["price"] = None
+            
+            # Images
+            images = []
+            seen_urls = set()
+            # Method 1: image-gallery-slide
+            gallery_slides = soup.select('.image-gallery-slide')
+            for slide in gallery_slides:
+                img = slide.select_one('picture img')
+                if img and img.get('src'):
+                    src = img.get('src')
+                    if src.startswith('http') and src not in seen_urls:
+                        seen_urls.add(src)
+                        images.append(src)
+            # Method 2: Fallback
+            if not images:
+                gallery_imgs = soup.select('.image-gallery img')
+                for img in gallery_imgs:
+                    src = img.get('src') or img.get('data-src')
+                    if src and src.startswith('http') and 'olx.com.pk' in src and 'logo' not in src and 'icon' not in src:
+                        if src not in seen_urls:
+                            seen_urls.add(src)
+                            images.append(src)
+            page_data["images"] = images
+            
+            # Description
+            desc_el = (soup.select_one('div[aria-label="Description"] ._7a99ad24 span') or
+                      soup.select_one('div._7a99ad24 span') or
+                      soup.select_one('div._2961c394[aria-label="Description"] ._7a99ad24 span'))
+            page_data["description"] = desc_el.get_text(strip=True) if desc_el else None
+            
+            # Location
+            loc_el = (soup.select_one('span._8206696c[aria-label="Location"]') or
+                     soup.select_one('span._8206696c'))
+            if loc_el:
+                loc_text = loc_el.get_text(strip=True)
+                page_data["location_text"] = ' '.join(loc_text.split())
+            else:
+                page_data["location_text"] = None
             except Exception as eval_error:
                 # Check if browser closed during evaluation
                 if not browser.is_connected() or page.is_closed():
