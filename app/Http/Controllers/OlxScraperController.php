@@ -77,18 +77,14 @@ class OlxScraperController extends Controller
         $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
         
         if ($useRoot) {
-            // Run as root via sudo (requires sudoers config)
-            // Find web server user
-            $webUser = get_current_user(); // Current PHP user
-            if (empty($webUser) || $webUser === 'root') {
-                $webUser = 'nobody'; // Default for OpenLiteSpeed
-            }
-            
+            // Run as root via sudo with NOPASSWD (requires sudoers config)
             // Use root's browsers path
             $rootBrowserPath = '/root/.cache/ms-playwright';
             $rootEnvPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath) . ' ';
             
-            $cmd = 'sudo -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            // Use sudo -n (non-interactive) to avoid password prompt
+            // NOPASSWD rule should allow this
+            $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         } else {
             $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
@@ -211,18 +207,14 @@ class OlxScraperController extends Controller
         $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
         
         if ($useRoot) {
-            // Run as root via sudo (requires sudoers config)
-            // Find web server user
-            $webUser = get_current_user(); // Current PHP user
-            if (empty($webUser) || $webUser === 'root') {
-                $webUser = 'nobody'; // Default for OpenLiteSpeed
-            }
-            
+            // Run as root via sudo with NOPASSWD (requires sudoers config)
             // Use root's browsers path
             $rootBrowserPath = '/root/.cache/ms-playwright';
             $rootEnvPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath) . ' ';
             
-            $cmd = 'sudo -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            // Use sudo -n (non-interactive) to avoid password prompt
+            // NOPASSWD rule should allow this
+            $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         } else {
             $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
