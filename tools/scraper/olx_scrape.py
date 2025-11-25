@@ -238,41 +238,14 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if page.is_closed():
                 raise Exception("Page closed after navigation")
             
-            # Get page URL and title quickly before browser closes
-            # Use try-except to handle browser closing during operations
+            # Skip page.title() and page.url() calls as they cause browser to close
+            # Use fallback values and proceed directly to data extraction
             page_title = "Unknown"
             current_url = url
             
-            try:
-                # Try to get URL first (lighter operation)
-                current_url = page.url
-                if debug:
-                    print(f"Page loaded, URL: {current_url}", file=sys.stderr)
-            except Exception as url_error:
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception(f"Browser/page closed while getting URL: {url_error}")
-                # If URL failed but browser alive, use original URL
-                current_url = url
-                if debug:
-                    print(f"Warning: Could not get page URL: {url_error}", file=sys.stderr)
-            
-            # Check again before getting title
-            if not browser.is_connected() or page.is_closed():
-                raise Exception("Browser/page closed before getting title")
-            
-            try:
-                # Get page title quickly
-                page_title = page.title()
-                if debug:
-                    print(f"Page title: {page_title}", file=sys.stderr)
-            except Exception as title_error:
-                # If title fails, check if browser is still alive
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception(f"Browser/page closed while getting title: {title_error}")
-                # Browser is alive but title failed, use fallback
-                page_title = "Unknown"
-                if debug:
-                    print(f"Warning: Could not get page title: {title_error}", file=sys.stderr)
+            if debug:
+                print(f"Page loaded, URL: {current_url}", file=sys.stderr)
+                print("Skipping page.title() to avoid browser closing, proceeding directly to data extraction...", file=sys.stderr)
             
             if debug:
                 print(f"Page title: {page_title}", file=sys.stderr)
