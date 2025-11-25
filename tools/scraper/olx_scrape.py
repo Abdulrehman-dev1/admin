@@ -186,18 +186,25 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 if not browser.is_connected() or page.is_closed():
                     raise Exception("Browser/page closed during stabilization")
                 
-                page.wait_for_timeout(4000)  # Wait for dynamic content
+                # Wait for dynamic content with multiple checks
+                for wait_iteration in range(4):
+                    time.sleep(1)
+                    if not browser.is_connected() or page.is_closed():
+                        raise Exception(f"Browser/page closed during wait iteration {wait_iteration + 1}")
                 
                 # Final check before proceeding
                 if not browser.is_connected() or page.is_closed():
                     raise Exception("Browser/page closed after waiting for content")
                 
-                # Wait for key elements to load
+                # Wait for key elements to load (with timeout)
                 try:
                     page.wait_for_selector('h1, .image-gallery-slide, span[aria-label="Price"]', timeout=10000)
-                except:
+                except Exception as selector_error:
                     if debug:
-                        print("Warning: Key selectors not found, continuing anyway...", file=sys.stderr)
+                        print(f"Warning: Key selectors not found: {selector_error}, continuing anyway...", file=sys.stderr)
+                    # Check if browser is still alive
+                    if not browser.is_connected() or page.is_closed():
+                        raise Exception("Browser/page closed while waiting for selectors")
             except Exception as nav_error:
                 if debug:
                     print(f"Navigation error: {nav_error}", file=sys.stderr)
@@ -214,25 +221,47 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                         raise retry_error
                 else:
                     raise Exception("Browser disconnected, cannot retry navigation")
-            if debug:
-                print(f"Page loaded, URL: {page.url}", file=sys.stderr)
+            # Wait a bit more for page to fully stabilize
+            time.sleep(2)
             
-            # Check if page loaded correctly
-            # Verify browser and page are still alive before accessing properties
-            if not browser.is_connected():
-                raise Exception("Browser disconnected after navigation")
-            
-            if page.is_closed():
-                raise Exception("Page closed after navigation")
-            
+            # Check if browser and page are still alive
             try:
-                page_title = page.title()
-                current_url = page.url
-            except Exception as title_error:
-                # Browser might have closed, check again
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception(f"Browser/page closed while getting title: {title_error}")
-                raise
+                if not browser.is_connected():
+                    raise Exception("Browser disconnected after navigation")
+                
+                if page.is_closed():
+                    raise Exception("Page closed after navigation")
+                
+                # Try to get page URL first (lighter operation)
+                try:
+                    current_url = page.url
+                    if debug:
+                        print(f"Page loaded, URL: {current_url}", file=sys.stderr)
+                except Exception as url_error:
+                    if not browser.is_connected() or page.is_closed():
+                        raise Exception(f"Browser/page closed while getting URL: {url_error}")
+                    raise
+                
+                # Now get page title
+                try:
+                    page_title = page.title()
+                except Exception as title_error:
+                    # If title fails but browser is still connected, use fallback
+                    if not browser.is_connected() or page.is_closed():
+                        raise Exception(f"Browser/page closed while getting title: {title_error}")
+                    # Browser is alive but title failed, use fallback
+                    page_title = "Unknown"
+                    if debug:
+                        print(f"Warning: Could not get page title: {title_error}", file=sys.stderr)
+            except Exception as check_error:
+                # Re-raise if it's our custom exception
+                if "Browser disconnected" in str(check_error) or "Page closed" in str(check_error):
+                    raise
+                # Otherwise, log and continue
+                if debug:
+                    print(f"Warning during browser check: {check_error}", file=sys.stderr)
+                page_title = "Unknown"
+                current_url = url
             
             if debug:
                 print(f"Page title: {page_title}", file=sys.stderr)
