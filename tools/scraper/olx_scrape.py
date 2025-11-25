@@ -95,32 +95,57 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             browser = None
             for attempt in range(max_retries):
                 try:
+                    if debug:
+                        print(f"Browser launch attempt {attempt + 1}...", file=sys.stderr)
                     browser = p.chromium.launch(
                         headless=headless,
                         args=browser_args,
-                        timeout=60000  # 60 seconds timeout
+                        timeout=120000  # 120 seconds timeout (increased)
                     )
+                    if debug:
+                        print("Browser launched successfully", file=sys.stderr)
                     break
                 except Exception as e:
                     if debug:
                         print(f"Browser launch attempt {attempt + 1} failed: {e}", file=sys.stderr)
                     if attempt < max_retries - 1:
                         import time
-                        time.sleep(2)  # Wait before retry
+                        time.sleep(3)  # Wait before retry
                     else:
                         raise
+            
+            # Wait for browser to fully initialize
+            import time
+            time.sleep(2)
+            
+            # Verify browser is still alive
+            if not browser or not browser.is_connected():
+                raise Exception("Browser closed immediately after launch")
+            
+            if debug:
+                print("Creating browser context...", file=sys.stderr)
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1920, 'height': 1080},
                 locale='en-US',
                 timezone_id='Asia/Karachi',
             )
-            page = context.new_page()
-            page.set_default_timeout(60000)  # Increased timeout to 60 seconds
             
-            # Wait a bit for browser to stabilize
-            import time
+            # Wait for context to initialize
             time.sleep(1)
+            
+            if debug:
+                print("Creating new page...", file=sys.stderr)
+            
+            # Verify browser is still connected before creating page
+            if not browser.is_connected():
+                raise Exception("Browser disconnected before creating page")
+            
+            page = context.new_page()
+            page.set_default_timeout(120000)  # Increased timeout to 120 seconds
+            
+            # Wait a bit for page to stabilize
+            time.sleep(2)
             
             # Set additional headers to avoid bot detection
             page.set_extra_http_headers({
