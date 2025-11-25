@@ -71,17 +71,16 @@ class OlxScraperController extends Controller
         
         $envPrefix = implode(' ', $envVars) . ' ';
         
-        // Use root user to run script (since root works fine but web server user has memory issues)
-        // SECURITY NOTE: This requires proper sudoers configuration
-        // Check if root execution is enabled
-        $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
+        // Since we're using requests library (no browser needed), we can run directly without sudo
+        // Check if we should use root (for backward compatibility)
+        $useRoot = env('OLX_SCRAPER_USE_ROOT', false); // Default to false since requests doesn't need browser
         
         if ($useRoot) {
             // Use wrapper script approach for better environment variable handling
             $wrapperScript = base_path('admin/tools/scraper/run_olx_scraper.sh');
             
             if (file_exists($wrapperScript)) {
-                // Use wrapper script (recommended)
+                // Use wrapper script with sudo (if needed for Playwright fallback)
                 $cmd = 'sudo -n -u root ' . escapeshellarg($wrapperScript) . ' ' . escapeshellarg($request->input('url'));
             } else {
                 // Fallback: Direct command with environment variables
@@ -99,11 +98,16 @@ class OlxScraperController extends Controller
                 $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
             }
         } else {
-            $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            // Run directly without sudo (requests library doesn't need browser)
+            $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
 
         $output = null;
         $returnVar = null;
+        
+        // Log the command for debugging
+        \Log::info('OLX Scraper: Executing command', ['cmd' => $cmd]);
+        
         exec($cmd . ' 2>&1', $lines, $returnVar);
         $stdout = implode("\n", $lines);
         
@@ -214,17 +218,16 @@ class OlxScraperController extends Controller
         
         $envPrefix = implode(' ', $envVars) . ' ';
         
-        // Use root user to run script (since root works fine but web server user has memory issues)
-        // SECURITY NOTE: This requires proper sudoers configuration
-        // Check if root execution is enabled
-        $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
+        // Since we're using requests library (no browser needed), we can run directly without sudo
+        // Check if we should use root (for backward compatibility)
+        $useRoot = env('OLX_SCRAPER_USE_ROOT', false); // Default to false since requests doesn't need browser
         
         if ($useRoot) {
             // Use wrapper script approach for better environment variable handling
             $wrapperScript = base_path('admin/tools/scraper/run_olx_scraper.sh');
             
             if (file_exists($wrapperScript)) {
-                // Use wrapper script (recommended)
+                // Use wrapper script with sudo (if needed for Playwright fallback)
                 $cmd = 'sudo -n -u root ' . escapeshellarg($wrapperScript) . ' ' . escapeshellarg($request->input('url'));
             } else {
                 // Fallback: Direct command with environment variables
@@ -242,11 +245,16 @@ class OlxScraperController extends Controller
                 $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
             }
         } else {
-            $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            // Run directly without sudo (requests library doesn't need browser)
+            $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
 
         $output = null;
         $returnVar = null;
+        
+        // Log the command for debugging
+        \Log::info('OLX Scraper: Executing command', ['cmd' => $cmd]);
+        
         exec($cmd . ' 2>&1', $lines, $returnVar);
         $stdout = implode("\n", $lines);
         
