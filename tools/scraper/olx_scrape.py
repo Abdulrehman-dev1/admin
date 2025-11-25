@@ -86,17 +86,34 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Extract data using BeautifulSoup
-        # Title
-        title_el = soup.select_one('h1._75bce902') or soup.select_one('h1')
+        if debug:
+            # Debug: Check if page loaded correctly
+            page_title_tag = soup.find('title')
+            if page_title_tag:
+                print(f"Page title tag: {page_title_tag.get_text(strip=True)[:100]}", file=sys.stderr)
+        
+        # Extract data using BeautifulSoup with multiple fallback selectors
+        # Title - try multiple selectors
+        title_el = (soup.select_one('h1._75bce902') or 
+                   soup.select_one('h1[class*="75bce902"]') or
+                   soup.select_one('h1') or
+                   soup.find('h1'))
         result["title"] = title_el.get_text(strip=True) if title_el else None
         
-        # Price
+        if debug:
+            print(f"Title extracted: {result['title']}", file=sys.stderr)
+        
+        # Price - try multiple selectors
         price_el = (soup.select_one('span._24469da7[aria-label="Price"]') or 
+                   soup.select_one('span[aria-label="Price"]') or
                    soup.select_one('span._24469da7') or
-                   soup.select_one('[aria-label="Price"]'))
+                   soup.find('span', {'aria-label': 'Price'}) or
+                   soup.find('span', class_=lambda x: x and '_24469da7' in x))
+        
         if price_el:
             price_text = price_el.get_text(strip=True)
+            if debug:
+                print(f"Price text found: {price_text}", file=sys.stderr)
             # Handle "Rs 3.38 Lac" format
             lac_match = re.search(r'Rs\s+([\d.]+)\s*Lac', price_text, re.IGNORECASE)
             if lac_match:
@@ -111,39 +128,98 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
                     result["price"] = None
         else:
             result["price"] = None
+            if debug:
+                print("Price element not found", file=sys.stderr)
         
-        # Images
+        # Images - try multiple methods
         images = []
         seen_urls = set()
+        
         # Method 1: image-gallery-slide
         gallery_slides = soup.select('.image-gallery-slide')
+        if debug:
+            print(f"Found {len(gallery_slides)} gallery slides", file=sys.stderr)
+        
         for slide in gallery_slides:
+            # Try picture img
             img = slide.select_one('picture img')
-            if img and img.get('src'):
-                src = img.get('src')
-                if src.startswith('http') and src not in seen_urls:
-                    seen_urls.add(src)
-                    images.append(src)
-        # Method 2: Fallback
-        if not images:
-            gallery_imgs = soup.select('.image-gallery img')
-            for img in gallery_imgs:
+            if img:
                 src = img.get('src') or img.get('data-src')
-                if src and src.startswith('http') and 'olx.com.pk' in src and 'logo' not in src and 'icon' not in src:
-                    if src not in seen_urls:
+                if src:
+                    # Handle relative URLs
+                    if src.startswith('//'):
+                        src = 'https:' + src
+                    elif src.startswith('/'):
+                        src = 'https://www.olx.com.pk' + src
+                    
+                    if src.startswith('http') and src not in seen_urls:
                         seen_urls.add(src)
                         images.append(src)
+            
+            # Try source srcset
+            source = slide.select_one('picture source[srcset]')
+            if source:
+                srcset = source.get('srcset')
+                if srcset:
+                    # Extract first URL from srcset
+                    srcset_url = srcset.split(',')[0].split()[0] if ',' in srcset else srcset.split()[0]
+                    if srcset_url.startswith('//'):
+                        srcset_url = 'https:' + srcset_url
+                    elif srcset_url.startswith('/'):
+                        srcset_url = 'https://www.olx.com.pk' + srcset_url
+                    
+                    if srcset_url.startswith('http') and srcset_url not in seen_urls:
+                        seen_urls.add(srcset_url)
+                        images.append(srcset_url)
+        
+        # Method 2: Fallback - any img in image-gallery
+        if not images:
+            gallery_imgs = soup.select('.image-gallery img')
+            if debug:
+                print(f"Fallback: Found {len(gallery_imgs)} gallery images", file=sys.stderr)
+            
+            for img in gallery_imgs:
+                src = img.get('src') or img.get('data-src')
+                if src:
+                    # Handle relative URLs
+                    if src.startswith('//'):
+                        src = 'https:' + src
+                    elif src.startswith('/'):
+                        src = 'https://www.olx.com.pk' + src
+                    
+                    if src.startswith('http') and 'olx.com.pk' in src and 'logo' not in src.lower() and 'icon' not in src.lower():
+                        if src not in seen_urls:
+                            seen_urls.add(src)
+                            images.append(src)
+        
         result["images"] = images
         
-        # Description
+        if debug:
+            print(f"Images extracted: {len(images)}", file=sys.stderr)
+        
+        # Description - try multiple selectors
         desc_el = (soup.select_one('div[aria-label="Description"] ._7a99ad24 span') or
                   soup.select_one('div._7a99ad24 span') or
-                  soup.select_one('div._2961c394[aria-label="Description"] ._7a99ad24 span'))
-        result["description"] = desc_el.get_text(strip=True) if desc_el else None
+                  soup.select_one('div._2961c394[aria-label="Description"] ._7a99ad24 span') or
+                  soup.select_one('div[aria-label="Description"] span') or
+                  soup.find('div', {'aria-label': 'Description'}))
         
-        # Location
+        if desc_el:
+            # Try to find span inside
+            if desc_el.name != 'span':
+                desc_span = desc_el.select_one('span') or desc_el
+            else:
+                desc_span = desc_el
+            result["description"] = desc_span.get_text(strip=True) if desc_span else None
+        else:
+            result["description"] = None
+        
+        # Location - try multiple selectors
         loc_el = (soup.select_one('span._8206696c[aria-label="Location"]') or
-                 soup.select_one('span._8206696c'))
+                 soup.select_one('span._8206696c') or
+                 soup.select_one('span[aria-label="Location"]') or
+                 soup.find('span', {'aria-label': 'Location'}))
+        
         if loc_el:
             loc_text = loc_el.get_text(strip=True)
             result["location_text"] = ' '.join(loc_text.split())
