@@ -196,15 +196,11 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 if not browser.is_connected() or page.is_closed():
                     raise Exception("Browser/page closed after waiting for content")
                 
-                # Wait for key elements to load (with timeout)
-                try:
-                    page.wait_for_selector('h1, .image-gallery-slide, span[aria-label="Price"]', timeout=10000)
-                except Exception as selector_error:
-                    if debug:
-                        print(f"Warning: Key selectors not found: {selector_error}, continuing anyway...", file=sys.stderr)
-                    # Check if browser is still alive
-                    if not browser.is_connected() or page.is_closed():
-                        raise Exception("Browser/page closed while waiting for selectors")
+                # Skip wait_for_selector to avoid browser closing
+                # Directly proceed to data extraction after navigation
+                # The page should be loaded enough after domcontentloaded + wait
+                if debug:
+                    print("Skipping wait_for_selector to avoid browser stability issues, proceeding to data extraction...", file=sys.stderr)
             except Exception as nav_error:
                 if debug:
                     print(f"Navigation error: {nav_error}", file=sys.stderr)
