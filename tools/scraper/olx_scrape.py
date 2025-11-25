@@ -285,117 +285,107 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if not browser.is_connected() or page.is_closed():
                 raise Exception("Browser/page closed before data extraction")
             
+            # Additional wait before data extraction to let browser stabilize
+            time.sleep(2)
+            
+            # Check again
+            if not browser.is_connected() or page.is_closed():
+                raise Exception("Browser/page closed during stabilization before data extraction")
+            
             if debug:
                 print("Extracting data...", file=sys.stderr)
             
-            # Extract OLX data - using actual selectors from user's HTML
-            # Using raw string to avoid escape sequence warnings
-            page_data = None
+            # Extract OLX data - using step-by-step extraction to avoid browser closing
+            # Extract each field separately to minimize memory usage
+            page_data = {}
+            
             try:
-                page_data = page.evaluate(r"""
-                () => {
-                    const result = {
-                        title: null,
-                        price: null,
-                        description: null,
-                        images: [],
-                        location_text: null
-                    };
-                    
-                    // Title - using actual selector: h1._75bce902
-                    const titleEl = document.querySelector('h1._75bce902') || 
-                                   document.querySelector('h1');
-                    if (titleEl) {
-                        result.title = titleEl.textContent.trim();
+                # Step 1: Extract title (simplest, fastest)
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed before title extraction")
+                
+                title_data = page.evaluate(r"""() => {
+                    const titleEl = document.querySelector('h1._75bce902') || document.querySelector('h1');
+                    return titleEl ? titleEl.textContent.trim() : null;
+                }""")
+                page_data["title"] = title_data
+                
+                # Step 2: Extract price
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed before price extraction")
+                
+                price_data = page.evaluate(r"""() => {
+                    const priceEl = document.querySelector('span._24469da7[aria-label="Price"]') ||
+                                   document.querySelector('span._24469da7') ||
+                                   document.querySelector('[aria-label="Price"]');
+                    if (!priceEl) return null;
+                    const priceText = priceEl.textContent.trim();
+                    let priceMatch = priceText.match(/Rs\s+([\d.]+)\s*Lac/i);
+                    if (priceMatch) {
+                        const lacValue = parseFloat(priceMatch[1]);
+                        return Math.round(lacValue * 100000).toString();
                     }
-                    
-                    // Images - using actual structure: .image-gallery-slide picture img
+                    priceMatch = priceText.match(/Rs\s+([\d,.]+)/i);
+                    return priceMatch ? priceMatch[1].replace(/,/g, '') : null;
+                }""")
+                page_data["price"] = price_data
+                
+                # Step 3: Extract images (most memory intensive, do last)
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed before image extraction")
+                
+                images_data = page.evaluate(r"""() => {
+                    const images = [];
                     const seenUrls = new Set();
-                    
-                    // Method 1: Primary method - image-gallery-slide
                     const gallerySlides = document.querySelectorAll('.image-gallery-slide');
                     gallerySlides.forEach(slide => {
-                        // Try img src first (JPEG preferred)
                         const img = slide.querySelector('picture img');
                         if (img) {
                             const src = img.getAttribute('src');
                             if (src && !seenUrls.has(src) && src.startsWith('http')) {
                                 seenUrls.add(src);
-                                result.images.push(src);
-                            }
-                        }
-                        // Also try source srcset (webp fallback)
-                        const source = slide.querySelector('picture source[srcset]');
-                        if (source) {
-                            const srcset = source.getAttribute('srcset');
-                            if (srcset && !seenUrls.has(srcset) && srcset.startsWith('http')) {
-                                seenUrls.add(srcset);
-                                // Prefer JPEG over webp, but add webp if no JPEG found
-                                if (!srcset.includes('.webp') || result.images.length === 0) {
-                                    result.images.push(srcset);
-                                }
+                                images.push(src);
                             }
                         }
                     });
-                    
-                    // Method 2: Fallback - any img in image-gallery
-                    if (result.images.length === 0) {
+                    if (images.length === 0) {
                         const galleryImgs = document.querySelectorAll('.image-gallery img');
                         galleryImgs.forEach(img => {
                             const src = img.getAttribute('src') || img.getAttribute('data-src');
                             if (src && !seenUrls.has(src) && src.startsWith('http') && 
                                 src.includes('olx.com.pk') && !src.includes('logo') && !src.includes('icon')) {
                                 seenUrls.add(src);
-                                result.images.push(src);
+                                images.push(src);
                             }
                         });
                     }
-                    
-                    // Price - using actual selector: span._24469da7
-                    const priceEl = document.querySelector('span._24469da7[aria-label="Price"]') ||
-                                   document.querySelector('span._24469da7') ||
-                                   document.querySelector('[aria-label="Price"]');
-                    
-                    if (priceEl) {
-                        const priceText = priceEl.textContent.trim();
-                        // Handle "Rs 3.38 Lac" format (Lac = 100,000)
-                        // Using double backslash for regex escape sequences
-                        let priceMatch = priceText.match(/Rs\s+([\d.]+)\s*Lac/i);
-                        if (priceMatch) {
-                            const lacValue = parseFloat(priceMatch[1]);
-                            result.price = Math.round(lacValue * 100000).toString();
-                        } else {
-                            // Handle normal format: Rs 1,234,567
-                            priceMatch = priceText.match(/Rs\s+([\d,.]+)/i);
-                            if (priceMatch) {
-                                result.price = priceMatch[1].replace(/,/g, '');
-                            }
-                        }
-                    }
-                    
-                    // Description - using actual selector: div._7a99ad24 span
+                    return images;
+                }""")
+                page_data["images"] = images_data
+                
+                # Step 4: Extract description
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed before description extraction")
+                
+                desc_data = page.evaluate(r"""() => {
                     const descEl = document.querySelector('div[aria-label="Description"] ._7a99ad24 span') ||
-                                   document.querySelector('div._7a99ad24 span') ||
-                                   document.querySelector('div._2961c394[aria-label="Description"] ._7a99ad24 span');
-                    
-                    if (descEl) {
-                        result.description = descEl.textContent.trim();
-                    }
-                    
-                    // Location - using actual selector: span._8206696c
+                                   document.querySelector('div._7a99ad24 span');
+                    return descEl ? descEl.textContent.trim() : null;
+                }""")
+                page_data["description"] = desc_data
+                
+                # Step 5: Extract location
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed before location extraction")
+                
+                loc_data = page.evaluate(r"""() => {
                     const locEl = document.querySelector('span._8206696c[aria-label="Location"]') ||
                                   document.querySelector('span._8206696c');
-                    
-                    if (locEl) {
-                        // Get text from location span, might contain SVG and other elements
-                        const locText = locEl.textContent.trim();
-                        // Clean up the text (remove extra whitespace)
-                        result.location_text = locText.replace(/\s+/g, ' ').trim();
-                    }
-                    
-                    return result;
-                }
-            """)
+                    if (!locEl) return null;
+                    const locText = locEl.textContent.trim();
+                    return locText.replace(/\s+/g, ' ').trim();
+                }""")
+                page_data["location_text"] = loc_data
             except Exception as eval_error:
                 # Check if browser closed during evaluation
                 if not browser.is_connected() or page.is_closed():
