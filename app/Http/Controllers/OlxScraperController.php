@@ -57,13 +57,19 @@ class OlxScraperController extends Controller
             '/usr/local/share/playwright', // Fallback if open_basedir allows
         ];
         
-        $envPrefix = '';
+        $envVars = [];
         foreach ($playwrightPaths as $playwrightPath) {
             if (@file_exists($playwrightPath) && @is_dir($playwrightPath)) {
-                $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+                $envVars[] = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath);
                 break;
             }
         }
+        
+        // Add additional environment variables for memory/address space issues
+        $envVars[] = 'MALLOC_ARENA_MAX=2';  // Reduce memory arenas
+        $envVars[] = 'MALLOC_MMAP_THRESHOLD_=131072';  // Memory mapping threshold
+        
+        $envPrefix = implode(' ', $envVars) . ' ';
         
         $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
 
@@ -165,13 +171,19 @@ class OlxScraperController extends Controller
             '/usr/local/share/playwright', // Fallback if open_basedir allows
         ];
         
-        $envPrefix = '';
+        $envVars = [];
         foreach ($playwrightPaths as $playwrightPath) {
             if (@file_exists($playwrightPath) && @is_dir($playwrightPath)) {
-                $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+                $envVars[] = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath);
                 break;
             }
         }
+        
+        // Add additional environment variables for memory/address space issues
+        $envVars[] = 'MALLOC_ARENA_MAX=2';  // Reduce memory arenas
+        $envVars[] = 'MALLOC_MMAP_THRESHOLD_=131072';  // Memory mapping threshold
+        
+        $envPrefix = implode(' ', $envVars) . ' ';
         
         $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
 

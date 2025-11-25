@@ -55,7 +55,7 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 print(f"Launching browser (headless={headless})", file=sys.stderr)
             
             # Launch browser with additional arguments to fix memory/address space issues
-            # Try without single-process first, if fails then use single-process
+            # Use single-process mode directly for web server users to avoid memory issues
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -64,13 +64,14 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 '--disable-gpu',
                 '--disable-software-rasterizer',
                 '--disable-extensions',
+                '--single-process',  # Use single-process mode to avoid partition_address_space issues
                 '--disable-background-networking',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-breakpad',
                 '--disable-component-update',
                 '--disable-default-apps',
-                '--disable-features=TranslateUI',
+                '--disable-features=TranslateUI,VizDisplayCompositor,PartitionAlloc',
                 '--disable-ipc-flooding-protection',
                 '--disable-renderer-backgrounding',
                 '--disable-sync',
@@ -82,25 +83,32 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 '--password-store=basic',
                 '--use-mock-keychain',
                 '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
+                '--disable-features=UseChromeOSDirectVideoDecoder',
+                '--disable-software-rasterizer',
+                '--disable-2d-canvas-clip-aa',
+                '--disable-2d-canvas-image-chromium',
+                '--disable-accelerated-video-decode',
             ]
             
-            try:
-                browser = p.chromium.launch(
-                    headless=headless,
-                    args=browser_args,
-                    timeout=60000  # 60 seconds timeout
-                )
-            except Exception as e:
-                if debug:
-                    print(f"First launch attempt failed: {e}, trying with single-process", file=sys.stderr)
-                # Retry with single-process mode
-                browser_args.append('--single-process')
-                browser = p.chromium.launch(
-                    headless=headless,
-                    args=browser_args,
-                    timeout=60000
-                )
+            # Try to launch browser with retry logic
+            max_retries = 2
+            browser = None
+            for attempt in range(max_retries):
+                try:
+                    browser = p.chromium.launch(
+                        headless=headless,
+                        args=browser_args,
+                        timeout=60000  # 60 seconds timeout
+                    )
+                    break
+                except Exception as e:
+                    if debug:
+                        print(f"Browser launch attempt {attempt + 1} failed: {e}", file=sys.stderr)
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(2)  # Wait before retry
+                    else:
+                        raise
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1920, 'height': 1080},
