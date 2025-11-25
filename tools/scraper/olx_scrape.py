@@ -385,15 +385,6 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 page_data["location_text"] = ' '.join(loc_text.split())
             else:
                 page_data["location_text"] = None
-            except Exception as eval_error:
-                # Check if browser closed during evaluation
-                if not browser.is_connected() or page.is_closed():
-                    raise Exception(f"Browser/page closed during data extraction: {eval_error}")
-                # Browser is alive but evaluation failed
-                raise
-            
-            if page_data is None:
-                raise Exception("Data extraction returned None")
             
             result["title"] = page_data.get("title")
             result["images"] = page_data.get("images", [])
