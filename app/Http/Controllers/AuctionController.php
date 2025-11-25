@@ -233,7 +233,7 @@ class AuctionController extends Controller
 
     // Auction-specific rules
     if ($listType === 'auction') {
-        $rules['start_date'] = ['required','date'];
+        $rules['start_date'] = ['nullable','date']; // Changed to nullable for edit page - no current date validation
         $rules['end_date'] = ['required','date','after_or_equal:start_date'];
         $rules['reserve_price'] = ['required','numeric'];
         $rules['minimum_bid'] = ['required','numeric'];
@@ -647,7 +647,7 @@ public function get_featured_realstate(){
     // 2) Base validation rules
     $rules = [
         'title'             => 'required|min:2|max:100',
-        'category_id'       => 'required|integer|exists:auction_categories,id',
+        'category_id'       => 'nullable|integer|exists:auction_categories,id',
         'sub_category_id'   => 'nullable|integer|exists:auction_categories,id',
         'child_category_id' => 'nullable|integer|exists:auction_categories,id',
         'description'       => 'required',

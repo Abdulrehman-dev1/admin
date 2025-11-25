@@ -4,14 +4,86 @@
 <div class="container">
   <h1>OLX Scraper</h1>
 
-  @if(session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
+  @php
+    $statusMessage = session('status');
+    $savedParam = request()->get('saved');
+    $auctionId = request()->get('auction_id') ?? session('success_auction_id');
+    
+    // If query parameter exists but no session message, create one
+    if ($savedParam == '1' && !$statusMessage) {
+      $statusMessage = 'Auction saved successfully!' . ($auctionId ? ' Auction ID: ' . $auctionId : '');
+    }
+  @endphp
+  
+  @if($statusMessage)
+    <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert" style="font-size: 16px; margin-top: 20px; z-index: 9999;">
+      <strong>✓ Success!</strong> {{ $statusMessage }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="document.getElementById('success-alert').remove()"></button>
+    </div>
+    <script>
+      // Ensure alert is visible
+      document.addEventListener('DOMContentLoaded', function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+          alert.style.display = 'block';
+          alert.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          
+          // Auto-dismiss after 10 seconds
+          setTimeout(function() {
+            if (alert && alert.parentNode) {
+              // Try Bootstrap dismiss first
+              if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+                try {
+                  var bsAlert = new bootstrap.Alert(alert);
+                  bsAlert.close();
+                } catch(e) {
+                  alert.remove();
+                }
+              } else {
+                // Fallback: fade out and remove
+                alert.style.transition = 'opacity 0.5s';
+                alert.style.opacity = '0';
+                setTimeout(function() {
+                  if (alert && alert.parentNode) {
+                    alert.remove();
+                  }
+                }, 500);
+              }
+            }
+          }, 10000);
+        }
+      });
+      
+      // Debug: Log success message
+      console.log('Success message found:', '{{ $statusMessage }}');
+    </script>
   @endif
   @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
+    <div class="alert alert-danger">
+      <strong>Error:</strong> {{ session('error') }}
+    </div>
   @endif
   @if(!empty($error))
-    <div class="alert alert-danger">{{ $error }}</div>
+    <div class="alert alert-danger">
+      <strong>Error:</strong> {{ $error }}
+    </div>
+  @endif
+  @if($errors->any())
+    <div class="alert alert-danger">
+      <strong>Validation Errors:</strong>
+      <ul class="mb-0">
+        @foreach($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+    </div>
+  @endif
+  
+  @if(session('debug_info'))
+    <div class="alert alert-info">
+      <strong>Debug Info:</strong>
+      <pre style="max-height: 200px; overflow: auto;">{{ json_encode(session('debug_info'), JSON_PRETTY_PRINT) }}</pre>
+    </div>
   @endif
   @if(!empty($exitCode))
     <div class="alert alert-warning">Script exit code: {{ $exitCode }}</div>
@@ -155,6 +227,12 @@
           <div class="col-md-4">
             <strong>Reserve Price:</strong>
             <div class="border p-2 bg-light">{{ number_format($preview['reserve_price'] ?? 0, 2) }} AED</div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="alert alert-info mb-0">
+            <i class="bi bi-info-circle"></i> <strong>Auto Bidder:</strong> This OLX product will have auto bidder enabled automatically when saved.
           </div>
         </div>
 

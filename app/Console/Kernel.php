@@ -4,7 +4,6 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use App\Jobs\CheckAuctionStatusJob;
 
 class Kernel extends ConsoleKernel
 {
@@ -13,13 +12,12 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Simple test schedule:
-        
-        // Your actual job schedule:
-			$schedule->job(new \App\Jobs\CheckAuctionStatusJob)
-        ->everyMinute()
-        ->withoutOverlapping()
-        ->onOneServer();
+        // Auction Status Check - Run every minute
+        $schedule->command('auction:check-status')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->appendOutputTo(storage_path('logs/auction-status.log'));
 
         // Auto Bidder - Run every 12 hours
         $schedule->command('auto:bid')

@@ -49,7 +49,14 @@ class OlxScraperController extends Controller
             ]);
         }
 
-        $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        // Set Playwright browsers path environment variable
+        $playwrightPath = '/usr/local/share/playwright';
+        $envPrefix = '';
+        if (file_exists($playwrightPath) && is_dir($playwrightPath)) {
+            $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+        }
+        
+        $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
 
         $output = null;
         $returnVar = null;
@@ -92,13 +99,43 @@ class OlxScraperController extends Controller
     {
         set_time_limit(180);
         
-        $request->validate([
-            'url' => 'required|url',
-            'user_id' => 'required|exists:users,id',
-            'category_id' => 'required|exists:auction_categories,id',
-            'sub_category_id' => 'nullable|exists:auction_categories,id',
-            'child_category_id' => 'nullable|exists:auction_categories,id',
+        // Log incoming request
+        Log::info('OLX Scraper save method called', [
+            'url' => $request->input('url'),
+            'user_id' => $request->input('user_id'),
+            'category_id' => $request->input('category_id'),
+            'sub_category_id' => $request->input('sub_category_id'),
+            'child_category_id' => $request->input('child_category_id'),
+            'all_input' => $request->all()
         ]);
+        
+        // Convert empty strings to null for nullable fields
+        $request->merge([
+            'sub_category_id' => $request->input('sub_category_id') ?: null,
+            'child_category_id' => $request->input('child_category_id') ?: null,
+        ]);
+        
+        try {
+            $request->validate([
+                'url' => 'required|url',
+                'user_id' => 'required|exists:users,id',
+                'category_id' => 'required|exists:auction_categories,id',
+                'sub_category_id' => 'nullable|exists:auction_categories,id',
+                'child_category_id' => 'nullable|exists:auction_categories,id',
+            ]);
+            Log::info('OLX Scraper validation passed');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('OLX Scraper validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            return redirect()->route('olx-scraper.index')
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Validation failed: ' . implode(', ', array_map(function($errors) {
+                    return implode(', ', $errors);
+                }, $e->errors())));
+        }
 
         // Run OLX scraper
         $script = env('SCRAPER_SCRIPT_PATH', base_path('tools/scraper/olx_scrape.py'));
@@ -111,7 +148,14 @@ class OlxScraperController extends Controller
             return redirect()->route('olx-scraper.index')->with('error', 'OLX scraper script not found.');
         }
 
-        $cmd = escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        // Set Playwright browsers path environment variable
+        $playwrightPath = '/usr/local/share/playwright';
+        $envPrefix = '';
+        if (file_exists($playwrightPath) && is_dir($playwrightPath)) {
+            $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+        }
+        
+        $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
 
         $output = null;
         $returnVar = null;
@@ -131,15 +175,46 @@ class OlxScraperController extends Controller
                 $jsonStr = $matches[0];
             }
             $json = json_decode($jsonStr, true);
+            $jsonError = json_last_error();
             
             Log::info('OLX JSON parse result', [
-                'json_error' => json_last_error(),
+                'json_error' => $jsonError,
+                'json_error_msg' => json_last_error_msg(),
                 'has_data' => !empty($json),
-                'json_str_first_200' => substr($jsonStr, 0, 200)
+                'json_str_first_500' => substr($jsonStr, 0, 500),
+                'json_keys' => !empty($json) ? array_keys($json) : []
             ]);
             
-            if (json_last_error() === JSON_ERROR_NONE && !empty($json)) {
+            // Check JSON parse error
+            if ($jsonError !== JSON_ERROR_NONE) {
+                Log::error('OLX JSON parse failed', [
+                    'error_code' => $jsonError,
+                    'error_msg' => json_last_error_msg(),
+                    'json_str' => substr($jsonStr, 0, 1000)
+                ]);
+                return redirect()->route('olx-scraper.index')
+                    ->with('error', 'Failed to parse scraper output. JSON Error: ' . json_last_error_msg())
+                    ->withInput();
+            }
+            
+            // Check if JSON is empty
+            if (empty($json)) {
+                Log::warning('OLX JSON is empty', ['stdout_length' => strlen($stdout)]);
+                return redirect()->route('olx-scraper.index')
+                    ->with('error', 'No data scraped. Scraper returned empty data.')
+                    ->withInput();
+            }
+            
+            if (!empty($json)) {
                 Log::info('OLX Scraped data:', $json);
+                
+                // Validate that we have minimum required data
+                if (empty($json['title']) || $json['title'] === 'No title' || $json['title'] === 'Oops!') {
+                    Log::warning('OLX: Invalid title in scraped data', ['title' => $json['title'] ?? 'N/A']);
+                    return redirect()->route('olx-scraper.index')
+                        ->with('error', 'Failed to scrape valid data. Title is missing or invalid.')
+                        ->withInput();
+                }
                 
                 try {
                     // Download and save images
@@ -182,12 +257,16 @@ class OlxScraperController extends Controller
                     }
                     
                     // Create auction
-                    Auction::create([
+                    // Set default values for required fields
+                    $listType = 'auction'; // Default to auction
+                    $productYear = date('Y'); // Default to current year
+                    
+                    $auctionData = [
                         'title' => $title,
                         'user_id' => $request->input('user_id'),
                         'category_id' => $request->input('category_id'),
-                        'sub_category_id' => $request->input('sub_category_id'),
-                        'child_category_id' => $request->input('child_category_id'),
+                        'sub_category_id' => $request->input('sub_category_id') ?: null,
+                        'child_category_id' => $request->input('child_category_id') ?: null,
                         'reserve_price' => $json['reserve_price'] ?? 0,
                         'minimum_bid' => $json['minimum_bid'] ?? 0,
                         'description' => $json['description'] ?? '',
@@ -197,19 +276,119 @@ class OlxScraperController extends Controller
                         'status' => 'active',
                         'start_date' => now(),
                         'end_date' => now()->addDays(7),
+                        'is_autobidder_on' => 1, // Auto bidder on for OLX products
+                        'list_type' => $listType,
+                        'product_year' => $productYear,
+                    ];
+                    
+                    // Validate required fields before creating
+                    if (empty($auctionData['user_id'])) {
+                        Log::error('OLX: user_id is missing');
+                        return redirect()->route('olx-scraper.index')
+                            ->with('error', 'User ID is required. Please select a user.')
+                            ->withInput();
+                    }
+                    
+                    if (empty($auctionData['category_id'])) {
+                        Log::error('OLX: category_id is missing');
+                        return redirect()->route('olx-scraper.index')
+                            ->with('error', 'Category ID is required. Please select a category.')
+                            ->withInput();
+                    }
+                    
+                    Log::info('OLX Auction data before create', [
+                        'data' => $auctionData,
+                        'user_id' => $auctionData['user_id'],
+                        'category_id' => $auctionData['category_id'],
+                        'title' => $auctionData['title'],
+                        'reserve_price' => $auctionData['reserve_price'],
+                        'minimum_bid' => $auctionData['minimum_bid'],
                     ]);
                     
-                    return redirect()->route('olx-scraper.index')->with('status', 'Auction saved successfully!');
+                    // Try to create auction
+                    try {
+                        $auction = Auction::create($auctionData);
+                    } catch (\Illuminate\Database\QueryException $dbEx) {
+                        // Re-throw to be caught by outer catch block
+                        throw $dbEx;
+                    } catch (\Exception $ex) {
+                        // Re-throw to be caught by outer catch block
+                        throw $ex;
+                    }
+                    
+                    Log::info('OLX Auction created successfully', [
+                        'auction_id' => $auction->id,
+                        'title' => $auction->title,
+                        'is_autobidder_on' => $auction->is_autobidder_on
+                    ]);
+                    
+                    // Flash success message
+                    $successMessage = 'Auction saved successfully! Auction ID: ' . $auction->id;
+                    
+                    Log::info('OLX Redirecting with success message', [
+                        'message' => $successMessage,
+                        'auction_id' => $auction->id
+                    ]);
+                    
+                    // Use both session flash and query parameter for reliability
+                    return redirect()->route('olx-scraper.index', ['saved' => '1', 'auction_id' => $auction->id])
+                        ->with('status', $successMessage)
+                        ->with('success_auction_id', $auction->id);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    $errorMsg = $e->getMessage();
+                    Log::error('OLX Save failed - Database error', [
+                        'message' => $errorMsg,
+                        'code' => $e->getCode(),
+                        'sql' => $e->getSql() ?? 'N/A',
+                        'bindings' => $e->getBindings() ?? [],
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    // Extract more user-friendly error message
+                    if (strpos($errorMsg, 'SQLSTATE') !== false) {
+                        if (strpos($errorMsg, 'Integrity constraint violation') !== false) {
+                            $errorMsg = 'Database constraint violation. Please check if user or category exists.';
+                        } elseif (strpos($errorMsg, 'Column') !== false && strpos($errorMsg, 'cannot be null') !== false) {
+                            $errorMsg = 'Required field is missing. Please check all required fields are filled.';
+                        }
+                    }
+                    
+                    return redirect()->route('olx-scraper.index')
+                        ->with('error', 'Database error: ' . $errorMsg)
+                        ->withInput();
                 } catch (\Exception $e) {
-                    Log::error('OLX Save failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                    return redirect()->route('olx-scraper.index')->with('error', 'Failed to save: ' . $e->getMessage());
+                    $errorMsg = $e->getMessage();
+                    Log::error('OLX Save failed', [
+                        'message' => $errorMsg,
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    return redirect()->route('olx-scraper.index')
+                        ->with('error', 'Failed to save: ' . $errorMsg)
+                        ->withInput();
                 }
+            } else {
+                Log::warning('OLX: JSON is empty after parse', [
+                    'json_error' => json_last_error(),
+                    'stdout_length' => strlen($stdout),
+                    'stdout_first_500' => substr($stdout, 0, 500)
+                ]);
+                return redirect()->route('olx-scraper.index')
+                    ->with('error', 'No data scraped. Check raw output below.')
+                    ->withInput();
             }
-            return redirect()->route('olx-scraper.index')->with('error', 'No data scraped. Check raw output.');
+        } else {
+            Log::error('OLX Scraper command failed', [
+                'returnVar' => $returnVar, 
+                'stdout' => substr($stdout, 0, 1000),
+                'stdout_length' => strlen($stdout)
+            ]);
+            return redirect()->route('olx-scraper.index')
+                ->with('error', 'Scraper command failed. Return code: ' . $returnVar . '. Check logs for details.')
+                ->withInput();
         }
-
-        Log::error('OLX Scraper command failed', ['returnVar' => $returnVar, 'stdout' => $stdout]);
-        return redirect()->route('olx-scraper.index')->with('error', 'Save failed: ' . $stdout);
     }
 }
 

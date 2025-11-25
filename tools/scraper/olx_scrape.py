@@ -5,6 +5,32 @@ OLX Scraper - Scrapes product data from OLX listings
 import argparse
 import json
 import sys
+import os
+
+# Set Playwright browsers path (try multiple locations)
+# Priority: 1. Global, 2. Root cache, 3. Temp location, 4. Current user cache
+# Force use global location if it exists
+if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH'):
+    # Try multiple locations in order of preference
+    global_cache = '/usr/local/share/playwright'
+    root_cache = '/root/.cache/ms-playwright'
+    temp_cache = '/tmp/playwright-browsers'
+    user_cache = os.path.expanduser('~/.cache/ms-playwright')
+    
+    # Check if global location exists and has chromium
+    if os.path.exists(global_cache) and os.path.exists(os.path.join(global_cache, 'chromium-1140')):
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = global_cache
+        if debug:
+            print(f"Using global cache: {global_cache}", file=sys.stderr)
+    elif os.path.exists(root_cache) and os.path.exists(os.path.join(root_cache, 'chromium-1140')):
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = root_cache
+        if debug:
+            print(f"Using root cache: {root_cache}", file=sys.stderr)
+    elif os.path.exists(temp_cache):
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = temp_cache
+    elif os.path.exists(user_cache):
+        os.environ['PLAYWRIGHT_BROWSERS_PATH'] = user_cache
+
 from playwright.sync_api import sync_playwright
 
 
@@ -33,19 +59,74 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 print(f"Launching browser (headless={headless})", file=sys.stderr)
             
             browser = p.chromium.launch(headless=headless)
-            page = browser.new_page(user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-            ))
+            context = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={'width': 1920, 'height': 1080},
+                locale='en-US',
+                timezone_id='Asia/Karachi',
+            )
+            page = context.new_page()
             page.set_default_timeout(30000)
+            
+            # Set additional headers to avoid bot detection
+            page.set_extra_http_headers({
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+            })
             
             # Navigate to URL
             if debug:
                 print("Navigating to URL...", file=sys.stderr)
-            page.goto(url, wait_until="domcontentloaded", timeout=15000)
-            page.wait_for_timeout(2000)  # Wait for dynamic content
+            # Navigate with retry logic
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                page.wait_for_timeout(4000)  # Wait for dynamic content
+                
+                # Wait for key elements to load
+                try:
+                    page.wait_for_selector('h1, .image-gallery-slide, span[aria-label="Price"]', timeout=10000)
+                except:
+                    if debug:
+                        print("Warning: Key selectors not found, continuing anyway...", file=sys.stderr)
+            except Exception as nav_error:
+                if debug:
+                    print(f"Navigation error: {nav_error}", file=sys.stderr)
+                # Try again with different wait strategy
+                page.goto(url, wait_until="load", timeout=30000)
+                page.wait_for_timeout(5000)
             if debug:
                 print(f"Page loaded, URL: {page.url}", file=sys.stderr)
+            
+            # Check if page loaded correctly
+            page_title = page.title()
+            current_url = page.url
+            
+            if debug:
+                print(f"Page title: {page_title}", file=sys.stderr)
+            
+            # Check for error/not found pages
+            if ("error" in current_url.lower() or 
+                "not found" in page_title.lower() or 
+                "oops" in page_title.lower() or 
+                "error" in page_title.lower()):
+                if debug:
+                    print("WARNING: Page might be an error/not found page!", file=sys.stderr)
+                result["error"] = f"OLX page not found or error: {page_title}. URL might be invalid or page removed."
+                try:
+                    context.close()
+                except:
+                    pass
+                try:
+                    browser.close()
+                except:
+                    pass
+                return result
             
             # Extract data using Playwright's evaluate
             # TODO: User will provide specific selectors
@@ -53,8 +134,9 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if debug:
                 print("Extracting data...", file=sys.stderr)
             
-            # Extract OLX data
-            page_data = page.evaluate("""
+            # Extract OLX data - using actual selectors from user's HTML
+            # Using raw string to avoid escape sequence warnings
+            page_data = page.evaluate(r"""
                 () => {
                     const result = {
                         title: null,
@@ -64,58 +146,95 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                         location_text: null
                     };
                     
-                    // Title
-                    const h1 = document.querySelector('h1');
-                    if (h1) result.title = h1.textContent.trim();
+                    // Title - using actual selector: h1._75bce902
+                    const titleEl = document.querySelector('h1._75bce902') || 
+                                   document.querySelector('h1');
+                    if (titleEl) {
+                        result.title = titleEl.textContent.trim();
+                    }
                     
-                    // Images from image-gallery - prefer JPEG over webp
-                    const gallerySlides = document.querySelectorAll('.image-gallery-slide');
+                    // Images - using actual structure: .image-gallery-slide picture img
                     const seenUrls = new Set();
+                    
+                    // Method 1: Primary method - image-gallery-slide
+                    const gallerySlides = document.querySelectorAll('.image-gallery-slide');
                     gallerySlides.forEach(slide => {
+                        // Try img src first (JPEG preferred)
                         const img = slide.querySelector('picture img');
                         if (img) {
                             const src = img.getAttribute('src');
-                            if (src && !seenUrls.has(src)) {
+                            if (src && !seenUrls.has(src) && src.startsWith('http')) {
                                 seenUrls.add(src);
                                 result.images.push(src);
                             }
                         }
+                        // Also try source srcset (webp fallback)
+                        const source = slide.querySelector('picture source[srcset]');
+                        if (source) {
+                            const srcset = source.getAttribute('srcset');
+                            if (srcset && !seenUrls.has(srcset) && srcset.startsWith('http')) {
+                                seenUrls.add(srcset);
+                                // Prefer JPEG over webp, but add webp if no JPEG found
+                                if (!srcset.includes('.webp') || result.images.length === 0) {
+                                    result.images.push(srcset);
+                                }
+                            }
+                        }
                     });
                     
-                    // Fallback: if no images found, try source tags
+                    // Method 2: Fallback - any img in image-gallery
                     if (result.images.length === 0) {
-                        const sources = document.querySelectorAll('.image-gallery-slide picture source');
-                        sources.forEach(source => {
-                            const srcset = source.getAttribute('srcset');
-                            if (srcset && !seenUrls.has(srcset)) {
-                                seenUrls.add(srcset);
-                                result.images.push(srcset);
+                        const galleryImgs = document.querySelectorAll('.image-gallery img');
+                        galleryImgs.forEach(img => {
+                            const src = img.getAttribute('src') || img.getAttribute('data-src');
+                            if (src && !seenUrls.has(src) && src.startsWith('http') && 
+                                src.includes('olx.com.pk') && !src.includes('logo') && !src.includes('icon')) {
+                                seenUrls.add(src);
+                                result.images.push(src);
                             }
                         });
                     }
                     
-                    // Price - look for price text
-                    const priceMatch = document.body.innerText.match(/Rs\s+([\d,]+)/);
-                    if (priceMatch) {
-                        result.price = priceMatch[1].replace(/,/g, '');
-                    }
+                    // Price - using actual selector: span._24469da7
+                    const priceEl = document.querySelector('span._24469da7[aria-label="Price"]') ||
+                                   document.querySelector('span._24469da7') ||
+                                   document.querySelector('[aria-label="Price"]');
                     
-                    // Description - look for description section by aria-label
-                    const descEl = document.querySelector('div[aria-label="Description"] ._7a99ad24 span');
-                    if (descEl) {
-                        result.description = descEl.textContent.trim();
-                    } else {
-                        // Fallback: find any div with text starting with typical description patterns
-                        const descElFallback = Array.from(document.querySelectorAll('._7a99ad24 span')).find(el => el.textContent && el.textContent.length > 50);
-                        if (descElFallback) {
-                            result.description = descElFallback.textContent.trim();
+                    if (priceEl) {
+                        const priceText = priceEl.textContent.trim();
+                        // Handle "Rs 3.38 Lac" format (Lac = 100,000)
+                        // Using double backslash for regex escape sequences
+                        let priceMatch = priceText.match(/Rs\s+([\d.]+)\s*Lac/i);
+                        if (priceMatch) {
+                            const lacValue = parseFloat(priceMatch[1]);
+                            result.price = Math.round(lacValue * 100000).toString();
+                        } else {
+                            // Handle normal format: Rs 1,234,567
+                            priceMatch = priceText.match(/Rs\s+([\d,.]+)/i);
+                            if (priceMatch) {
+                                result.price = priceMatch[1].replace(/,/g, '');
+                            }
                         }
                     }
                     
-                    // Location - look for location text
-                    const locMatch = document.body.innerText.match(/Model Colony.*Karachi/);
-                    if (locMatch) {
-                        result.location_text = locMatch[0];
+                    // Description - using actual selector: div._7a99ad24 span
+                    const descEl = document.querySelector('div[aria-label="Description"] ._7a99ad24 span') ||
+                                   document.querySelector('div._7a99ad24 span') ||
+                                   document.querySelector('div._2961c394[aria-label="Description"] ._7a99ad24 span');
+                    
+                    if (descEl) {
+                        result.description = descEl.textContent.trim();
+                    }
+                    
+                    // Location - using actual selector: span._8206696c
+                    const locEl = document.querySelector('span._8206696c[aria-label="Location"]') ||
+                                  document.querySelector('span._8206696c');
+                    
+                    if (locEl) {
+                        // Get text from location span, might contain SVG and other elements
+                        const locText = locEl.textContent.trim();
+                        // Clean up the text (remove extra whitespace)
+                        result.location_text = locText.replace(/\s+/g, ' ').trim();
                     }
                     
                     return result;
@@ -128,20 +247,36 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             result["description"] = page_data.get("description")
             result["location_text"] = page_data.get("location_text")
             
+            if debug:
+                print(f"Extracted - Title: {result['title']}, Price: {result['price']}, Images: {len(result['images'])}", file=sys.stderr)
+            
             # Convert price from PKR to AED
             # PKR to AED conversion rate: 1 PKR = 0.01307 AED (based on Wise.com mid-market rate)
             PKR_TO_AED_RATE = 0.01307
             
             if result["price"]:
                 try:
+                    # Price is already in PKR (handled in JavaScript for "Lac" format)
                     pkr_price = float(result["price"])
                     aed_price = pkr_price * PKR_TO_AED_RATE
-                    result["minimum_bid"] = aed_price
-                    result["reserve_price"] = aed_price
-                except:
+                    result["minimum_bid"] = round(aed_price, 2)
+                    result["reserve_price"] = round(aed_price, 2)
+                except Exception as e:
+                    if debug:
+                        print(f"Price conversion error: {e}", file=sys.stderr)
                     pass
             
-            browser.close()
+            # Close browser and context properly
+            try:
+                context.close()
+            except Exception as e:
+                if debug:
+                    print(f"Error closing context: {e}", file=sys.stderr)
+            try:
+                browser.close()
+            except Exception as e:
+                if debug:
+                    print(f"Error closing browser: {e}", file=sys.stderr)
             
     except Exception as e:
         if debug:
@@ -155,12 +290,14 @@ def main():
     parser = argparse.ArgumentParser(description="Scrape OLX listing")
     parser.add_argument("url", help="OLX listing URL")
     parser.add_argument("--dry-run", action="store_true", help="Parse only; no DB")
+    parser.add_argument("--headless", action="store_true", default=True, help="Run browser in headless mode (default: True)")
+    parser.add_argument("--no-headless", dest="headless", action="store_false", help="Run browser with GUI (for debugging)")
     args = parser.parse_args()
 
     try:
         # Fetch data
         print("Starting OLX fetch...", file=sys.stderr)
-        data = scrape_olx(args.url, headless=True, debug=False)
+        data = scrape_olx(args.url, headless=args.headless, debug=True)
         print("Fetch completed", file=sys.stderr)
     except Exception as e:
         print(json.dumps({"error": f"Failed to fetch: {str(e)}"}, indent=2))
@@ -180,4 +317,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
