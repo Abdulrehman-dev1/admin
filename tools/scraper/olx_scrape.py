@@ -54,9 +54,8 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if debug:
                 print(f"Launching browser (headless={headless})", file=sys.stderr)
             
-            # Launch browser with additional arguments to fix memory/address space issues
-            # Use single-process mode directly for web server users to avoid memory issues
-            # Reduced flags to minimize memory issues
+            # Launch browser with minimal arguments to avoid memory/address space issues
+            # Use single-process mode and minimal features
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -71,7 +70,7 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 '--disable-breakpad',
                 '--disable-component-update',
                 '--disable-default-apps',
-                '--disable-features=TranslateUI,VizDisplayCompositor',
+                '--disable-features=TranslateUI,VizDisplayCompositor,BlinkGenPropertyTrees',
                 '--disable-ipc-flooding-protection',
                 '--disable-renderer-backgrounding',
                 '--disable-sync',
@@ -87,6 +86,16 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 '--disable-accelerated-video-decode',
                 '--disable-2d-canvas-clip-aa',
                 '--disable-2d-canvas-image-chromium',
+                '--disable-background-downloads',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-extensions-with-background-pages',
+                '--disable-default-apps',
+                '--disable-hang-monitor',
+                '--disable-popup-blocking',
+                '--disable-prompt-on-repost',
+                '--disable-translate',
+                '--disable-web-resources',
+                '--disable-features=AudioServiceOutOfProcess',
             ]
             
             # Try to launch browser with retry logic
@@ -181,7 +190,8 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 if not browser.is_connected():
                     raise Exception("Browser disconnected before navigation")
                 
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                # Use shorter timeout and commit wait strategy to avoid browser closing
+                page.goto(url, wait_until="commit", timeout=20000)
                 
                 # Immediately check if browser and page are still alive
                 if not browser.is_connected():
