@@ -118,18 +118,27 @@ class OlxScraperController extends Controller
         if ($returnVar === 0) {
             // Parse JSON output - find JSON in output
             $jsonStr = $stdout;
-            // Try to find JSON object in output
-            if (preg_match('/\{.*\}/s', $stdout, $matches)) {
+            
+            // Try to find JSON object in output (look for "Fetch completed" marker)
+            if (preg_match('/Fetch completed\s*(\{.*\})/s', $stdout, $matches)) {
+                $jsonStr = $matches[1];
+            } elseif (preg_match('/\{.*\}/s', $stdout, $matches)) {
                 $jsonStr = $matches[0];
             }
+            
+            \Log::info('OLX Scraper: JSON string to parse', ['json_str_length' => strlen($jsonStr), 'first_500' => substr($jsonStr, 0, 500)]);
+            
             $json = json_decode($jsonStr, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
+            if (json_last_error() === JSON_ERROR_NONE && !empty($json)) {
                 $data = $json;
+                \Log::info('OLX Scraper: JSON parsed successfully', ['has_title' => !empty($json['title']), 'has_price' => !empty($json['price'])]);
             } else {
-                $error = 'Failed to parse JSON output.';
+                $error = 'Failed to parse JSON output. JSON Error: ' . json_last_error_msg();
+                \Log::error('OLX Scraper: JSON parse failed', ['error' => json_last_error_msg(), 'json_str' => substr($jsonStr, 0, 500)]);
             }
         } else {
             $error = 'Scraper error: ' . $stdout;
+            \Log::error('OLX Scraper: Script failed', ['returnVar' => $returnVar, 'stdout' => substr($stdout, 0, 500)]);
         }
 
         return view('olx-scraper.index', [
@@ -267,9 +276,14 @@ class OlxScraperController extends Controller
 
         if ($returnVar === 0) {
             $jsonStr = $stdout;
-            if (preg_match('/\{.*\}/s', $stdout, $matches)) {
+            
+            // Try to find JSON object in output (look for "Fetch completed" marker)
+            if (preg_match('/Fetch completed\s*(\{.*\})/s', $stdout, $matches)) {
+                $jsonStr = $matches[1];
+            } elseif (preg_match('/\{.*\}/s', $stdout, $matches)) {
                 $jsonStr = $matches[0];
             }
+            
             $json = json_decode($jsonStr, true);
             $jsonError = json_last_error();
             
@@ -277,6 +291,8 @@ class OlxScraperController extends Controller
                 'json_error' => $jsonError,
                 'json_error_msg' => json_last_error_msg(),
                 'has_data' => !empty($json),
+                'has_title' => !empty($json['title'] ?? null),
+                'has_price' => !empty($json['price'] ?? null),
                 'json_str_first_500' => substr($jsonStr, 0, 500),
                 'json_keys' => !empty($json) ? array_keys($json) : []
             ]);
