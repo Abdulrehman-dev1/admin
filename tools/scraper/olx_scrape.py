@@ -218,46 +218,50 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 else:
                     raise Exception("Browser disconnected, cannot retry navigation")
             # Wait a bit more for page to fully stabilize
-            time.sleep(2)
+            time.sleep(3)
             
-            # Check if browser and page are still alive
+            # Check if browser and page are still alive before any operations
+            if not browser.is_connected():
+                raise Exception("Browser disconnected after navigation")
+            
+            if page.is_closed():
+                raise Exception("Page closed after navigation")
+            
+            # Get page URL and title quickly before browser closes
+            # Use try-except to handle browser closing during operations
+            page_title = "Unknown"
+            current_url = url
+            
             try:
-                if not browser.is_connected():
-                    raise Exception("Browser disconnected after navigation")
-                
-                if page.is_closed():
-                    raise Exception("Page closed after navigation")
-                
-                # Try to get page URL first (lighter operation)
-                try:
-                    current_url = page.url
-                    if debug:
-                        print(f"Page loaded, URL: {current_url}", file=sys.stderr)
-                except Exception as url_error:
-                    if not browser.is_connected() or page.is_closed():
-                        raise Exception(f"Browser/page closed while getting URL: {url_error}")
-                    raise
-                
-                # Now get page title
-                try:
-                    page_title = page.title()
-                except Exception as title_error:
-                    # If title fails but browser is still connected, use fallback
-                    if not browser.is_connected() or page.is_closed():
-                        raise Exception(f"Browser/page closed while getting title: {title_error}")
-                    # Browser is alive but title failed, use fallback
-                    page_title = "Unknown"
-                    if debug:
-                        print(f"Warning: Could not get page title: {title_error}", file=sys.stderr)
-            except Exception as check_error:
-                # Re-raise if it's our custom exception
-                if "Browser disconnected" in str(check_error) or "Page closed" in str(check_error):
-                    raise
-                # Otherwise, log and continue
+                # Try to get URL first (lighter operation)
+                current_url = page.url
                 if debug:
-                    print(f"Warning during browser check: {check_error}", file=sys.stderr)
-                page_title = "Unknown"
+                    print(f"Page loaded, URL: {current_url}", file=sys.stderr)
+            except Exception as url_error:
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception(f"Browser/page closed while getting URL: {url_error}")
+                # If URL failed but browser alive, use original URL
                 current_url = url
+                if debug:
+                    print(f"Warning: Could not get page URL: {url_error}", file=sys.stderr)
+            
+            # Check again before getting title
+            if not browser.is_connected() or page.is_closed():
+                raise Exception("Browser/page closed before getting title")
+            
+            try:
+                # Get page title quickly
+                page_title = page.title()
+                if debug:
+                    print(f"Page title: {page_title}", file=sys.stderr)
+            except Exception as title_error:
+                # If title fails, check if browser is still alive
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception(f"Browser/page closed while getting title: {title_error}")
+                # Browser is alive but title failed, use fallback
+                page_title = "Unknown"
+                if debug:
+                    print(f"Warning: Could not get page title: {title_error}", file=sys.stderr)
             
             if debug:
                 print(f"Page title: {page_title}", file=sys.stderr)
@@ -283,12 +287,18 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             # Extract data using Playwright's evaluate
             # TODO: User will provide specific selectors
             
+            # Final check before data extraction
+            if not browser.is_connected() or page.is_closed():
+                raise Exception("Browser/page closed before data extraction")
+            
             if debug:
                 print("Extracting data...", file=sys.stderr)
             
             # Extract OLX data - using actual selectors from user's HTML
             # Using raw string to avoid escape sequence warnings
-            page_data = page.evaluate(r"""
+            page_data = None
+            try:
+                page_data = page.evaluate(r"""
                 () => {
                     const result = {
                         title: null,
@@ -392,6 +402,15 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                     return result;
                 }
             """)
+            except Exception as eval_error:
+                # Check if browser closed during evaluation
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception(f"Browser/page closed during data extraction: {eval_error}")
+                # Browser is alive but evaluation failed
+                raise
+            
+            if page_data is None:
+                raise Exception("Data extraction returned None")
             
             result["title"] = page_data.get("title")
             result["images"] = page_data.get("images", [])
