@@ -20,12 +20,8 @@ if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH'):
     # Check if global location exists and has chromium
     if os.path.exists(global_cache) and os.path.exists(os.path.join(global_cache, 'chromium-1140')):
         os.environ['PLAYWRIGHT_BROWSERS_PATH'] = global_cache
-        if debug:
-            print(f"Using global cache: {global_cache}", file=sys.stderr)
     elif os.path.exists(root_cache) and os.path.exists(os.path.join(root_cache, 'chromium-1140')):
         os.environ['PLAYWRIGHT_BROWSERS_PATH'] = root_cache
-        if debug:
-            print(f"Using root cache: {root_cache}", file=sys.stderr)
     elif os.path.exists(temp_cache):
         os.environ['PLAYWRIGHT_BROWSERS_PATH'] = temp_cache
     elif os.path.exists(user_cache):
@@ -58,7 +54,37 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if debug:
                 print(f"Launching browser (headless={headless})", file=sys.stderr)
             
-            browser = p.chromium.launch(headless=headless)
+            # Launch browser with additional arguments to fix memory/address space issues
+            browser = p.chromium.launch(
+                headless=headless,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--disable-software-rasterizer',
+                    '--disable-extensions',
+                    '--single-process',  # Use single process mode to avoid memory issues
+                    '--disable-background-networking',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-breakpad',
+                    '--disable-component-update',
+                    '--disable-default-apps',
+                    '--disable-features=TranslateUI',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-renderer-backgrounding',
+                    '--disable-sync',
+                    '--metrics-recording-only',
+                    '--mute-audio',
+                    '--no-first-run',
+                    '--safebrowsing-disable-auto-update',
+                    '--enable-automation',
+                    '--password-store=basic',
+                    '--use-mock-keychain',
+                ]
+            )
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1920, 'height': 1080},
