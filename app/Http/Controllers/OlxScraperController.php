@@ -71,7 +71,27 @@ class OlxScraperController extends Controller
         
         $envPrefix = implode(' ', $envVars) . ' ';
         
-        $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        // Use root user to run script (since root works fine but web server user has memory issues)
+        // SECURITY NOTE: This requires proper sudoers configuration
+        // Check if root execution is enabled
+        $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
+        
+        if ($useRoot) {
+            // Run as root via sudo (requires sudoers config)
+            // Find web server user
+            $webUser = get_current_user(); // Current PHP user
+            if (empty($webUser) || $webUser === 'root') {
+                $webUser = 'nobody'; // Default for OpenLiteSpeed
+            }
+            
+            // Use root's browsers path
+            $rootBrowserPath = '/root/.cache/ms-playwright';
+            $rootEnvPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath) . ' ';
+            
+            $cmd = 'sudo -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        } else {
+            $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        }
 
         $output = null;
         $returnVar = null;
@@ -185,7 +205,27 @@ class OlxScraperController extends Controller
         
         $envPrefix = implode(' ', $envVars) . ' ';
         
-        $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        // Use root user to run script (since root works fine but web server user has memory issues)
+        // SECURITY NOTE: This requires proper sudoers configuration
+        // Check if root execution is enabled
+        $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
+        
+        if ($useRoot) {
+            // Run as root via sudo (requires sudoers config)
+            // Find web server user
+            $webUser = get_current_user(); // Current PHP user
+            if (empty($webUser) || $webUser === 'root') {
+                $webUser = 'nobody'; // Default for OpenLiteSpeed
+            }
+            
+            // Use root's browsers path
+            $rootBrowserPath = '/root/.cache/ms-playwright';
+            $rootEnvPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath) . ' ';
+            
+            $cmd = 'sudo -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        } else {
+            $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+        }
 
         $output = null;
         $returnVar = null;
