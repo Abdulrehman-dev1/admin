@@ -55,36 +55,52 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 print(f"Launching browser (headless={headless})", file=sys.stderr)
             
             # Launch browser with additional arguments to fix memory/address space issues
-            browser = p.chromium.launch(
-                headless=headless,
-                args=[
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-gpu',
-                    '--disable-software-rasterizer',
-                    '--disable-extensions',
-                    '--single-process',  # Use single process mode to avoid memory issues
-                    '--disable-background-networking',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-breakpad',
-                    '--disable-component-update',
-                    '--disable-default-apps',
-                    '--disable-features=TranslateUI',
-                    '--disable-ipc-flooding-protection',
-                    '--disable-renderer-backgrounding',
-                    '--disable-sync',
-                    '--metrics-recording-only',
-                    '--mute-audio',
-                    '--no-first-run',
-                    '--safebrowsing-disable-auto-update',
-                    '--enable-automation',
-                    '--password-store=basic',
-                    '--use-mock-keychain',
-                ]
-            )
+            # Try without single-process first, if fails then use single-process
+            browser_args = [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-breakpad',
+                '--disable-component-update',
+                '--disable-default-apps',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
+                '--disable-renderer-backgrounding',
+                '--disable-sync',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--no-first-run',
+                '--safebrowsing-disable-auto-update',
+                '--enable-automation',
+                '--password-store=basic',
+                '--use-mock-keychain',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor',
+            ]
+            
+            try:
+                browser = p.chromium.launch(
+                    headless=headless,
+                    args=browser_args,
+                    timeout=60000  # 60 seconds timeout
+                )
+            except Exception as e:
+                if debug:
+                    print(f"First launch attempt failed: {e}, trying with single-process", file=sys.stderr)
+                # Retry with single-process mode
+                browser_args.append('--single-process')
+                browser = p.chromium.launch(
+                    headless=headless,
+                    args=browser_args,
+                    timeout=60000
+                )
             context = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 viewport={'width': 1920, 'height': 1080},
@@ -92,7 +108,11 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 timezone_id='Asia/Karachi',
             )
             page = context.new_page()
-            page.set_default_timeout(30000)
+            page.set_default_timeout(60000)  # Increased timeout to 60 seconds
+            
+            # Wait a bit for browser to stabilize
+            import time
+            time.sleep(1)
             
             # Set additional headers to avoid bot detection
             page.set_extra_http_headers({
@@ -109,9 +129,21 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             # Navigate to URL
             if debug:
                 print("Navigating to URL...", file=sys.stderr)
-            # Navigate with retry logic
+            # Navigate with retry logic and better error handling
             try:
+                if debug:
+                    print("Navigating to URL...", file=sys.stderr)
+                
+                # Check if browser is still alive
+                if not browser.is_connected():
+                    raise Exception("Browser disconnected before navigation")
+                
                 page.goto(url, wait_until="domcontentloaded", timeout=30000)
+                
+                # Check if page is still alive
+                if page.is_closed():
+                    raise Exception("Page closed after navigation")
+                
                 page.wait_for_timeout(4000)  # Wait for dynamic content
                 
                 # Wait for key elements to load
@@ -123,9 +155,19 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             except Exception as nav_error:
                 if debug:
                     print(f"Navigation error: {nav_error}", file=sys.stderr)
-                # Try again with different wait strategy
-                page.goto(url, wait_until="load", timeout=30000)
-                page.wait_for_timeout(5000)
+                
+                # Check if browser is still alive before retry
+                if browser.is_connected():
+                    try:
+                        # Try again with different wait strategy
+                        page.goto(url, wait_until="load", timeout=30000)
+                        page.wait_for_timeout(5000)
+                    except Exception as retry_error:
+                        if debug:
+                            print(f"Retry navigation also failed: {retry_error}", file=sys.stderr)
+                        raise retry_error
+                else:
+                    raise Exception("Browser disconnected, cannot retry navigation")
             if debug:
                 print(f"Page loaded, URL: {page.url}", file=sys.stderr)
             
