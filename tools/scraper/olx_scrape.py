@@ -56,22 +56,22 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             
             # Launch browser with additional arguments to fix memory/address space issues
             # Use single-process mode directly for web server users to avoid memory issues
+            # Reduced flags to minimize memory issues
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
+                '--single-process',  # Critical: Use single-process mode to avoid partition_address_space issues
                 '--disable-gpu',
                 '--disable-software-rasterizer',
                 '--disable-extensions',
-                '--single-process',  # Use single-process mode to avoid partition_address_space issues
                 '--disable-background-networking',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-breakpad',
                 '--disable-component-update',
                 '--disable-default-apps',
-                '--disable-features=TranslateUI,VizDisplayCompositor,PartitionAlloc',
+                '--disable-features=TranslateUI,VizDisplayCompositor',
                 '--disable-ipc-flooding-protection',
                 '--disable-renderer-backgrounding',
                 '--disable-sync',
@@ -83,11 +83,10 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                 '--password-store=basic',
                 '--use-mock-keychain',
                 '--disable-web-security',
-                '--disable-features=UseChromeOSDirectVideoDecoder',
-                '--disable-software-rasterizer',
+                '--disable-accelerated-2d-canvas',
+                '--disable-accelerated-video-decode',
                 '--disable-2d-canvas-clip-aa',
                 '--disable-2d-canvas-image-chromium',
-                '--disable-accelerated-video-decode',
             ]
             
             # Try to launch browser with retry logic

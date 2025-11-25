@@ -77,21 +77,27 @@ class OlxScraperController extends Controller
         $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
         
         if ($useRoot) {
-            // Run as root via sudo with NOPASSWD (requires sudoers config)
-            // Use root's browsers path
-            $rootBrowserPath = '/root/.cache/ms-playwright';
+            // Use wrapper script approach for better environment variable handling
+            $wrapperScript = base_path('admin/tools/scraper/run_olx_scraper.sh');
             
-            // Environment variables for root user
-            $rootEnvVars = [
-                'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath),
-                'MALLOC_ARENA_MAX=2',
-                'MALLOC_MMAP_THRESHOLD_=131072',
-            ];
-            $rootEnvPrefix = implode(' ', $rootEnvVars) . ' ';
-            
-            // Use sudo -n (non-interactive) to avoid password prompt
-            // Pass environment variables via sudo -E or directly in command
-            $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            if (file_exists($wrapperScript)) {
+                // Use wrapper script (recommended)
+                $cmd = 'sudo -n -u root ' . escapeshellarg($wrapperScript) . ' ' . escapeshellarg($request->input('url'));
+            } else {
+                // Fallback: Direct command with environment variables
+                $rootBrowserPath = '/root/.cache/ms-playwright';
+                
+                // Environment variables for root user
+                $rootEnvVars = [
+                    'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath),
+                    'MALLOC_ARENA_MAX=2',
+                    'MALLOC_MMAP_THRESHOLD_=131072',
+                ];
+                $rootEnvPrefix = implode(' ', $rootEnvVars) . ' ';
+                
+                // Use sudo -n (non-interactive) to avoid password prompt
+                $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            }
         } else {
             $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
@@ -214,21 +220,27 @@ class OlxScraperController extends Controller
         $useRoot = env('OLX_SCRAPER_USE_ROOT', true); // Default to true since root works
         
         if ($useRoot) {
-            // Run as root via sudo with NOPASSWD (requires sudoers config)
-            // Use root's browsers path
-            $rootBrowserPath = '/root/.cache/ms-playwright';
+            // Use wrapper script approach for better environment variable handling
+            $wrapperScript = base_path('admin/tools/scraper/run_olx_scraper.sh');
             
-            // Environment variables for root user
-            $rootEnvVars = [
-                'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath),
-                'MALLOC_ARENA_MAX=2',
-                'MALLOC_MMAP_THRESHOLD_=131072',
-            ];
-            $rootEnvPrefix = implode(' ', $rootEnvVars) . ' ';
-            
-            // Use sudo -n (non-interactive) to avoid password prompt
-            // Pass environment variables via sudo -E or directly in command
-            $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            if (file_exists($wrapperScript)) {
+                // Use wrapper script (recommended)
+                $cmd = 'sudo -n -u root ' . escapeshellarg($wrapperScript) . ' ' . escapeshellarg($request->input('url'));
+            } else {
+                // Fallback: Direct command with environment variables
+                $rootBrowserPath = '/root/.cache/ms-playwright';
+                
+                // Environment variables for root user
+                $rootEnvVars = [
+                    'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($rootBrowserPath),
+                    'MALLOC_ARENA_MAX=2',
+                    'MALLOC_MMAP_THRESHOLD_=131072',
+                ];
+                $rootEnvPrefix = implode(' ', $rootEnvVars) . ' ';
+                
+                // Use sudo -n (non-interactive) to avoid password prompt
+                $cmd = 'sudo -n -u root ' . $rootEnvPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
+            }
         } else {
             $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
         }
