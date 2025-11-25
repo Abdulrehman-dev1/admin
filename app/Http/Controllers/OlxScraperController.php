@@ -50,10 +50,19 @@ class OlxScraperController extends Controller
         }
 
         // Set Playwright browsers path environment variable
-        $playwrightPath = '/usr/local/share/playwright';
+        // Try multiple locations within open_basedir restrictions
+        $playwrightPaths = [
+            '/home/xpertbid.com/.cache/ms-playwright',
+            '/tmp/playwright-browsers',
+            '/usr/local/share/playwright', // Fallback if open_basedir allows
+        ];
+        
         $envPrefix = '';
-        if (file_exists($playwrightPath) && is_dir($playwrightPath)) {
-            $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+        foreach ($playwrightPaths as $playwrightPath) {
+            if (@file_exists($playwrightPath) && @is_dir($playwrightPath)) {
+                $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+                break;
+            }
         }
         
         $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
@@ -149,10 +158,19 @@ class OlxScraperController extends Controller
         }
 
         // Set Playwright browsers path environment variable
-        $playwrightPath = '/usr/local/share/playwright';
+        // Try multiple locations within open_basedir restrictions
+        $playwrightPaths = [
+            '/home/xpertbid.com/.cache/ms-playwright',
+            '/tmp/playwright-browsers',
+            '/usr/local/share/playwright', // Fallback if open_basedir allows
+        ];
+        
         $envPrefix = '';
-        if (file_exists($playwrightPath) && is_dir($playwrightPath)) {
-            $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+        foreach ($playwrightPaths as $playwrightPath) {
+            if (@file_exists($playwrightPath) && @is_dir($playwrightPath)) {
+                $envPrefix = 'PLAYWRIGHT_BROWSERS_PATH=' . escapeshellarg($playwrightPath) . ' ';
+                break;
+            }
         }
         
         $cmd = $envPrefix . escapeshellcmd($python) . ' ' . escapeshellarg($script) . ' ' . escapeshellarg($request->input('url'));
