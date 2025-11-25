@@ -415,16 +415,41 @@ class OlxScraperController extends Controller
                         'title' => $auctionData['title'],
                         'reserve_price' => $auctionData['reserve_price'],
                         'minimum_bid' => $auctionData['minimum_bid'],
+                        'is_autobidder_on' => $auctionData['is_autobidder_on'] ?? null,
+                        'list_type' => $auctionData['list_type'] ?? null,
+                        'product_year' => $auctionData['product_year'] ?? null,
                     ]);
+                    
+                    // Validate all required fields are present
+                    $requiredFields = ['user_id', 'category_id', 'title', 'list_type', 'product_year'];
+                    foreach ($requiredFields as $field) {
+                        if (empty($auctionData[$field])) {
+                            $errorMsg = "Required field '{$field}' is missing or empty";
+                            Log::error('OLX: ' . $errorMsg, ['auction_data' => $auctionData]);
+                            return redirect()->route('olx-scraper.index')
+                                ->with('error', $errorMsg)
+                                ->withInput();
+                        }
+                    }
                     
                     // Try to create auction
                     try {
                         $auction = Auction::create($auctionData);
+                        Log::info('OLX Auction created successfully', ['auction_id' => $auction->id]);
                     } catch (\Illuminate\Database\QueryException $dbEx) {
                         // Re-throw to be caught by outer catch block
+                        Log::error('OLX: Database exception during create', [
+                            'message' => $dbEx->getMessage(),
+                            'code' => $dbEx->getCode(),
+                            'sql' => $dbEx->getSql() ?? 'N/A'
+                        ]);
                         throw $dbEx;
                     } catch (\Exception $ex) {
                         // Re-throw to be caught by outer catch block
+                        Log::error('OLX: General exception during create', [
+                            'message' => $ex->getMessage(),
+                            'trace' => $ex->getTraceAsString()
+                        ]);
                         throw $ex;
                     }
                     
