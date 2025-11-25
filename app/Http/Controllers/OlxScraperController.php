@@ -384,7 +384,9 @@ class OlxScraperController extends Controller
                         'description' => $json['description'] ?? '',
                         'image' => $firstImage,
                         'album' => $albumJson,
-                        'amenities' => json_encode($json['amenities'] ?? []),
+                        'amenities' => (!empty($json['amenities']) && is_array($json['amenities']) && count($json['amenities']) > 0) 
+                            ? json_encode($json['amenities']) 
+                            : null,
                         'status' => 'active',
                         'start_date' => now(),
                         'end_date' => now()->addDays(7),
