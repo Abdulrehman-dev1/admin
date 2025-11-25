@@ -6,8 +6,17 @@ import argparse
 import json
 import sys
 import os
+import re
+from bs4 import BeautifulSoup
 
-# Set Playwright browsers path (try multiple locations)
+# Try to use requests first (no browser needed)
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
+# Set Playwright browsers path (try multiple locations) - only if needed
 # Priority: 1. Global, 2. Root cache, 3. Temp location, 4. Current user cache
 # Force use global location if it exists
 if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH'):
@@ -27,7 +36,143 @@ if not os.environ.get('PLAYWRIGHT_BROWSERS_PATH'):
     elif os.path.exists(user_cache):
         os.environ['PLAYWRIGHT_BROWSERS_PATH'] = user_cache
 
-from playwright.sync_api import sync_playwright
+# Only import Playwright if requests fails
+PLAYWRIGHT_AVAILABLE = False
+try:
+    from playwright.sync_api import sync_playwright
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    pass
+
+
+def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
+    """
+    Scrape OLX using requests (no browser needed)
+    """
+    if debug:
+        print("Using requests library (no browser needed)...", file=sys.stderr)
+    
+    result = {
+        "title": None,
+        "price": None,
+        "minimum_bid": 0,
+        "reserve_price": 0,
+        "description": None,
+        "images": [],
+        "location_text": None,
+        "amenities": []
+    }
+    
+    try:
+        # Make HTTP request with proper headers
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+        
+        if debug:
+            print(f"Fetching URL: {url}", file=sys.stderr)
+        
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        
+        if debug:
+            print("HTML content fetched successfully", file=sys.stderr)
+        
+        # Parse HTML with BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract data using BeautifulSoup
+        # Title
+        title_el = soup.select_one('h1._75bce902') or soup.select_one('h1')
+        result["title"] = title_el.get_text(strip=True) if title_el else None
+        
+        # Price
+        price_el = (soup.select_one('span._24469da7[aria-label="Price"]') or 
+                   soup.select_one('span._24469da7') or
+                   soup.select_one('[aria-label="Price"]'))
+        if price_el:
+            price_text = price_el.get_text(strip=True)
+            # Handle "Rs 3.38 Lac" format
+            lac_match = re.search(r'Rs\s+([\d.]+)\s*Lac', price_text, re.IGNORECASE)
+            if lac_match:
+                lac_value = float(lac_match.group(1))
+                result["price"] = str(int(lac_value * 100000))
+            else:
+                # Handle normal format: Rs 1,234,567
+                price_match = re.search(r'Rs\s+([\d,.]+)', price_text, re.IGNORECASE)
+                if price_match:
+                    result["price"] = price_match.group(1).replace(',', '')
+                else:
+                    result["price"] = None
+        else:
+            result["price"] = None
+        
+        # Images
+        images = []
+        seen_urls = set()
+        # Method 1: image-gallery-slide
+        gallery_slides = soup.select('.image-gallery-slide')
+        for slide in gallery_slides:
+            img = slide.select_one('picture img')
+            if img and img.get('src'):
+                src = img.get('src')
+                if src.startswith('http') and src not in seen_urls:
+                    seen_urls.add(src)
+                    images.append(src)
+        # Method 2: Fallback
+        if not images:
+            gallery_imgs = soup.select('.image-gallery img')
+            for img in gallery_imgs:
+                src = img.get('src') or img.get('data-src')
+                if src and src.startswith('http') and 'olx.com.pk' in src and 'logo' not in src and 'icon' not in src:
+                    if src not in seen_urls:
+                        seen_urls.add(src)
+                        images.append(src)
+        result["images"] = images
+        
+        # Description
+        desc_el = (soup.select_one('div[aria-label="Description"] ._7a99ad24 span') or
+                  soup.select_one('div._7a99ad24 span') or
+                  soup.select_one('div._2961c394[aria-label="Description"] ._7a99ad24 span'))
+        result["description"] = desc_el.get_text(strip=True) if desc_el else None
+        
+        # Location
+        loc_el = (soup.select_one('span._8206696c[aria-label="Location"]') or
+                 soup.select_one('span._8206696c'))
+        if loc_el:
+            loc_text = loc_el.get_text(strip=True)
+            result["location_text"] = ' '.join(loc_text.split())
+        else:
+            result["location_text"] = None
+        
+        # Convert price from PKR to AED
+        PKR_TO_AED_RATE = 0.01307
+        if result["price"]:
+            try:
+                pkr_price = float(result["price"])
+                aed_price = pkr_price * PKR_TO_AED_RATE
+                result["minimum_bid"] = round(aed_price, 2)
+                result["reserve_price"] = round(aed_price, 2)
+            except Exception as e:
+                if debug:
+                    print(f"Price conversion error: {e}", file=sys.stderr)
+                pass
+        
+        if debug:
+            print(f"Extracted - Title: {result['title']}, Price: {result['price']}, Images: {len(result['images'])}", file=sys.stderr)
+        
+        return result
+        
+    except Exception as e:
+        if debug:
+            print(f"Error in requests-based scraping: {e}", file=sys.stderr)
+        result["error"] = str(e)
+        return result
 
 
 def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
@@ -37,6 +182,34 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
     """
     if debug:
         print(f"Starting OLX scraper for URL: {url}", file=sys.stderr)
+    
+    # Try requests first (no browser needed)
+    if REQUESTS_AVAILABLE:
+        if debug:
+            print("Attempting to scrape with requests (no browser)...", file=sys.stderr)
+        result = scrape_olx_with_requests(url, debug=debug)
+        # If we got data, return it
+        if result.get("title") or result.get("price") or result.get("images"):
+            if debug:
+                print("Successfully scraped with requests!", file=sys.stderr)
+            return result
+        # If requests failed, fall back to Playwright
+        if debug:
+            print("Requests method didn't get data, falling back to Playwright...", file=sys.stderr)
+    
+    # Fallback to Playwright if requests not available or failed
+    if not PLAYWRIGHT_AVAILABLE:
+        return {
+            "title": None,
+            "price": None,
+            "minimum_bid": 0,
+            "reserve_price": 0,
+            "description": None,
+            "images": [],
+            "location_text": None,
+            "amenities": [],
+            "error": "Neither requests nor Playwright available"
+        }
     
     result = {
         "title": None,
