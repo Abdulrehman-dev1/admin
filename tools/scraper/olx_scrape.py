@@ -238,80 +238,38 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
                         raise retry_error
                 else:
                     raise Exception("Browser disconnected, cannot retry navigation")
-            # Wait a bit more for page to fully stabilize
-            time.sleep(3)
-            
-            # Check if browser and page are still alive before any operations
-            if not browser.is_connected():
-                raise Exception("Browser disconnected after navigation")
-            
-            if page.is_closed():
-                raise Exception("Page closed after navigation")
-            
-            # Skip page.title() and page.url() calls as they cause browser to close
-            # Use fallback values and proceed directly to data extraction
+            # Immediately get page content after navigation (before browser closes)
+            # Don't wait, get content immediately
             page_title = "Unknown"
             current_url = url
             
             if debug:
                 print(f"Page loaded, URL: {current_url}", file=sys.stderr)
-                print("Skipping page.title() to avoid browser closing, proceeding directly to data extraction...", file=sys.stderr)
+                print("Getting page content immediately (before browser closes)...", file=sys.stderr)
             
-            if debug:
-                print(f"Page title: {page_title}", file=sys.stderr)
-            
-            # Check for error/not found pages
-            if ("error" in current_url.lower() or 
-                "not found" in page_title.lower() or 
-                "oops" in page_title.lower() or 
-                "error" in page_title.lower()):
-                if debug:
-                    print("WARNING: Page might be an error/not found page!", file=sys.stderr)
-                result["error"] = f"OLX page not found or error: {page_title}. URL might be invalid or page removed."
-                try:
-                    context.close()
-                except:
-                    pass
-                try:
-                    browser.close()
-                except:
-                    pass
-                return result
-            
-            # Extract data using Playwright's evaluate
-            # TODO: User will provide specific selectors
-            
-            # Final check before data extraction
-            if not browser.is_connected() or page.is_closed():
-                raise Exception("Browser/page closed before data extraction")
-            
-            # Additional wait before data extraction to let browser stabilize
-            time.sleep(2)
-            
-            # Check again
-            if not browser.is_connected() or page.is_closed():
-                raise Exception("Browser/page closed during stabilization before data extraction")
-            
-            if debug:
-                print("Extracting data...", file=sys.stderr)
-            
-            # Extract OLX data - using page.content() instead of page.evaluate() to avoid browser closing
+            # Extract OLX data - using page.content() immediately after navigation
             # Get HTML content and parse with BeautifulSoup
             from bs4 import BeautifulSoup
             
-            if not browser.is_connected() or page.is_closed():
-                raise Exception("Browser/page closed before content extraction")
-            
-            if debug:
-                print("Getting page content...", file=sys.stderr)
-            
-            # Get page HTML content (safer than evaluate)
+            # Get page HTML content immediately (don't wait)
+            html_content = None
             try:
+                # Check browser is still alive
+                if not browser.is_connected() or page.is_closed():
+                    raise Exception("Browser/page closed immediately after navigation")
+                
+                # Get content immediately
                 html_content = page.content()
+                
+                if debug:
+                    print("Page content retrieved successfully", file=sys.stderr)
             except Exception as content_error:
                 if not browser.is_connected() or page.is_closed():
                     raise Exception(f"Browser/page closed while getting content: {content_error}")
                 raise
+            
+            if html_content is None:
+                raise Exception("Failed to get page content")
             
             if debug:
                 print("Parsing HTML with BeautifulSoup...", file=sys.stderr)
