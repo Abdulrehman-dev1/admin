@@ -77,14 +77,25 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
         if debug:
             print(f"Fetching URL: {url}", file=sys.stderr)
         
-        response = requests.get(url, headers=headers, timeout=30)
+        response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
         response.raise_for_status()
         
         if debug:
-            print("HTML content fetched successfully", file=sys.stderr)
+            print(f"HTML content fetched successfully (Status: {response.status_code}, Length: {len(response.text)})", file=sys.stderr)
+        
+        # Check if we got valid HTML
+        if len(response.text) < 1000:
+            if debug:
+                print("Warning: HTML content seems too short, might be an error page", file=sys.stderr)
         
         # Parse HTML with BeautifulSoup
         soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Debug: Save HTML to file for inspection (optional)
+        if debug:
+            # Check if page has OLX structure
+            has_olx_structure = bool(soup.find('body') and ('olx' in response.text.lower() or 'olx.com.pk' in response.text.lower()))
+            print(f"Page has OLX structure: {has_olx_structure}", file=sys.stderr)
         
         if debug:
             # Debug: Check if page loaded correctly
@@ -93,22 +104,50 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
                 print(f"Page title tag: {page_title_tag.get_text(strip=True)[:100]}", file=sys.stderr)
         
         # Extract data using BeautifulSoup with multiple fallback selectors
-        # Title - try multiple selectors
+        # Title - try multiple selectors including data attributes
+        title_el = None
+        # Try class-based selectors first
         title_el = (soup.select_one('h1._75bce902') or 
                    soup.select_one('h1[class*="75bce902"]') or
-                   soup.select_one('h1') or
-                   soup.find('h1'))
+                   soup.select_one('h1[data-aut-id="itemTitle"]') or
+                   soup.select_one('h1'))
+        
+        # If still not found, try finding by text pattern
+        if not title_el:
+            all_h1 = soup.find_all('h1')
+            for h1 in all_h1:
+                text = h1.get_text(strip=True)
+                if text and len(text) > 5:  # Valid title should be longer
+                    title_el = h1
+                    break
+        
         result["title"] = title_el.get_text(strip=True) if title_el else None
         
         if debug:
             print(f"Title extracted: {result['title']}", file=sys.stderr)
+            if not result["title"]:
+                # Debug: Show all h1 tags
+                all_h1 = soup.find_all('h1')
+                print(f"Found {len(all_h1)} h1 tags", file=sys.stderr)
+                for i, h1 in enumerate(all_h1[:3]):  # Show first 3
+                    print(f"  H1 {i+1}: {h1.get_text(strip=True)[:50]}", file=sys.stderr)
         
-        # Price - try multiple selectors
+        # Price - try multiple selectors and text search
         price_el = (soup.select_one('span._24469da7[aria-label="Price"]') or 
                    soup.select_one('span[aria-label="Price"]') or
                    soup.select_one('span._24469da7') or
                    soup.find('span', {'aria-label': 'Price'}) or
                    soup.find('span', class_=lambda x: x and '_24469da7' in x))
+        
+        # If not found by selector, search in page text
+        if not price_el:
+            # Search for price pattern in all spans
+            all_spans = soup.find_all('span')
+            for span in all_spans:
+                text = span.get_text(strip=True)
+                if re.search(r'Rs\s+[\d,.]+', text, re.IGNORECASE):
+                    price_el = span
+                    break
         
         if price_el:
             price_text = price_el.get_text(strip=True)
@@ -130,6 +169,11 @@ def scrape_olx_with_requests(url: str, debug: bool = False) -> dict:
             result["price"] = None
             if debug:
                 print("Price element not found", file=sys.stderr)
+                # Debug: Search for price pattern in page text
+                page_text = soup.get_text()
+                price_in_text = re.search(r'Rs\s+[\d,.]+', page_text, re.IGNORECASE)
+                if price_in_text:
+                    print(f"Found price pattern in page text: {price_in_text.group()}", file=sys.stderr)
         
         # Images - try multiple methods
         images = []
@@ -269,9 +313,14 @@ def scrape_olx(url: str, headless: bool = True, debug: bool = False) -> dict:
             if debug:
                 print("Successfully scraped with requests!", file=sys.stderr)
             return result
-        # If requests failed, fall back to Playwright
+        # If requests failed but no error, return empty result (don't fall back to Playwright)
+        if not result.get("error"):
+            if debug:
+                print("Requests method didn't get data, but no error occurred. Returning empty result.", file=sys.stderr)
+            return result
+        # Only fall back to Playwright if there was an error (like 403, 404, etc.)
         if debug:
-            print("Requests method didn't get data, falling back to Playwright...", file=sys.stderr)
+            print(f"Requests method failed with error: {result.get('error')}, falling back to Playwright...", file=sys.stderr)
     
     # Fallback to Playwright if requests not available or failed
     if not PLAYWRIGHT_AVAILABLE:
