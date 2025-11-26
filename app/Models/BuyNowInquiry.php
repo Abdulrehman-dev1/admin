@@ -17,9 +17,9 @@ class BuyNowInquiry extends Model
         'status',
     ];
 
-    public function product()
+    public function auction()
     {
-        return $this->belongsTo(Product::class, 'auction_id');
+        return $this->belongsTo(Auction::class, 'auction_id');
     }
 
     public function user()

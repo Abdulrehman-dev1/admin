@@ -35,6 +35,7 @@ use App\Http\Controllers\VehicleVerificationController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ReferralController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BuyNowInquiryController;
 use App\Models\IndividualVerification;
 use App\Mail\VerificationDeclinedMail;
 
@@ -267,6 +268,10 @@ Route::resource('master-settings', MasterSettingController::class);
 Route::resource('createletters', CreateLetterController::class);
 Route::resource('transactions', TransactionController::class);
 Route::resource('emailtemplates', EmailTemplateController::class);
+Route::get('buy-now-inquiries', [BuyNowInquiryController::class, 'index'])->name('buy-now-inquiries.index');
+Route::get('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'show'])->name('buy-now-inquiries.show');
+Route::post('buy-now-inquiries/{id}/update-status', [BuyNowInquiryController::class, 'updateStatus'])->name('buy-now-inquiries.update-status');
+Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
 
 Route::get('/get-subcategories/{parent}', [AuctionCategoryController::class, 'getSubCategories']);
 Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'getChildCategories']);

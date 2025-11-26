@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'base' => 'AED', 
+    'base' => 'PKR', 
 ];
