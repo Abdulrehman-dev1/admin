@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Auction;
+use App\Models\Auction1;
 use App\Models\User;
 use App\Models\AuctionCategory;
 use App\Models\Subcategory;
@@ -872,12 +873,15 @@ public function get_featured_realstate(){
 
 public function api_update(Request $request, $id)
 {
+    // 2) Load auction first to get existing start_date
+    $auction = Auction::findOrFail($id);
+    
     // 1) Validate
     $validatedData = $request->validate([
         'title'               => 'required|min:2|max:100',
         'category_id'         => 'required',
-        'start_date'          => 'required|date',
-        'end_date'            => 'required|date|after_or_equal:start_date',
+        'start_date'          => 'nullable|date', // Changed to nullable - use existing if not provided
+        'end_date'            => 'required|date',
         'reserve_price'       => 'required|numeric',
         'minimum_bid'         => 'required|numeric',
         'description'         => 'required',
@@ -898,8 +902,22 @@ public function api_update(Request $request, $id)
         'facilities'          => 'nullable|string',
     ]);
 
-    // 2) Load auction
-    $auction = Auction::findOrFail($id);
+    // Use existing start_date if not provided in request
+    if (empty($validatedData['start_date']) || $validatedData['start_date'] === null || $validatedData['start_date'] === '') {
+        $validatedData['start_date'] = $auction->start_date;
+    }
+    
+    // Validate end_date is after or equal to start_date (after we've set start_date)
+    if (!empty($validatedData['end_date']) && !empty($validatedData['start_date'])) {
+        if (strtotime($validatedData['end_date']) < strtotime($validatedData['start_date'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'End date must be on or after the start date.',
+                'errors' => ['end_date' => ['End date must be on or after the start date.']]
+            ], 422);
+        }
+    }
+    
     $oldStatus = (string) ($auction->status ?? ''); // capture old status early
 
     // 3) Unified verification gate (Individual OR Corporate)
@@ -1197,10 +1215,55 @@ public function cancel($id)
 
 public function api_show($id)
 {
+    // First try to find in auctions table
     $auction = Auction::with([
         'property_verification',
         'vehicle_verification'
     ])->find($id);
+
+    // If not found, try to find in auctions_1 (drafts) table
+    if (!$auction) {
+        $draft = Auction1::find($id);
+        if ($draft) {
+            // Convert draft to auction-like format
+            $auction = (object) [
+                'id' => $draft->id,
+                'title' => $draft->title,
+                'user_id' => $draft->user_id,
+                'category_id' => $draft->category_id,
+                'sub_category_id' => $draft->sub_category_id,
+                'child_category_id' => $draft->child_category_id,
+                'description' => $draft->description,
+                'minimum_bid' => $draft->minimum_bid,
+                'reserve_price' => $draft->reserve_price,
+                'start_date' => $draft->start_date,
+                'end_date' => $draft->end_date,
+                'product_year' => $draft->product_year,
+                'product_location' => $draft->product_location,
+                'state_id' => $draft->state_id,
+                'city_id' => $draft->city_id,
+                'image' => $draft->image,
+                'album' => $draft->album,
+                'list_type' => $draft->list_type,
+                'product_condition' => $draft->product_condition,
+                'create_category' => $draft->create_category,
+                'developer' => $draft->developer,
+                'location_url' => $draft->location_url,
+                'delivery_date' => $draft->delivery_date,
+                'sale_starts' => $draft->sale_starts,
+                'payment_plan' => $draft->payment_plan,
+                'number_of_buildings' => $draft->number_of_buildings,
+                'government_fee' => $draft->government_fee,
+                'nearby_location' => $draft->nearby_location,
+                'amenities' => $draft->amenities,
+                'facilities' => $draft->facilities,
+                'status' => $draft->status,
+                'is_draft' => true,
+                'property_verification' => null,
+                'vehicle_verification' => null,
+            ];
+        }
+    }
 
     if (!$auction) {
         return response()->json(['message' => 'Auction not found'], 404);
@@ -1213,6 +1276,7 @@ public function api_show($id)
 {
     $user = Auth::user();
 
+    // Get published auctions
     $auctions = Auction::where('user_id', $user->id)
         ->with('bids') // Make sure to eager load bids
         ->get()
@@ -1228,11 +1292,54 @@ public function api_show($id)
                 'featured_name'=> $auction->featured_name,
                 'status'=> $auction->status,
                 'currentBid' => $highestBid,
+                'is_draft' => false, // Published listing
+                'created_at' => $auction->created_at,
                 // ...other fields if needed
             ];
         });
 
-    return response()->json(['auction' => $auctions]);
+    // Get saved drafts from auctions_1 table - get ALL drafts including soft-deleted ones
+    // Use withTrashed() to include soft-deleted records (deleted_at is not null)
+    $drafts = Auction1::where('user_id', $user->id)
+        ->withTrashed() // Include soft-deleted records
+        ->get() // Get all records for this user, regardless of status or deleted_at
+        ->filter(function ($draft) {
+            // Filter to only include drafts (status is 'draft' or null/empty)
+            $status = strtolower(trim($draft->status ?? ''));
+            return empty($status) || $status === 'draft';
+        })
+        ->map(function ($draft) {
+            return [
+                'id' => $draft->id,
+                'slug' => $draft->slug ?? null,
+                'title' => $draft->title ?? 'Untitled Draft',
+                'album' => $draft->album,
+                'image' => $draft->image,
+                'start_date' => $draft->start_date,
+                'end_date' => $draft->end_date,
+                'featured_name'=> null,
+                'status'=> 'Draft',
+                'currentBid' => 0,
+                'is_draft' => true, // This is a draft
+                'created_at' => $draft->created_at,
+                'deleted_at' => $draft->deleted_at, // Include deleted_at to show if it's soft-deleted
+            ];
+        })
+        ->values(); // Re-index the collection
+
+    // Debug: Log counts
+    \Log::info('Listings API - User ID: ' . $user->id);
+    \Log::info('Published auctions count: ' . $auctions->count());
+    \Log::info('Drafts count: ' . $drafts->count());
+
+    // Merge auctions and drafts, sort by created_at (newest first)
+    $allListings = $auctions->concat($drafts)->sortByDesc(function ($item) {
+        return $item['created_at'] ?? now();
+    })->values();
+
+    \Log::info('Total listings count: ' . $allListings->count());
+
+    return response()->json(['auction' => $allListings]);
 }
 
     
@@ -1446,4 +1553,186 @@ public function filtered(Request $request)
 }
 
 //new
+
+/**
+ * Save partial auction data to auctions_1 table (draft save)
+ * No validation required - saves whatever data is provided
+ * For sell page: always creates new draft (deletes old one if exists)
+ * For edit page: updates existing draft if draft_id is provided
+ */
+public function api_save_draft(Request $request)
+{
+    try {
+        $userId = auth()->id();
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        $draftId = $request->input('draft_id'); // For edit page
+        $isEditPageInput = $request->input('is_edit_page', 'false'); // Flag to identify edit page (comes as string from FormData)
+        
+        // Only treat as edit page if explicitly "true"
+        // Sell page sends "false", so this will be false and will create new draft
+        $isEditPage = ($isEditPageInput === 'true' || $isEditPageInput === true);
+
+        // Prepare data - accept all fields without validation
+        $data = [
+            'user_id' => $userId,
+            'status' => 'draft',
+        ];
+
+        // Add all provided fields
+        $fields = [
+            'title', 'category_id', 'sub_category_id', 'child_category_id',
+            'start_date', 'end_date', 'reserve_price', 'minimum_bid',
+            'description', 'product_year', 'product_location', 'state_id', 'city_id',
+            'list_type', 'product_condition', 'create_category',
+            'developer', 'location_url', 'delivery_date', 'sale_starts',
+            'payment_plan', 'number_of_buildings', 'government_fee',
+            'nearby_location', 'amenities', 'facilities',
+        ];
+
+        foreach ($fields as $field) {
+            if ($request->has($field) && $request->input($field) !== null && $request->input($field) !== '') {
+                $data[$field] = $request->input($field);
+            }
+        }
+
+        // Handle album uploads if provided
+        $albumsArray = [];
+        if ($request->hasFile('album')) {
+            $albumFiles = $request->file('album');
+            if (!is_array($albumFiles)) {
+                $albumFiles = [$albumFiles];
+            }
+            foreach ($albumFiles as $file) {
+                if ($file->isValid()) {
+                    $albumName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    
+                    // Determine if it's a video or image
+                    if ($file->getMimeType() === 'video/mp4') {
+                        $file->move(public_path('/assets/videos/auction/'), $albumName);
+                        $albumsArray[] = '/assets/videos/auction/' . $albumName;
+                    } else {
+                        $file->move(public_path('/assets/images/auction/'), $albumName);
+                        $albumsArray[] = '/assets/images/auction/' . $albumName;
+                    }
+                }
+            }
+        }
+
+        // If new album files uploaded, use them
+        if (!empty($albumsArray)) {
+            $data['album'] = json_encode($albumsArray);
+            $data['image'] = $albumsArray[0] ?? null;
+        }
+
+        // Logic: 
+        // - If draft_id provided (edit page), update that specific draft
+        // - If is_edit_page = "true" (explicitly), find and update existing draft
+        // - Otherwise (sell page - is_edit_page = "false" or not set), ALWAYS delete old drafts and create new
+        
+        if ($draftId) {
+            // Edit page: Update specific draft by ID
+            $draft = Auction1::where('id', $draftId)
+                ->where('user_id', $userId)
+                ->where('status', 'draft')
+                ->first();
+            
+            if ($draft) {
+                // Keep existing album if no new uploads
+                if (empty($albumsArray) && $draft->album) {
+                    $data['album'] = $draft->album;
+                    $data['image'] = $draft->image;
+                }
+                $draft->update($data);
+                $savedDraft = $draft;
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Draft not found',
+                ], 404);
+            }
+        } elseif ($isEditPageInput === 'true' || $isEditPageInput === true) {
+            // Edit page without draft_id: Find and update latest draft
+            $draft = Auction1::where('user_id', $userId)
+                ->where('status', 'draft')
+                ->latest()
+                ->first();
+            
+            if ($draft) {
+                // Keep existing album if no new uploads
+                if (empty($albumsArray) && $draft->album) {
+                    $data['album'] = $draft->album;
+                    $data['image'] = $draft->image;
+                }
+                $draft->update($data);
+                $savedDraft = $draft;
+            } else {
+                // No draft found, create new
+                $savedDraft = Auction1::create($data);
+            }
+        } else {
+            // Sell page: Create new draft WITHOUT deleting existing ones
+            // This allows users to have multiple drafts
+            $savedDraft = Auction1::create($data);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Draft saved successfully',
+            'draft_id' => $savedDraft->id,
+            'draft' => $savedDraft,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to save draft: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
+/**
+ * Get saved draft for current user
+ */
+public function api_get_draft()
+{
+    try {
+        $userId = auth()->id();
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
+        $draft = Auction1::where('user_id', $userId)
+            ->where('status', 'draft')
+            ->latest()
+            ->first();
+
+        if (!$draft) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No draft found',
+                'draft' => null,
+            ], 200);
+        }
+
+        return response()->json([
+            'success' => true,
+            'draft' => $draft,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to get draft: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }

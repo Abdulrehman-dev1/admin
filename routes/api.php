@@ -167,6 +167,8 @@ Route::middleware('auth:sanctum')->group(function () {
   
     Route::post('/change-password', [ProfileController::class, 'updatePassword']);
     Route::post('/auctions_store', [AuctionController::class, 'api_store']);
+    Route::post('/auctions_save_draft', [AuctionController::class, 'api_save_draft']);
+    Route::get('/auctions_get_draft', [AuctionController::class, 'api_get_draft']);
     // Edit/Update Auction API (for frontend edit form)
 Route::post('auctions_update/{id}', [AuctionController::class, 'api_update']);
 Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
@@ -186,6 +188,7 @@ Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
     Route::post('/user/change-password', [ProfileController::class, 'updatePassword']);
     Route::post('/identity-verification', [ProfileController::class, 'saveIdentityVerification']);
     Route::get('/get-identity-verification', [ProfileController::class, 'getIdentityVerification']);
+    Route::get('/check-verification-status', [ProfileController::class, 'checkVerificationStatus']);
     Route::get('/user/details', [ProfileController::class, 'getUserDetails']);
     Route::post('/user/save-login', [ProfileController::class, 'saveLoginDetails']);
     Route::post('/user/change-password', [ProfileController::class, 'changePassword']);

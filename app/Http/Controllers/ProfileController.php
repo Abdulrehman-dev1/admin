@@ -280,6 +280,29 @@ public function saveIdentityVerification(Request $request)
     {
         return response()->json(Auth::user()->identity_verification ?? []);
     }
+
+    // Check if user is verified (Individual or Corporate)
+    public function checkVerificationStatus()
+    {
+        $user = Auth::user();
+        $userId = $user->id;
+
+        $individual = \App\Models\IndividualVerification::where('user_id', $userId)->first();
+        $corporate = \App\Models\CorporateVerification::where('user_id', $userId)->first();
+
+        $isApproved = function ($rec) {
+            if (!$rec) return false;
+            return in_array(strtolower($rec->status ?? ''), ['approved', 'verified'], true);
+        };
+
+        $isVerified = $isApproved($individual) || $isApproved($corporate);
+
+        return response()->json([
+            'is_verified' => $isVerified,
+            'individual_status' => $individual->status ?? null,
+            'corporate_status' => $corporate->status ?? null,
+        ]);
+    }
    public function validateReferral(Request $request)
 {
     $request->validate([
