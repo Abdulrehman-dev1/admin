@@ -5,8 +5,12 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Auction;
 use App\Models\Bid;
+use App\Models\NewNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AuctionClosedMail;
+use App\Mail\AuctionAwardedMail;
 
 class CheckAuctionStatusCommand extends Command
 {
@@ -64,9 +68,37 @@ class CheckAuctionStatusCommand extends Command
                     $awardedCount++;
                     $this->info("  ✅ Auction #{$auction->id} ({$auction->title}) - Awarded to User #{$highestBid->user_id} (Bid: AED {$highestBid->bid_amount})");
 
-                    // 4. Send notification to the winner
-                    // (a) via email (Laravel Mail or Notification)
-                    // (b) via OneSignal push if you have that integrated
+                    // Reload auction with relationships
+                    $auction->load(['user', 'winner']);
+                    $highestBid->load('user');
+
+                    try {
+                        // Send email to winner
+                        if ($highestBid->user && $highestBid->user->email) {
+                            Mail::to($highestBid->user->email)->send(new AuctionAwardedMail($auction, $highestBid, 'winner'));
+                            $this->info("    📧 Email sent to winner: {$highestBid->user->email}");
+                        }
+
+                        // Send email to admin
+                        Mail::to('xpertbidofficial@gmail.com')->send(new AuctionAwardedMail($auction, $highestBid, 'admin'));
+                        $this->info("    📧 Email sent to admin");
+
+                        // Send notification to winner
+                        if ($highestBid->user) {
+                            NewNotification::create([
+                                'user_id' => $highestBid->user_id,
+                                'title' => 'Congratulations! You Won the Auction',
+                                'message' => "You have won the auction for \"{$auction->title}\" with a bid of AED " . number_format($highestBid->bid_amount, 2),
+                                'type' => 'auction',
+                                'image_url' => NewNotification::getImageForType('auction'),
+                            ]);
+                            $this->info("    🔔 Notification sent to winner");
+                        }
+                    } catch (\Exception $emailError) {
+                        Log::error("Error sending award emails/notifications for Auction #{$auction->id}: " . $emailError->getMessage());
+                        $this->warn("    ⚠️  Failed to send emails/notifications: " . $emailError->getMessage());
+                    }
+
                 } else {
                     // Otherwise, no valid bids => mark as closed
                     $auction->status = 'closed';
@@ -74,6 +106,36 @@ class CheckAuctionStatusCommand extends Command
                     
                     $closedCount++;
                     $this->warn("  ⚠️  Auction #{$auction->id} ({$auction->title}) - Closed (No valid bids)");
+
+                    // Reload auction with seller relationship
+                    $auction->load('user');
+
+                    try {
+                        // Send email to seller
+                        if ($auction->user && $auction->user->email) {
+                            Mail::to($auction->user->email)->send(new AuctionClosedMail($auction, 'seller'));
+                            $this->info("    📧 Email sent to seller: {$auction->user->email}");
+                        }
+
+                        // Send email to admin
+                        Mail::to('xpertbidofficial@gmail.com')->send(new AuctionClosedMail($auction, 'admin'));
+                        $this->info("    📧 Email sent to admin");
+
+                        // Send notification to seller
+                        if ($auction->user) {
+                            NewNotification::create([
+                                'user_id' => $auction->user_id,
+                                'title' => 'Your Auction Has Been Closed',
+                                'message' => "Your auction \"{$auction->title}\" has been closed as it ended without valid bids.",
+                                'type' => 'auction',
+                                'image_url' => NewNotification::getImageForType('auction'),
+                            ]);
+                            $this->info("    🔔 Notification sent to seller");
+                        }
+                    } catch (\Exception $emailError) {
+                        Log::error("Error sending closed emails/notifications for Auction #{$auction->id}: " . $emailError->getMessage());
+                        $this->warn("    ⚠️  Failed to send emails/notifications: " . $emailError->getMessage());
+                    }
                 }
 
             } catch (\Exception $e) {

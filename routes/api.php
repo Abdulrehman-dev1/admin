@@ -29,6 +29,8 @@ use App\Http\Controllers\Api\BlogApiController;
 use App\Http\Controllers\Api\CurrencyController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\BuyNowInquiryController;
+use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\CheckoutController;
 
 Route::get('/currencies', [CurrencyController::class, 'index']);
 Route::get('/blogs', [BlogApiController::class, 'index']);
@@ -178,6 +180,19 @@ Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
     Route::post('/favorites/add', [FavoritesController::class, 'add']);
     Route::get('/favorites', [FavoritesController::class, 'index']);
     Route::post('/favorites/check', [FavoritesController::class, 'check']);
+    
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/add', [CartController::class, 'add']);
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove']);
+    Route::put('/cart/update/{id}', [CartController::class, 'update']);
+    Route::get('/cart/count', [CartController::class, 'count']);
+    Route::delete('/cart/clear', [CartController::class, 'clear']);
+    
+    // Checkout routes
+    Route::post('/checkout/create-payment-intent', [CheckoutController::class, 'createPaymentIntent']);
+    Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
+    Route::get('/order/{orderNumber}', [CheckoutController::class, 'getOrderByNumber']);
     Route::get('/account-settings', [ProfileController::class, 'getProfile']);
     Route::post('/user/update', [ProfileController::class, 'updateProfile']);
     Route::get('/user/address', [ProfileController::class, 'getAddress']);

@@ -28,6 +28,8 @@ class NewNotification extends Model
         $images = [
             'wallet' => '/assets/images/message-text.svg',
             'bid' => '/assets/images/message-text.svg',
+            'auction' => '/assets/images/message-text.svg',
+            'order' => '/assets/images/message-text.svg',
         ];
 
         return $images[$type] ?? '/assets/images/message-text.svg';

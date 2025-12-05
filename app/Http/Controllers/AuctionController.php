@@ -26,6 +26,7 @@ use App\Models\IndividualVerification;
 use App\Models\CorporateVerification;
 use Illuminate\Support\Carbon;      //  import Carbon here
 use App\Mail\AuctionStatusUpdated;
+use App\Models\NewNotification;
 
 class AuctionController extends Controller
 {
@@ -1374,25 +1375,81 @@ public function api_show($id)
 
         switch ($status) {
             case 'won':
-                $auctions = Auction::where('winner_id', $user->id)->get();
+                $auctions = Auction::where('winner_id', $user->id)
+                    ->where(function($query) {
+                        $query->where('status', 'awarded')
+                              ->orWhere('status', 'closed');
+                    })
+                    ->with(['bids' => function($query) {
+                        $query->orderBy('bid_amount', 'desc')->limit(1);
+                    }, 'user:id,name,profile_pic'])
+                    ->get()
+                    ->map(function($auction) {
+                        $highestBid = $auction->bids->first();
+                        $auction->current_highest_bid = $highestBid ? $highestBid->bid_amount : ($auction->reserve_price ?? $auction->minimum_bid ?? 0);
+                        // Map user to owner format for frontend
+                        if ($auction->user) {
+                            $auction->owner = [
+                                'name' => $auction->user->name,
+                                'profile' => $auction->user->profile_pic
+                            ];
+                            $auction->user_name = $auction->user->name;
+                            $auction->profile_pic = $auction->user->profile_pic;
+                        }
+                        return $auction;
+                    });
                 break;
 
             case 'lost':
                 $auctions = Auction::whereHas('bids', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
-                ->where('winner_id', '!=', $user->id)
-                ->get();
+                ->where(function($query) use ($user) {
+                    $query->where('winner_id', '!=', $user->id)
+                          ->where(function($q) {
+                              $q->where('status', 'closed')
+                                ->orWhere('status', 'awarded');
+                          });
+                })
+                ->with('user:id,name,profile_pic')
+                ->get()
+                ->map(function($auction) {
+                    // Map user to owner format for frontend
+                    if ($auction->user) {
+                        $auction->owner = [
+                            'name' => $auction->user->name,
+                            'profile' => $auction->user->profile_pic
+                        ];
+                        $auction->user_name = $auction->user->name;
+                        $auction->profile_pic = $auction->user->profile_pic;
+                    }
+                    return $auction;
+                });
                 break;
 
             case 'active':
                 $auctions = Auction::whereHas('bids', function ($query) use ($user) {
                     $query->where('user_id', $user->id);
                 })
+                ->where('status', 'active')
+                ->whereNull('winner_id')
                 ->whereDoesntHave('bids', function ($query) {
                     $query->whereRaw('bids.bid_amount > (SELECT MAX(bids.bid_amount) FROM bids WHERE bids.auction_id = auctions.id)');
                 })
-                ->get();
+                ->with('user:id,name,profile_pic')
+                ->get()
+                ->map(function($auction) {
+                    // Map user to owner format for frontend
+                    if ($auction->user) {
+                        $auction->owner = [
+                            'name' => $auction->user->name,
+                            'profile' => $auction->user->profile_pic
+                        ];
+                        $auction->user_name = $auction->user->name;
+                        $auction->profile_pic = $auction->user->profile_pic;
+                    }
+                    return $auction;
+                });
                 break;
 
             default:
@@ -1451,6 +1508,23 @@ public function api_show($id)
 
         Mail::to($winner->email)
             ->send(new AuctionWonNotification($firstName, $listingTitle, $winningBidAmount, $auctionEnded, $completePaymentLink));
+
+        // In-app notification to winner
+        try {
+            NewNotification::create([
+                'user_id'   => $winner->id,
+                'title'     => 'Congratulations! You Won the Auction',
+                'message'   => "You have won the auction for \"{$auction->title}\" with a bid of " . number_format($winningBidAmount, 2),
+                'type'      => 'auction',
+                'image_url' => NewNotification::getImageForType('auction'),
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to create winner notification', [
+                'auction_id' => $auction->id,
+                'winner_id'  => $winner->id,
+                'error'      => $e->getMessage(),
+            ]);
+        }
 
         // Retrieve all bids except the winning bid
         $losingBids = $auction->bids()->where('user_id', '!=', $winner->id)->get();

@@ -41,6 +41,24 @@ use App\Mail\VerificationDeclinedMail;
 
 use App\Http\Controllers\ScraperController;
 use App\Http\Controllers\OlxScraperController;
+use App\Http\Controllers\PaymentVerificationController;
+use App\Http\Controllers\OrderController;
+
+
+use Illuminate\Support\Facades\Mail;
+
+Route::get('/send-test-mail', function () {
+    try {
+        Mail::raw('Hello! This is a test email from Localhost via Gmail SMTP.', function ($message) {
+            $message->to('connecttoabdulrehman01@gmail.com') // Jisko bhejni hai uska email
+                    ->subject('Localhost SMTP Test');
+        });
+        return 'Email has been sent successfully!';
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});
+
 
 Route::get('/scraper', [ScraperController::class, 'index'])->name('scraper.index');
 Route::post('/scraper/preview', [ScraperController::class, 'preview'])->name('scraper.preview');
@@ -131,6 +149,28 @@ Route::get('wallets', [WalletController::class, 'index'])
     'payment-requests/{payment_request}',
     [PaymentRequestController::class, 'update']
 )->name('payment-requests.update');
+
+  // Payment Verification Routes
+  Route::get('payment-verifications', [PaymentVerificationController::class, 'index'])
+       ->name('payment-verifications.index');
+  Route::get('payment-verifications/{id}', [PaymentVerificationController::class, 'show'])
+       ->name('payment-verifications.show');
+  Route::post('payment-verifications/{id}/approve', [PaymentVerificationController::class, 'approve'])
+       ->name('payment-verifications.approve');
+  Route::post('payment-verifications/{id}/decline', [PaymentVerificationController::class, 'decline'])
+       ->name('payment-verifications.decline');
+  // Receipt image route
+  Route::get('receipts/{filename}', [PaymentVerificationController::class, 'receipt'])
+       ->name('receipts.show')
+       ->where('filename', '[A-Za-z0-9._-]+');
+  
+  // Orders Routes
+  Route::get('orders', [OrderController::class, 'index'])
+       ->name('orders.index');
+  Route::get('orders/{id}', [OrderController::class, 'show'])
+       ->name('orders.show');
+  Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
+       ->name('orders.update-status');
 });
 
 //Route::get('payment-requests-admin', [PaymentRequestController::class, 'Adminindex']);
