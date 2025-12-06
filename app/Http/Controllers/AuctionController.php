@@ -1411,9 +1411,15 @@ public function api_show($id)
                                 ->orWhere('status', 'awarded');
                           });
                 })
-                ->with('user:id,name,profile_pic')
+                ->with(['bids' => function($query) {
+                    $query->orderBy('bid_amount', 'desc')->limit(1);
+                }, 'user:id,name,profile_pic'])
                 ->get()
                 ->map(function($auction) {
+                    // Get highest bid
+                    $highestBid = $auction->bids->first();
+                    $auction->current_highest_bid = $highestBid ? $highestBid->bid_amount : ($auction->reserve_price ?? $auction->minimum_bid ?? 0);
+                    
                     // Map user to owner format for frontend
                     if ($auction->user) {
                         $auction->owner = [
@@ -1436,9 +1442,15 @@ public function api_show($id)
                 ->whereDoesntHave('bids', function ($query) {
                     $query->whereRaw('bids.bid_amount > (SELECT MAX(bids.bid_amount) FROM bids WHERE bids.auction_id = auctions.id)');
                 })
-                ->with('user:id,name,profile_pic')
+                ->with(['bids' => function($query) {
+                    $query->orderBy('bid_amount', 'desc')->limit(1);
+                }, 'user:id,name,profile_pic'])
                 ->get()
                 ->map(function($auction) {
+                    // Get highest bid
+                    $highestBid = $auction->bids->first();
+                    $auction->current_highest_bid = $highestBid ? $highestBid->bid_amount : ($auction->reserve_price ?? $auction->minimum_bid ?? 0);
+                    
                     // Map user to owner format for frontend
                     if ($auction->user) {
                         $auction->owner = [
