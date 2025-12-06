@@ -242,16 +242,34 @@ class CheckoutController extends Controller
         try {
             // Handle receipt image upload for bank transfer
             $receiptImagePath = null;
+            
+            // Debug logging
+            Log::info('=== Receipt Image Upload Debug ===');
+            Log::info('Has File: ' . ($request->hasFile('receipt_image') ? 'YES' : 'NO'));
+            Log::info('Payment Method: ' . $orderData['payment_method']);
+            
             if ($request->hasFile('receipt_image')) {
                 $file = $request->file('receipt_image');
+                Log::info('File Name: ' . $file->getClientOriginalName());
+                Log::info('File Size: ' . $file->getSize() . ' bytes');
+                Log::info('File MIME: ' . $file->getMimeType());
+                
                 $fileName = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $receiptImagePath = $file->storeAs('receipts', $fileName, 'public');
+                
+                Log::info('Stored Path: ' . $receiptImagePath);
+            } else {
+                Log::warning('No receipt image file found in request');
+                Log::info('All Request Files: ' . json_encode($request->allFiles()));
             }
             
             // If no receipt image, set to null explicitly
             if (empty($receiptImagePath)) {
                 $receiptImagePath = null;
             }
+            
+            Log::info('Final Receipt Path: ' . ($receiptImagePath ?? 'NULL'));
+            Log::info('=== End Receipt Debug ===');
 
             // Determine payment status
             $paymentStatus = 'pending';
