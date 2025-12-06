@@ -45,13 +45,11 @@
             @if($order->shipping_address_line2)
                 <p>{{ $order->shipping_address_line2 }}</p>
             @endif
-            <p>{{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_postal_code }}</p>
-            <p>{{ $order->shipping_country }}</p>
-        </div>
-        
-        <p>To view your order details and track its status, please log in to your XpertBid account.</p>
-        
-        <p>For any queries or assistance, please reach out to our support team at <a href="mailto:xpertbidofficial@gmail.com">xpertbidofficial@gmail.com</a>.</p>
+        <p>{{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_postal_code }}</p>
+        <p>{{ $order->shipping_country }}</p>
+    </div>
+    
+    <p>For any queries or assistance, please reach out to our support team at <a href="mailto:xpertbidofficial@gmail.com">xpertbidofficial@gmail.com</a>.</p>
         
         <p style="margin-top: 30px;">
             Best regards,<br>
