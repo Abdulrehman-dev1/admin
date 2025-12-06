@@ -144,12 +144,24 @@ class PaymentVerificationController extends Controller
      */
     public function receipt($filename)
     {
-        $filePath = 'receipts/' . $filename;
-        
-        if (!Storage::disk('public')->exists($filePath)) {
-            abort(404, 'Receipt image not found');
+        // Try public/assets/images/recipt first (new location)
+        $newPath = public_path('assets/images/recipt/' . $filename);
+        if (file_exists($newPath)) {
+            return response()->file($newPath);
         }
-
-        return response()->file(Storage::disk('public')->path($filePath));
+        
+        // Try storage/app/public (old location)
+        $filePath = 'receipts/' . $filename;
+        if (Storage::disk('public')->exists($filePath)) {
+            return response()->file(Storage::disk('public')->path($filePath));
+        }
+        
+        // Try public/receipts as fallback (old location)
+        $publicPath = public_path('receipts/' . $filename);
+        if (file_exists($publicPath)) {
+            return response()->file($publicPath);
+        }
+        
+        abort(404, 'Receipt image not found');
     }
 }
