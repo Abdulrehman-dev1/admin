@@ -254,10 +254,54 @@ class CheckoutController extends Controller
                 Log::info('File Size: ' . $file->getSize() . ' bytes');
                 Log::info('File MIME: ' . $file->getMimeType());
                 
-                $fileName = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $receiptImagePath = $file->storeAs('receipts', $fileName, 'public');
-                
-                Log::info('Stored Path: ' . $receiptImagePath);
+                try {
+                    $fileName = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                    
+                    // Try to store with public disk
+                    $receiptImagePath = $file->storeAs('receipts', $fileName, 'public');
+                    Log::info('storeAs Result: ' . ($receiptImagePath ?: 'EMPTY/FALSE'));
+                    
+                    // If storeAs fails, try Storage facade
+                    if (empty($receiptImagePath)) {
+                        Log::warning('storeAs returned empty, trying Storage::put...');
+                        
+                        $path = 'receipts/' . $fileName;
+                        $stored = Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+                        
+                        if ($stored) {
+                            $receiptImagePath = $path;
+                            Log::info('Storage::put successful: ' . $receiptImagePath);
+                        } else {
+                            Log::warning('Storage::put failed, trying manual move...');
+                            
+                            // Create directory if not exists
+                            $uploadPath = storage_path('app/public/receipts');
+                            if (!file_exists($uploadPath)) {
+                                mkdir($uploadPath, 0755, true);
+                                Log::info('Created directory: ' . $uploadPath);
+                            }
+                            
+                            // Check directory permissions
+                            Log::info('Directory exists: ' . (file_exists($uploadPath) ? 'YES' : 'NO'));
+                            Log::info('Directory writable: ' . (is_writable($uploadPath) ? 'YES' : 'NO'));
+                            Log::info('Directory permissions: ' . substr(sprintf('%o', fileperms($uploadPath)), -4));
+                            
+                            // Move file manually
+                            $fullPath = $uploadPath . '/' . $fileName;
+                            if ($file->move($uploadPath, $fileName)) {
+                                $receiptImagePath = 'receipts/' . $fileName;
+                                Log::info('Manual move successful: ' . $receiptImagePath);
+                            } else {
+                                Log::error('Manual move failed');
+                            }
+                        }
+                    }
+                    
+                    Log::info('Final Stored Path: ' . ($receiptImagePath ?: 'STILL EMPTY'));
+                } catch (\Exception $e) {
+                    Log::error('Receipt upload error: ' . $e->getMessage());
+                    Log::error('Stack trace: ' . $e->getTraceAsString());
+                }
             } else {
                 Log::warning('No receipt image file found in request');
                 Log::info('All Request Files: ' . json_encode($request->allFiles()));
