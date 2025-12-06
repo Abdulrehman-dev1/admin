@@ -247,6 +247,11 @@ class CheckoutController extends Controller
                 $fileName = 'receipt_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $receiptImagePath = $file->storeAs('receipts', $fileName, 'public');
             }
+            
+            // If no receipt image, set to null explicitly
+            if (empty($receiptImagePath)) {
+                $receiptImagePath = null;
+            }
 
             // Determine payment status
             $paymentStatus = 'pending';
@@ -338,10 +343,18 @@ class CheckoutController extends Controller
 
             DB::commit();
 
+            // Format order data for response
+            $orderData = $order->load('items')->toArray();
+            
+            // Ensure receipt_image is properly formatted
+            if (!isset($orderData['receipt_image']) || empty($orderData['receipt_image']) || $orderData['receipt_image'] === '0' || $orderData['receipt_image'] === 0) {
+                $orderData['receipt_image'] = null;
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Order placed successfully',
-                'order' => $order->load('items'),
+                'order' => $orderData,
                 'order_number' => $order->order_number,
             ]);
 
