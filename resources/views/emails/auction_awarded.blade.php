@@ -25,14 +25,10 @@
             <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 20px 0;">
                 <h3 style="margin-top: 0; color: #23262F;">Auction Details</h3>
                 <p><strong>Listing:</strong> {{ $auction->title }}</p>
-                <p><strong>Winning Bid Amount:</strong> AED {{ number_format($highestBid->bid_amount, 2) }}</p>
+                <p><strong>Winning Bid Amount:</strong> {{ number_format($highestBid->bid_amount, 2) }}</p>
                 <p><strong>Auction Ended:</strong> {{ \Carbon\Carbon::parse($auction->end_date)->format('F d, Y h:i A') }}</p>
-                <p><strong>Reserve Price:</strong> AED {{ number_format($auction->reserve_price ?? 0, 2) }}</p>
+                <p><strong>Reserve Price:</strong> {{ number_format($auction->reserve_price ?? 0, 2) }}</p>
             </div>
-            
-            <p style="background-color: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745;">
-                <strong>Next Steps:</strong> Our team will contact you shortly to complete the transaction. Please ensure your payment method is ready and your shipping address is up to date in your account.
-            </p>
             
             <p>To view your winning bid and complete the purchase, please log in to your XpertBid account.</p>
             

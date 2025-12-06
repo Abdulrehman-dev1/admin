@@ -35,3 +35,32 @@ class PaymentApprovedMail extends Mailable
                     ->with(['order' => $this->order]);
     }
 }
+
+class OrderPlacedMail extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    public $order;
+
+    /**
+     * Create a new message instance.
+     *
+     * @param Order $order
+     */
+    public function __construct(Order $order)
+    {
+        $this->order = $order;
+    }
+
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        return $this->subject('Order Confirmation - Order #' . $this->order->order_number)
+                    ->view('emails.order_placed')
+                    ->with(['order' => $this->order]);
+    }
+}

@@ -8,10 +8,12 @@ use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Auction;
 use App\Models\NewNotification;
+use App\Mail\OrderPlacedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Log;
@@ -326,6 +328,14 @@ class CheckoutController extends Controller
                 'image_url' => NewNotification::getImageForType('order') ?? null,
             ]);
 
+            // Send order confirmation email
+            try {
+                Mail::to($order->billing_email)->send(new OrderPlacedMail($order));
+            } catch (\Exception $e) {
+                Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+                // Don't fail the order if email fails
+            }
+
             DB::commit();
 
             return response()->json([
@@ -384,9 +394,15 @@ class CheckoutController extends Controller
             ];
         });
 
+        // Ensure receipt_image is properly formatted
+        $orderData = $order->toArray();
+        if (isset($orderData['receipt_image']) && ($orderData['receipt_image'] === '0' || $orderData['receipt_image'] === 0 || empty($orderData['receipt_image']))) {
+            $orderData['receipt_image'] = null;
+        }
+
         return response()->json([
             'success' => true,
-            'order' => $order,
+            'order' => $orderData,
         ]);
     }
 }
