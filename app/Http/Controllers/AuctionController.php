@@ -923,14 +923,13 @@ class AuctionController extends Controller
         // 2) Load auction first to get existing start_date
         $auction = Auction::findOrFail($id);
 
-        // 1) Validate
-        $validatedData = $request->validate([
+        // Determine list type (allow changing checks from request, fallback to existing)
+        $listType = $request->input('list_type', $auction->list_type ?? 'auction');
+
+        // Base Rules
+        $rules = [
             'title' => 'required|min:2|max:100',
             'category_id' => 'required',
-            'start_date' => 'nullable|date', // Changed to nullable - use existing if not provided
-            'end_date' => 'required|date',
-            'reserve_price' => 'required|numeric',
-            'minimum_bid' => 'required|numeric',
             'description' => 'required',
             'product_year' => 'required',
             'product_location' => 'nullable',
@@ -947,7 +946,25 @@ class AuctionController extends Controller
             'nearby_location' => 'nullable|string',
             'amenities' => 'nullable|string',
             'facilities' => 'nullable|string',
-        ]);
+        ];
+
+        // Conditional Rules
+        if ($listType === 'normal_list') {
+            $rules['product_condition'] = 'required|in:new,old';
+            $rules['minimum_bid'] = 'required|numeric'; // Price
+            $rules['start_date'] = 'nullable|date';
+            $rules['end_date'] = 'nullable|date';
+            $rules['reserve_price'] = 'nullable|numeric';
+        } else {
+            // Auction default
+            $rules['start_date'] = 'nullable|date'; // Use existing if not provided
+            $rules['end_date'] = 'required|date';
+            $rules['reserve_price'] = 'required|numeric';
+            $rules['minimum_bid'] = 'required|numeric';
+        }
+
+        // 1) Validate
+        $validatedData = $request->validate($rules);
 
         // Use existing start_date if not provided in request
         if (empty($validatedData['start_date']) || $validatedData['start_date'] === null || $validatedData['start_date'] === '') {
@@ -973,7 +990,8 @@ class AuctionController extends Controller
         $corporate = CorporateVerification::where('user_id', $userId)->first();
 
         $norm = function ($rec) {
-            return strtolower($rec->status ?? ''); };
+            return strtolower($rec->status ?? '');
+        };
         $isApproved = function ($rec) use ($norm) {
             if (!$rec)
                 return false;
@@ -1181,7 +1199,17 @@ class AuctionController extends Controller
             'album' => $albumValue,
             'create_category' => $request->input('create_category'),
             'status' => 'resubmit', // business rule
+            'list_type' => $listType,
         ]);
+
+        // For normal_list, cleanup fields
+        if ($listType === 'normal_list') {
+            $auctionData['start_date'] = null;
+            $auctionData['end_date'] = null;
+            if (empty($auctionData['reserve_price'])) {
+                $auctionData['reserve_price'] = $auctionData['minimum_bid'] ?? 0;
+            }
+        }
 
         $auction->update($auctionData);
 
