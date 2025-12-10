@@ -865,9 +865,40 @@ class AuctionController extends Controller
         // ------------------------------------------------------------
         // 4) Create auction with all fields including new property fields
         // ------------------------------------------------------------
+        // Determine image path: either from new upload or existing string
+        $imagePath = null;
+        if (count($albumsArray) > 0) {
+            $imagePath = $albumsArray[0];
+        } elseif ($request->filled('image')) {
+            $imagePath = $request->input('image');
+        }
+
+        // Determine final album array (files + existing paths)
+        // 1. Get existing paths from request
+        $existingPaths = [];
+        if ($request->filled('album')) {
+            $inputAlbum = $request->input('album');
+            // If it's a JSON string, decode it. If array, use as is.
+            if (is_string($inputAlbum)) {
+                $decoded = json_decode($inputAlbum, true);
+                if (is_array($decoded)) {
+                    $existingPaths = $decoded;
+                }
+            } elseif (is_array($inputAlbum)) {
+                $existingPaths = $inputAlbum;
+            }
+        }
+
+        // 2. Merge existing paths with new uploads
+        // Appending new uploads to the end of existing ones
+        $finalAlbumArray = array_merge($existingPaths, $albumsArray);
+
+        // ------------------------------------------------------------
+        // 4) Create auction with all fields including new property fields
+        // ------------------------------------------------------------
         $auctionData = array_merge($validatedData, [
-            'image' => count($albumsArray) > 0 ? $albumsArray[0] : null,  // cover image
-            'album' => json_encode($albumsArray),
+            'image' => $imagePath,  // cover image
+            'album' => json_encode($finalAlbumArray),
             'user_id' => auth()->user()->id,
             'status' => 'inactive', // default status
             'create_category' => $request->input('create_category'),
@@ -1252,9 +1283,36 @@ class AuctionController extends Controller
 
 
 
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
-        $listing = Auction::findOrFail($id);
+        // 1. If explicit "is_draft" flag is set, force delete from Auction1
+        if ($request->has('is_draft') && filter_var($request->input('is_draft'), FILTER_VALIDATE_BOOLEAN)) {
+            $draft = Auction1::find($id);
+            if ($draft) {
+                $draft->forceDelete();
+                return response()->json([
+                    'message' => 'Draft deleted successfully from auction_1 (explicit)',
+                    'listing' => $draft,
+                ]);
+            }
+            return response()->json(['message' => 'Draft not found in auction_1'], 404);
+        }
+
+        // 2. Default: Check Active first
+        $listing = Auction::find($id);
+
+        if (!$listing) {
+            // Check in drafts (Auction1)
+            $draft = Auction1::find($id);
+            if ($draft) {
+                $draft->forceDelete();
+                return response()->json([
+                    'message' => 'Draft deleted successfully from auction_1',
+                    'listing' => $draft,
+                ]);
+            }
+            return response()->json(['message' => 'Listing not found'], 404);
+        }
 
         // (Optional) authorization — uncomment if you have policies
         // $this->authorize('update', $listing);
