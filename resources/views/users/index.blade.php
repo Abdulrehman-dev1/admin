@@ -77,41 +77,43 @@
           <div class="card-body">
             <form action="{{ route('users.index') }}" method="GET">
               <div class="row align-items-end">
-                <div class="form-group mb-0">
-                  <label for="date_from" class="form-label fw-bold" style="color: #374557; font-size: 14px;">From
-                    Date</label>
-                  <input type="date" name="date_from" id="date_from" class="form-control"
-                    value="{{ request('date_from') }}"
-                    style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
+                <div class="col-md-4">
+                  <div class="form-group mb-0">
+                    <label for="date_from" class="form-label fw-bold" style="color: #374557; font-size: 14px;">From
+                      Date</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control"
+                      value="{{ request('date_from') }}"
+                      style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group mb-0">
+                    <label for="date_to" class="form-label fw-bold" style="color: #374557; font-size: 14px;">To
+                      Date</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}"
+                      style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-group mb-0 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100"
+                      style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600;">
+                      <i class="fas fa-filter me-2"></i>Filter
+                    </button>
+                    <a href="{{ route('users.index') }}" class="btn btn-secondary w-100"
+                      style="height: 48px; border-radius: 10px; background-color: #F3F4F6; color: #374557; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center;">
+                      <i class="fas fa-undo me-2"></i>Reset
+                    </a>
+                  </div>
                 </div>
               </div>
-              <div class="col-md-4">
-                <div class="form-group mb-0">
-                  <label for="date_to" class="form-label fw-bold" style="color: #374557; font-size: 14px;">To Date</label>
-                  <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}"
-                    style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="form-group mb-0 d-flex gap-2">
-                  <button type="submit" class="btn btn-primary w-100"
-                    style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600;">
-                    <i class="fas fa-filter me-2"></i>Filter
-                  </button>
-                  <a href="{{ route('users.index') }}" class="btn btn-secondary w-100"
-                    style="height: 48px; border-radius: 10px; background-color: #F3F4F6; color: #374557; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-undo me-2"></i>Reset
-                  </a>
-                </div>
-              </div>
+            </form>
           </div>
-          </form>
         </div>
       </div>
     </div>
   </div>
   <div class="nftmax__container">
-
     <div class="nftmax-table__heading">
       <h3 class="nftmax-table__title mb-0">User Management</h3>
       <a href="{{ route('users.create') }}" class="nftmax__btn nftmax__btn--primary btn btn-primary">Add User</a>
@@ -120,7 +122,6 @@
       <!-- NFTMax Table Head -->
       <thead class="nftmax-table__head">
         <tr>
-          <th class="nftmax-table__column-1 nftmax-table__h1">#</th>
           <th class="nftmax-table__column-3 nftmax-table__h3">Name</th>
           <th class="nftmax-table__column-2 nftmax-table__h2">Email</th>
           <th class="nftmax-table__column-3 nftmax-table__h3">Verification</th>
@@ -133,9 +134,6 @@
       <tbody class="nftmax-table__body">
         @forelse ($users as $index => $user)
           <tr>
-            <td class="nftmax-table__column-1 nftmax-table__data-1">
-              <span class="nftmax-table__text"><b>{{ $index + 1 }}</b></span>
-            </td>
             <td class="nftmax-table__column-3 nftmax-table__data-3">
               <p class="nftmax-table__text">{{ $user->name ?? 'N/A' }}</p>
             </td>
@@ -194,7 +192,7 @@
       <!-- End NFTMax Table Body -->
     </table>
     <div class="d-flex justify-content-center mt-4">
-        {{ $users->links('pagination::bootstrap-5') }}
+      {{ $users->links('pagination::bootstrap-5') }}
     </div>
   </div>
   </div>
