@@ -65,6 +65,24 @@
     }
   </style>
 <div class="nftmax-table mg-top-40">
+    <div class="row mb-4">
+        <div class="col-12">
+            <form action="{{ route('users.index') }}" method="GET" class="d-flex align-items-end gap-3">
+                <div class="form-group mb-0">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request('date_from') }}">
+                </div>
+                <div class="form-group mb-0">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}">
+                </div>
+                <div class="form-group mb-0">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{{ route('users.index') }}" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
 <div class="nftmax__container">
 
     <div class="nftmax-table__heading"><h3 class="nftmax-table__title mb-0">Auctions</h3>
@@ -142,6 +160,7 @@
                 </td>
                 <td>
                     <div class="nftmax__actions ">
+                        <a href="{{ route('users.show', $user->id) }}" class="nftmax__btn nftmax__btn--view btn btn-primary me-1" style="background-color: #6f42c1; border-color: #6f42c1;">View</a>
                         <a href="{{ route('users.edit', $user->id) }}" class="nftmax__btn nftmax__btn--edit btn btn-info">Edit</a>
                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" style="display:none;">
                             @csrf

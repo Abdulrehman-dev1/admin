@@ -14,10 +14,19 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::with('IndividualVerification')->get();
-		//dd($users);
+        $query = User::with('IndividualVerification');
+
+        if ($request->has('date_from') && $request->date_from != '') {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to') && $request->date_to != '') {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $users = $query->orderBy('id', 'desc')->get();
+        //dd($users);
         return view('users.index', compact('users'));
     }
 
@@ -26,22 +35,22 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-   // app/Http/Controllers/UserController.php
+    // app/Http/Controllers/UserController.php
 
 
 
-   public function create()
-{
-    // Option A: hard‑coded list
-    $roles = [
-        'admin',
-        'user',
-        // …add as needed
-    ];
+    public function create()
+    {
+        // Option A: hard‑coded list
+        $roles = [
+            'admin',
+            'user',
+            // …add as needed
+        ];
 
-    $user = new User();  // for old('role', $user->role ?? '')
-    return view('users.create', compact('roles', 'user'));
-}
+        $user = new User();  // for old('role', $user->role ?? '')
+        return view('users.create', compact('roles', 'user'));
+    }
 
 
     /**
@@ -52,28 +61,28 @@ class UserController extends Controller
      * 
      * 
      **/
-public function store(Request $request)
-{
-    $data = $request->validate([
-        'name'      => 'required|string|max:255',
-        'username'  => 'required|string|max:255|unique:users,username',
-        'email'     => 'required|email|max:255|unique:users,email',
-        'password'  => 'required|string|min:8|confirmed',
-        'phone'     => 'required|string|max:20',
-        'role'      => 'required|string|in:admin,user',
-        'country_id'=> 'required|exists:countries,id',
-        'city_id'   => 'required|exists:cities,id',
-        'address'   => 'nullable|string|max:500',
-    ]);
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username',
+            'email' => 'required|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+            'phone' => 'required|string|max:20',
+            'role' => 'required|string|in:admin,user',
+            'country_id' => 'required|exists:countries,id',
+            'city_id' => 'required|exists:cities,id',
+            'address' => 'nullable|string|max:500',
+        ]);
 
-    $data['password'] = bcrypt($data['password']);
+        $data['password'] = bcrypt($data['password']);
 
-    $user = User::create($data);
+        $user = User::create($data);
 
-    return redirect()
-        ->route('users.index')
-        ->with('success','User created successfully.');
-}
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User created successfully.');
+    }
     /**
      * Display the specified user.
      *
@@ -91,10 +100,10 @@ public function store(Request $request)
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
- public function edit(User $user)
+    public function edit(User $user)
     {
-        $roles = ['admin','user'];
-        return view('users.create', compact('roles','user'));
+        $roles = ['admin', 'user'];
+        return view('users.create', compact('roles', 'user'));
     }
 
     /**
@@ -104,47 +113,47 @@ public function store(Request $request)
      * @param  \App\Models\User  $user
      * @return \Illuminate\Http\Response
      */
- public function update(Request $request, User $user)
-{
-    $data = $request->validate([
-        'name'      => 'required|string|max:255',
-        'username'  => "required|string|max:255|unique:users,username,{$user->id}",
-        'email'     => "required|email|max:255|unique:users,email,{$user->id}",
-        'password'  => 'nullable|string|min:8|confirmed',
-        'phone'     => 'required|string|max:20',
-        'role'      => 'required|string|in:admin,user',
-        'country_id'=> 'required|exists:countries,id',
-        'city_id'   => 'required|exists:cities,id',
-        'address'   => 'nullable|string|max:500',
-    ]);
+    public function update(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => "required|string|max:255|unique:users,username,{$user->id}",
+            'email' => "required|email|max:255|unique:users,email,{$user->id}",
+            'password' => 'nullable|string|min:8|confirmed',
+            'phone' => 'required|string|max:20',
+            'role' => 'required|string|in:admin,user',
+            'country_id' => 'required|exists:countries,id',
+            'city_id' => 'required|exists:cities,id',
+            'address' => 'nullable|string|max:500',
+        ]);
 
-    if (!empty($data['password'])) {
-        $data['password'] = bcrypt($data['password']);
-    } else {
-        unset($data['password']);
+        if (!empty($data['password'])) {
+            $data['password'] = bcrypt($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $user->update($data);
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User updated successfully.');
     }
+    public function updateStatus(User $user, Request $request)
+    {
+        // If the checkbox is checked, the form submits status="on". 
+        // If it’s unchecked, no “status” key is sent.
+        $newStatus = $request->has('status')
+            ? 'enable'
+            : 'disable';
 
-    $user->update($data);
+        $user->status = $newStatus;
+        $user->save();
 
-    return redirect()
-        ->route('users.index')
-        ->with('success','User updated successfully.');
-}
-public function updateStatus(User $user, Request $request)
-{
-    // If the checkbox is checked, the form submits status="on". 
-    // If it’s unchecked, no “status” key is sent.
-    $newStatus = $request->has('status')
-               ? 'enable'
-               : 'disable';
-
-    $user->status = $newStatus;
-    $user->save();
-
-    return redirect()
-        ->route('users.index')
-        ->with('success', "User status updated to {$newStatus}.");
-}
+        return redirect()
+            ->route('users.index')
+            ->with('success', "User status updated to {$newStatus}.");
+    }
 
 
     /**
@@ -165,34 +174,35 @@ public function updateStatus(User $user, Request $request)
         return response()->json(['message' => 'Logged out successfully']);
     }
     // In your user model
-public function updateOneSignalPlayerId(Request $request)
-{
-    $user = auth()->user();
-    $user->onesignal_player_id = $request->player_id;
-    $user->save();
-}
-public function getUserProfile()
-{   $id = Auth::user()->id;
-    $user = User::find($id);
-
-    if (!$user) {
-        return response()->json(['message' => 'User not found'], 404);
+    public function updateOneSignalPlayerId(Request $request)
+    {
+        $user = auth()->user();
+        $user->onesignal_player_id = $request->player_id;
+        $user->save();
     }
+    public function getUserProfile()
+    {
+        $id = Auth::user()->id;
+        $user = User::find($id);
 
-    // Check if profile_pic is an external URL (like Google or Facebook)
-    if ($user->profile_pic && preg_match('/^https?:\/\//', $user->profile_pic)) {
-        // If profile_pic starts with "http" or "https", return it directly (Google, Facebook, etc.)
-        $profilePicUrl = $user->profile_pic;
-    } else {
-        // Otherwise, assume it's a locally uploaded file and construct the correct URL
-        $profilePicUrl = asset('' . $user->profile_pic);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        // Check if profile_pic is an external URL (like Google or Facebook)
+        if ($user->profile_pic && preg_match('/^https?:\/\//', $user->profile_pic)) {
+            // If profile_pic starts with "http" or "https", return it directly (Google, Facebook, etc.)
+            $profilePicUrl = $user->profile_pic;
+        } else {
+            // Otherwise, assume it's a locally uploaded file and construct the correct URL
+            $profilePicUrl = asset('' . $user->profile_pic);
+        }
+
+        return response()->json([
+            'name' => $user->name,
+            'profile_pic' => $profilePicUrl, // Now correctly formatted
+        ]);
     }
-
-    return response()->json([
-        'name' => $user->name,
-        'profile_pic' => $profilePicUrl, // Now correctly formatted
-    ]);
-}
 
     /**
      * Verify if the specified user exists.
