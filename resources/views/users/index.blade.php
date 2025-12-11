@@ -110,9 +110,9 @@
     }
 
     /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-               but if it's separate, we can style standard bootstrap elements. 
-               Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-               We target the container to center things properly. */
+                 but if it's separate, we can style standard bootstrap elements. 
+                 Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+                 We target the container to center things properly. */
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
       /* This is the container class in default Laravel pagination view */
       display: flex !important;
@@ -125,6 +125,16 @@
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between>div:first-child {
       /* The 'Showing x to y' text container */
       margin-bottom: 5px;
+    }
+
+    /* FORCE FULL WIDTH FOR PAGINATION NAV */
+    nav[role="navigation"] {
+      width: 100%;
+    }
+
+    nav[role="navigation"] .d-md-flex,
+    nav[role="navigation"] .justify-content-between {
+      width: 100% !important;
     }
   </style>
   <div class="nftmax-table mg-top-40">
