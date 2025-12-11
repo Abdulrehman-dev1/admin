@@ -146,7 +146,7 @@
                      <div class="footer-section">
                             <p style="margin:0 0 10px 0;">&copy; {{ date('Y') }} XpertBid. All rights reserved.</p>
                             <p style="margin:0;">
-                                   <a href="{{ url('/') }}" style="color:#5356FB;text-decoration:none;">Visit
+                                   <a href="{{ url('xpertbid.com') }}" style="color:#5356FB;text-decoration:none;">Visit
                                           Website</a> |
                                    <a href="mailto:support@xpertbid.com"
                                           style="color:#5356FB;text-decoration:none;">Contact Support</a>

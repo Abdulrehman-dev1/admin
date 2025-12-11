@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Users List')
+@section('title', $pageTitle ?? 'Users List')
 
 @section('content')
 
@@ -110,9 +110,9 @@
     }
 
     /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-                       but if it's separate, we can style standard bootstrap elements. 
-                       Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-                       We target the container to center things properly. */
+                               but if it's separate, we can style standard bootstrap elements. 
+                               Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+                               We target the container to center things properly. */
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
       /* This is the container class in default Laravel pagination view */
       display: flex !important;
@@ -152,7 +152,7 @@
       <div class="col-12">
         <div class="card nftmax-card">
           <div class="card-body">
-            <form action="{{ route('users.index') }}" method="GET">
+            <form action="{{ $filterRoute ?? route('users.index') }}" method="GET">
               <div class="row align-items-end">
                 <div class="col-md-4">
                   <div class="form-group mb-0">
@@ -177,7 +177,7 @@
                       style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600; margin-bottom: 0px;">
                       <i class="fas fa-filter me-2"></i>Filter
                     </button>
-                    <a href="{{ route('users.index') }}" class="btn btn-secondary w-100"
+                    <a href="{{ $filterRoute ?? route('users.index') }}" class="btn btn-secondary w-100"
                       style="height: 48px; border-radius: 10px; background-color: #F3F4F6; color: #374557; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center;">
                       <i class="fas fa-undo me-2"></i>Reset
                     </a>
@@ -192,7 +192,7 @@
   </div>
   <div class="nftmax__container">
     <div class="nftmax-table__heading">
-      <h3 class="nftmax-table__title mb-0">User Management</h3>
+      <h3 class="nftmax-table__title mb-0">{{ $pageTitle ?? 'User Management' }}</h3>
       <a href="{{ route('users.create') }}" class="nftmax__btn nftmax__btn--primary btn btn-primary">Add User</a>
     </div>
     <table id="nftmax-table__main" class="nftmax-table__main nftmax-table__product-history">
@@ -215,7 +215,7 @@
               <p class="nftmax-table__text">{{ $user->name ?? 'N/A' }}</p>
             </td>
             <td class="nftmax-table__column-2 nftmax-table__data-2">
-              <p class="nftmax-table__text" title="{{ $user->email }}">{{ Str::limit($user->email, 10) }}</p>
+              <p class="nftmax-table__text" title="{{ $user->email }}">{{ Str::limit($user->email, 15) }}</p>
             </td>
 
             <td class="nftmax-table__column-4 nftmax-table__data-4">
@@ -226,7 +226,7 @@
               @endif
             </td>
             <td class="nftmax-table__column-4 nftmax-table__data-4">
-               <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
+              <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
             </td>
             <td class="nftmax-table__column-5 nftmax-table__data-5">
               <form action="{{ route('user.status.update', $user) }}" method="POST" style="display:inline">

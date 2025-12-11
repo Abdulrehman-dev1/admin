@@ -51,7 +51,7 @@ Route::get('/send-test-mail', function () {
     try {
         Mail::raw('Hello! This is a test email from Localhost via Gmail SMTP.', function ($message) {
             $message->to('connecttoabdulrehman01@gmail.com') // Jisko bhejni hai uska email
-                    ->subject('Localhost SMTP Test');
+                ->subject('Localhost SMTP Test');
         });
         return 'Email has been sent successfully!';
     } catch (\Exception $e) {
@@ -70,7 +70,7 @@ Route::post('/olx-scraper/preview', [OlxScraperController::class, 'preview'])->n
 Route::post('/olx-scraper/save', [OlxScraperController::class, 'save'])->name('olx-scraper.save');
 
 // routes/web.php
-Route::middleware(['auth'])->group(function() {
+Route::middleware(['auth'])->group(function () {
     Route::resource('blogs', BlogController::class);
 });
 
@@ -93,12 +93,16 @@ Route::get('/debug-decline-mail/{id}', function ($id) {
 
 // Web routes (blade)
 Route::resource('vehicle-verifications', VehicleVerificationController::class);
-Route::post('vehicle-verifications/{vehicleVerification}/accept',
-    [VehicleVerificationController::class,'accept'])
-  ->name('vehicle-verifications.accept');
-Route::post('vehicle-verifications/{vehicleVerification}/decline',
-    [VehicleVerificationController::class,'decline'])
-  ->name('vehicle-verifications.decline');
+Route::post(
+    'vehicle-verifications/{vehicleVerification}/accept',
+    [VehicleVerificationController::class, 'accept']
+)
+    ->name('vehicle-verifications.accept');
+Route::post(
+    'vehicle-verifications/{vehicleVerification}/decline',
+    [VehicleVerificationController::class, 'decline']
+)
+    ->name('vehicle-verifications.decline');
 
 
 Route::resource(
@@ -121,15 +125,19 @@ Route::post(
 Route::middleware(['auth'])->group(function () {
     // Resource routes for index, create, store, show, edit, update, destroy
     Route::resource('corporate-verifications', CorporateVerificationController::class)
-         ->names('corporate-verifications');
+        ->names('corporate-verifications');
 
     // Custom Accept / Decline actions
-    Route::post('corporate-verifications/{corporate_verification}/accept', 
-        [CorporateVerificationController::class, 'accept'])
+    Route::post(
+        'corporate-verifications/{corporate_verification}/accept',
+        [CorporateVerificationController::class, 'accept']
+    )
         ->name('corporate-verifications.accept');
 
-    Route::post('corporate-verifications/{corporate_verification}/decline', 
-        [CorporateVerificationController::class, 'decline'])
+    Route::post(
+        'corporate-verifications/{corporate_verification}/decline',
+        [CorporateVerificationController::class, 'decline']
+    )
         ->name('corporate-verifications.decline');
 });
 
@@ -139,38 +147,38 @@ Route::middleware('auth')->group(function () {
         'individual-verifications',
         IndividualVerificationController::class
     );
-  Route::get('payment-requests-admin', [App\Http\Controllers\PaymentRequestController::class, 'Adminindex'])
-     ->name('payment-requests-admin');
-Route::get('wallets', [WalletController::class, 'index'])
-         ->name('wallets.index');
+    Route::get('payment-requests-admin', [App\Http\Controllers\PaymentRequestController::class, 'Adminindex'])
+        ->name('payment-requests-admin');
+    Route::get('wallets', [WalletController::class, 'index'])
+        ->name('wallets.index');
     Route::put('wallets/{wallet}', [WalletController::class, 'update'])
-         ->name('wallets.update');
-  Route::put(
-    'payment-requests/{payment_request}',
-    [PaymentRequestController::class, 'update']
-)->name('payment-requests.update');
+        ->name('wallets.update');
+    Route::put(
+        'payment-requests/{payment_request}',
+        [PaymentRequestController::class, 'update']
+    )->name('payment-requests.update');
 
-  // Payment Verification Routes
-  Route::get('payment-verifications', [PaymentVerificationController::class, 'index'])
-       ->name('payment-verifications.index');
-  Route::get('payment-verifications/{id}', [PaymentVerificationController::class, 'show'])
-       ->name('payment-verifications.show');
-  Route::post('payment-verifications/{id}/approve', [PaymentVerificationController::class, 'approve'])
-       ->name('payment-verifications.approve');
-  Route::post('payment-verifications/{id}/decline', [PaymentVerificationController::class, 'decline'])
-       ->name('payment-verifications.decline');
-  // Receipt image route
-  Route::get('receipts/{filename}', [PaymentVerificationController::class, 'receipt'])
-       ->name('receipts.show')
-       ->where('filename', '[A-Za-z0-9._-]+');
-  
-  // Orders Routes
-  Route::get('orders', [OrderController::class, 'index'])
-       ->name('orders.index');
-  Route::get('orders/{id}', [OrderController::class, 'show'])
-       ->name('orders.show');
-  Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
-       ->name('orders.update-status');
+    // Payment Verification Routes
+    Route::get('payment-verifications', [PaymentVerificationController::class, 'index'])
+        ->name('payment-verifications.index');
+    Route::get('payment-verifications/{id}', [PaymentVerificationController::class, 'show'])
+        ->name('payment-verifications.show');
+    Route::post('payment-verifications/{id}/approve', [PaymentVerificationController::class, 'approve'])
+        ->name('payment-verifications.approve');
+    Route::post('payment-verifications/{id}/decline', [PaymentVerificationController::class, 'decline'])
+        ->name('payment-verifications.decline');
+    // Receipt image route
+    Route::get('receipts/{filename}', [PaymentVerificationController::class, 'receipt'])
+        ->name('receipts.show')
+        ->where('filename', '[A-Za-z0-9._-]+');
+
+    // Orders Routes
+    Route::get('orders', [OrderController::class, 'index'])
+        ->name('orders.index');
+    Route::get('orders/{id}', [OrderController::class, 'show'])
+        ->name('orders.show');
+    Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
+        ->name('orders.update-status');
 });
 
 //Route::get('payment-requests-admin', [PaymentRequestController::class, 'Adminindex']);
@@ -188,14 +196,18 @@ Route::get('wallets', [WalletController::class, 'index'])
 //     ->middleware('auth');
 
 // Approve
-Route::post('individual-verifications/{id}/accept',
-    [IndividualVerificationController::class, 'accept'])
+Route::post(
+    'individual-verifications/{id}/accept',
+    [IndividualVerificationController::class, 'accept']
+)
     ->name('individual-verifications.accept')
     ->middleware('auth');
 
 // Decline
-Route::post('individual-verifications/{id}/decline',
-    [IndividualVerificationController::class, 'decline'])
+Route::post(
+    'individual-verifications/{id}/decline',
+    [IndividualVerificationController::class, 'decline']
+)
     ->name('individual-verifications.decline')
     ->middleware('auth');
 
@@ -208,34 +220,34 @@ Route::post('individual-verifications/{id}/decline',
 
 // list view
 Route::get('/auctionstatus', [AuctionStatusController::class, 'index'])
-     ->name('auctionstatus.index');
+    ->name('auctionstatus.index');
 
 // edit form
 Route::get('/auctionstatus/{id}', [AuctionStatusController::class, 'edit'])
-     ->name('auctionstatus.edit');
+    ->name('auctionstatus.edit');
 
 // approve/decline submit
 Route::put('/auctionstatus/{id}', [AuctionStatusController::class, 'update'])
-     ->name('auctionstatus.update');
+    ->name('auctionstatus.update');
 
 Route::resource('auctionstatus', AuctionStatusController::class)
-     ->only(['index','edit','update']);
+    ->only(['index', 'edit', 'update']);
 
 Route::prefix('admin')
-     ->middleware('auth')
-     ->group(function(){
-  Route::resource('seo', SeoController::class); //  use the imported class
-});
+    ->middleware('auth')
+    ->group(function () {
+        Route::resource('seo', SeoController::class); //  use the imported class
+    });
 
 
 
 Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])
-         ->name('dashboard');
+        ->name('dashboard');
     // any other routes behind the login wall…
 });
 Route::get('/promotions', [PromotionController::class, 'index'])
-     ->name('promotions.index');
+    ->name('promotions.index');
 
 
 Route::get('/slider-categories/create', [SliderCategoryController::class, 'create'])->name('slider_categories.create');
@@ -275,7 +287,7 @@ Route::get('/signa', function () {
 // })->name('login');
 Route::get('/logout', function () {
     Auth::logout();
-     return redirect()->route('login');
+    return redirect()->route('login');
 })->name('logout');
 
 Route::post('/login', [AuthController::class, 'login']); // Keep the POST route for login submission
@@ -287,36 +299,37 @@ Route::post('/verify-code', [AuthController::class, 'verifyCode']);
 //     return view('dashboard');
 // })->middleware('auth')->name('dashboard');
 Route::post('/updated/{user}', [UserController::class, 'updateStatus'])
-     ->name('user.status.update');
+    ->name('user.status.update');
 Route::middleware('auth')->group(function () {
- //   Route::resource('roles', RoleController::class);
- //   Route::get('users/{user}/roles', [RoleController::class, 'assignRoleForm'])->name('users.roles');
- //   Route::post('users/{user}/roles', [RoleController::class, 'assignRole'])->name('users.roles.store');
- //   Route::resource('permissions', PermissionsController::class);
-Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSubcategories']);
-Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildern']);
-Route::resource('users', UserController::class);
-Route::get('/profile', [UserController::class, 'show'])->name('user.profile');
-Route::get('/profile/edit', [ProfileController::class, 'editProfile'])->name('user.profile.edit');
-Route::post('/profile/update', [ProfileController::class, 'updateProfile'])->name('user.profile.update');
-Route::resource('auction_categories', AuctionCategoryController::class);
-Route::resource('faq_questions', FaqQuestionController::class);
-Route::resource('testimonies', TestimonyController::class);
-Route::resource('auctions', AuctionController::class);
-Route::resource('content-pages', ContentPageController::class);
-Route::resource('master-settings', MasterSettingController::class);
-Route::resource('createletters', CreateLetterController::class);
-Route::resource('transactions', TransactionController::class);
-Route::resource('emailtemplates', EmailTemplateController::class);
-Route::get('buy-now-inquiries', [BuyNowInquiryController::class, 'index'])->name('buy-now-inquiries.index');
-Route::get('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'show'])->name('buy-now-inquiries.show');
-Route::post('buy-now-inquiries/{id}/update-status', [BuyNowInquiryController::class, 'updateStatus'])->name('buy-now-inquiries.update-status');
-Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
+    //   Route::resource('roles', RoleController::class);
+    //   Route::get('users/{user}/roles', [RoleController::class, 'assignRoleForm'])->name('users.roles');
+    //   Route::post('users/{user}/roles', [RoleController::class, 'assignRole'])->name('users.roles.store');
+    //   Route::resource('permissions', PermissionsController::class);
+    Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSubcategories']);
+    Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildern']);
+    Route::get('utm-campaign-users', [UserController::class, 'utmCampaign'])->name('utm_campaign_users.index');
+    Route::resource('users', UserController::class);
+    Route::get('/profile', [UserController::class, 'show'])->name('user.profile');
+    Route::get('/profile/edit', [ProfileController::class, 'editProfile'])->name('user.profile.edit');
+    Route::post('/profile/update', [ProfileController::class, 'updateProfile'])->name('user.profile.update');
+    Route::resource('auction_categories', AuctionCategoryController::class);
+    Route::resource('faq_questions', FaqQuestionController::class);
+    Route::resource('testimonies', TestimonyController::class);
+    Route::resource('auctions', AuctionController::class);
+    Route::resource('content-pages', ContentPageController::class);
+    Route::resource('master-settings', MasterSettingController::class);
+    Route::resource('createletters', CreateLetterController::class);
+    Route::resource('transactions', TransactionController::class);
+    Route::resource('emailtemplates', EmailTemplateController::class);
+    Route::get('buy-now-inquiries', [BuyNowInquiryController::class, 'index'])->name('buy-now-inquiries.index');
+    Route::get('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'show'])->name('buy-now-inquiries.show');
+    Route::post('buy-now-inquiries/{id}/update-status', [BuyNowInquiryController::class, 'updateStatus'])->name('buy-now-inquiries.update-status');
+    Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
 
-Route::get('/get-subcategories/{parent}', [AuctionCategoryController::class, 'getSubCategories']);
-Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'getChildCategories']);
+    Route::get('/get-subcategories/{parent}', [AuctionCategoryController::class, 'getSubCategories']);
+    Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'getChildCategories']);
 
-// Route::get('/test-mail', function () {
+    // Route::get('/test-mail', function () {
 //     try {
 //         Mail::raw('This is a test email from XpertBid.', function ($message) {
 //             $message->to('connecttoabdulrehman01@gmail.com')
@@ -329,27 +342,27 @@ Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'get
 // });
 
 
- Route::get('/test-new-listing-notification', function () {
-     $firstName = 'Ali'; // Test user ka naam
-     $listingTitle = 'Sample Auction Listing'; // Test listing ka title
-     $auctionEnds = \Carbon\Carbon::now()->addDays(3)->toDayDateTimeString(); // Auction end date ko 3 din baad set karta hai
+    Route::get('/test-new-listing-notification', function () {
+        $firstName = 'Ali'; // Test user ka naam
+        $listingTitle = 'Sample Auction Listing'; // Test listing ka title
+        $auctionEnds = \Carbon\Carbon::now()->addDays(3)->toDayDateTimeString(); // Auction end date ko 3 din baad set karta hai
 
-     try {
-         Mail::to('connecttoabdulrehman01@gmail.com')->send(new \App\Mail\NewListingNotification($firstName, $listingTitle, $auctionEnds));
-         return 'Test New Listing Notification email sent successfully!';
-     } catch (\Exception $e) {
-         return 'Mail send failed: ' . $e->getMessage();
-     }
-});
-Route::prefix('locations')->group(function () {
-    Route::get('/', [LocationController::class, 'index'])->name('locations.index');
-    Route::get('/create', [LocationController::class, 'create'])->name('locations.create');
-    Route::post('/', [LocationController::class, 'store'])->name('locations.store');
-    Route::get('/{id}/{type}/edit', [LocationController::class, 'edit'])->name('locations.edit');
-    Route::put('/{id}/{type}', [LocationController::class, 'update'])->name('locations.update');
-    Route::delete('/{id}/{type}', [LocationController::class, 'destroy'])->name('locations.destroy');
-});
+        try {
+            Mail::to('connecttoabdulrehman01@gmail.com')->send(new \App\Mail\NewListingNotification($firstName, $listingTitle, $auctionEnds));
+            return 'Test New Listing Notification email sent successfully!';
+        } catch (\Exception $e) {
+            return 'Mail send failed: ' . $e->getMessage();
+        }
+    });
+    Route::prefix('locations')->group(function () {
+        Route::get('/', [LocationController::class, 'index'])->name('locations.index');
+        Route::get('/create', [LocationController::class, 'create'])->name('locations.create');
+        Route::post('/', [LocationController::class, 'store'])->name('locations.store');
+        Route::get('/{id}/{type}/edit', [LocationController::class, 'edit'])->name('locations.edit');
+        Route::put('/{id}/{type}', [LocationController::class, 'update'])->name('locations.update');
+        Route::delete('/{id}/{type}', [LocationController::class, 'destroy'])->name('locations.destroy');
+    });
 });
 
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -31,6 +31,29 @@ class UserController extends Controller
     }
 
     /**
+     * Display a listing of users with non-null UTM Campaign.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function utmCampaign(Request $request)
+    {
+        $query = User::with('IndividualVerification')->whereNotNull('utm_campaign');
+
+        if ($request->has('date_from') && $request->date_from != '') {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->has('date_to') && $request->date_to != '') {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $users = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
+        $pageTitle = 'UTM Campaign Users';
+        $filterRoute = route('utm_campaign_users.index');
+
+        return view('users.index', compact('users', 'pageTitle', 'filterRoute'));
+    }
+
+    /**
      * Show the form for creating a new user.
      *
      * @return \Illuminate\Http\Response
