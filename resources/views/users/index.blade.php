@@ -110,9 +110,9 @@
     }
 
     /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-                   but if it's separate, we can style standard bootstrap elements. 
-                   Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-                   We target the container to center things properly. */
+                     but if it's separate, we can style standard bootstrap elements. 
+                     Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+                     We target the container to center things properly. */
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
       /* This is the container class in default Laravel pagination view */
       display: flex !important;
@@ -139,6 +139,12 @@
     nav .d-md-flex,
     nav .justify-content-between {
       width: 100% !important;
+    }
+
+    /* Target the 'Showing results' paragraph specifically */
+    nav p.small.text-muted {
+      margin-bottom: 0 !important;
+      margin-top: 20px !important;
     }
   </style>
   <div class="nftmax-table mg-top-40">
@@ -244,7 +250,7 @@
             <td>
               <div class="nftmax__actions ">
                 <a href="{{ route('users.show', $user->id) }}" class="nftmax__btn nftmax__btn--view btn btn-primary me-1"
-                  style="background-color: #6f42c1; border-color: #6f42c1;">View</a>
+                  style="background-color: #5356FB; border-color: #5356FB;">View</a>
                 <a href="{{ route('users.edit', $user->id) }}" class="nftmax__btn nftmax__btn--edit btn btn-info">Edit</a>
                 <form action="{{ route('users.destroy', $user->id) }}" method="POST" style="display:none;">
                   @csrf
