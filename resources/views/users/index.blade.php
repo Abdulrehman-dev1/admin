@@ -202,7 +202,6 @@
           <th class="nftmax-table__column-3 nftmax-table__h3">Name</th>
           <th class="nftmax-table__column-2 nftmax-table__h2">Email</th>
           <th class="nftmax-table__column-3 nftmax-table__h3">Verification</th>
-          <th class="nftmax-table__column-4 nftmax-table__h4">Created At</th>
           <th class="nftmax-table__column-4 nftmax-table__h4">UTM Campaign</th>
           <th class="nftmax-table__column-5 nftmax-table__h5">Block</th>
           <th class="nftmax-table__column-5 nftmax-table__h6">Actions</th>
@@ -216,7 +215,7 @@
               <p class="nftmax-table__text">{{ $user->name ?? 'N/A' }}</p>
             </td>
             <td class="nftmax-table__column-2 nftmax-table__data-2">
-              <p class="nftmax-table__text">{{ $user->email }}</p>
+              <p class="nftmax-table__text" title="{{ $user->email }}">{{ Str::limit($user->email, 10) }}</p>
             </td>
 
             <td class="nftmax-table__column-4 nftmax-table__data-4">
@@ -227,10 +226,7 @@
               @endif
             </td>
             <td class="nftmax-table__column-4 nftmax-table__data-4">
-              <p class="nftmax-table__text">{{ $user->created_at->format('d M, Y') }}</p>
-            </td>
-            <td class="nftmax-table__column-4 nftmax-table__data-4">
-              <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
+               <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
             </td>
             <td class="nftmax-table__column-5 nftmax-table__data-5">
               <form action="{{ route('user.status.update', $user) }}" method="POST" style="display:inline">
