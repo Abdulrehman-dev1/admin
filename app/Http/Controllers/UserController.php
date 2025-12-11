@@ -25,7 +25,7 @@ class UserController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $users = $query->orderBy('id', 'desc')->get();
+        $users = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
         //dd($users);
         return view('users.index', compact('users'));
     }
