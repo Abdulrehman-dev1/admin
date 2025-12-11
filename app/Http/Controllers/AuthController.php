@@ -46,6 +46,9 @@ class AuthController extends Controller
             'provider' => 'email',   // default provider
             'provider_id' => null,
             'profile_pic' => null,
+            'utm_source' => $request->utm_source,
+            'utm_medium' => $request->utm_medium,
+            'utm_campaign' => $request->utm_campaign,
         ]);
 
         // Generate token
@@ -141,6 +144,9 @@ class AuthController extends Controller
                 'provider_id' => $payload->id,
                 'profile_pic' => $payload->picture ?? null,
                 'password' => Hash::make(Str::random(16)),
+                'utm_source' => $request->utm_source,
+                'utm_medium' => $request->utm_medium,
+                'utm_campaign' => $request->utm_campaign,
             ]);
             Auth::login($user);
             $token = $user->createToken('GoogleRegister')->plainTextToken;
@@ -216,6 +222,9 @@ class AuthController extends Controller
                 'profile_pic' => $googleUser->picture ?? null,
                 'password' => Hash::make(Str::random(16)),
                 'referral_code' => $referralCode,
+                'utm_source' => $request->utm_source,
+                'utm_medium' => $request->utm_medium,
+                'utm_campaign' => $request->utm_campaign,
             ]);
 
             Auth::login($user);

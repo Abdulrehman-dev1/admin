@@ -37,9 +37,6 @@
                      </tr>
               </table>
 
-
-
-              <p style="font-size: 12px; color: #777; margin-top: 30px;">This is an automated system email.</p>
        </div>
 </body>
 
