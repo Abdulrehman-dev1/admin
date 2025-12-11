@@ -67,20 +67,36 @@
 <div class="nftmax-table mg-top-40">
     <div class="row mb-4">
         <div class="col-12">
-            <form action="{{ route('users.index') }}" method="GET" class="d-flex align-items-end gap-3">
-                <div class="form-group mb-0">
-                    <label for="date_from" class="form-label">From Date</label>
-                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request('date_from') }}">
+            <div class="card nftmax-card">
+                <div class="card-body">
+                    <form action="{{ route('users.index') }}" method="GET">
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="date_from" class="form-label fw-bold">From Date</label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request('date_from') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label for="date_to" class="form-label fw-bold">To Date</label>
+                                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-0 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-filter me-2"></i>Filter
+                                    </button>
+                                    <a href="{{ route('users.index') }}" class="btn btn-secondary w-100">
+                                        <i class="fas fa-undo me-2"></i>Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-group mb-0">
-                    <label for="date_to" class="form-label">To Date</label>
-                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}">
-                </div>
-                <div class="form-group mb-0">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="{{ route('users.index') }}" class="btn btn-secondary">Reset</a>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 <div class="nftmax__container">
