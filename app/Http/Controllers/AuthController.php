@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UserSignupConfirmation;
+use App\Mail\AdminNewUserRegistration;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
 use Google_Client;
@@ -52,7 +53,7 @@ class AuthController extends Controller
 
         // Optional confirmation mail
         Mail::to($user->email)->send(new UserSignupConfirmation());
-        Mail::to(env('ADMIN_EMAIL'))->send(new UserSignupConfirmation());
+        Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
         return response()->json([
             'user' => $user,
@@ -145,6 +146,7 @@ class AuthController extends Controller
             $token = $user->createToken('GoogleRegister')->plainTextToken;
 
             Mail::to($user->email)->send(new UserSignupConfirmation());
+            Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
             return response()->json([
                 'user' => $user,
@@ -222,6 +224,7 @@ class AuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             Mail::to($user->email)->send(new UserSignupConfirmation());
+            Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
             return response()->json([
                 'user' => [
