@@ -69,6 +69,62 @@
       text-align: center;
       left: 0;
     }
+
+    /* Custom Pagination Styles */
+    .pagination {
+      justify-content: space-between;
+      margin-top: 20px;
+      gap: 6px;
+    }
+
+    .page-item .page-link {
+      border-radius: 8px !important;
+      color: #5356FB;
+      border: 1px solid #E3E4E8;
+      background: #fff;
+      padding: 8px 14px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: none;
+    }
+
+    .page-item.active .page-link {
+      background-color: #5356FB !important;
+      border-color: #5356FB !important;
+      color: white !important;
+    }
+
+    .page-item.disabled .page-link {
+      color: #A0AEC0;
+      background-color: #FAFAFB;
+      border-color: #E3E4E8;
+    }
+
+    .page-link:hover {
+      background-color: #F3F4F6;
+      color: #5356FB;
+    }
+
+    .page-link:focus {
+      box-shadow: 0 0 0 0.2rem rgba(83, 86, 251, 0.25);
+    }
+
+    /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
+         but if it's separate, we can style standard bootstrap elements. 
+         Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+         We target the container to center things properly. */
+    .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
+      /* This is the container class in default Laravel pagination view */
+      display: flex !important;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between>div:first-child {
+      /* The 'Showing x to y' text container */
+      margin-bottom: 5px;
+    }
   </style>
   <div class="nftmax-table mg-top-40">
     <div class="row mb-4">
