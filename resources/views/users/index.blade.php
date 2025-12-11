@@ -110,9 +110,9 @@
     }
 
     /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-                     but if it's separate, we can style standard bootstrap elements. 
-                     Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-                     We target the container to center things properly. */
+                       but if it's separate, we can style standard bootstrap elements. 
+                       Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+                       We target the container to center things properly. */
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
       /* This is the container class in default Laravel pagination view */
       display: flex !important;
@@ -202,7 +202,8 @@
           <th class="nftmax-table__column-3 nftmax-table__h3">Name</th>
           <th class="nftmax-table__column-2 nftmax-table__h2">Email</th>
           <th class="nftmax-table__column-3 nftmax-table__h3">Verification</th>
-          <th class="nftmax-table__column-4 nftmax-table__h4">Role</th>
+          <th class="nftmax-table__column-4 nftmax-table__h4">Created At</th>
+          <th class="nftmax-table__column-4 nftmax-table__h4">UTM Campaign</th>
           <th class="nftmax-table__column-5 nftmax-table__h5">Block</th>
           <th class="nftmax-table__column-5 nftmax-table__h6">Actions</th>
         </tr>
@@ -226,7 +227,10 @@
               @endif
             </td>
             <td class="nftmax-table__column-4 nftmax-table__data-4">
-              <div class="nftmax-table__status nftmax-gbcolor">{{ $user->role ?? 'User' }}</div>
+              <p class="nftmax-table__text">{{ $user->created_at->format('d M, Y') }}</p>
+            </td>
+            <td class="nftmax-table__column-4 nftmax-table__data-4">
+              <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
             </td>
             <td class="nftmax-table__column-5 nftmax-table__data-5">
               <form action="{{ route('user.status.update', $user) }}" method="POST" style="display:inline">
