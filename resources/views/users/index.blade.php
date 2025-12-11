@@ -248,7 +248,7 @@
       </tbody>
       <!-- End NFTMax Table Body -->
     </table>
-    <div class="d-flex justify-content-center mt-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 w-100">
       {{ $users->links('pagination::bootstrap-5') }}
     </div>
   </div>
