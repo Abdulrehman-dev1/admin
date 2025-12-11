@@ -110,15 +110,16 @@
     }
 
     /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-         but if it's separate, we can style standard bootstrap elements. 
-         Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-         We target the container to center things properly. */
+               but if it's separate, we can style standard bootstrap elements. 
+               Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
+               We target the container to center things properly. */
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
       /* This is the container class in default Laravel pagination view */
       display: flex !important;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      flex-direction: row !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      gap: 10px !important;
     }
 
     .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between>div:first-child {
@@ -153,7 +154,7 @@
                 <div class="col-md-4">
                   <div class="form-group mb-0 d-flex gap-2">
                     <button type="submit" class="btn btn-primary w-100"
-                      style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600;">
+                      style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600; margin-bottom: 0px;">
                       <i class="fas fa-filter me-2"></i>Filter
                     </button>
                     <a href="{{ route('users.index') }}" class="btn btn-secondary w-100"
