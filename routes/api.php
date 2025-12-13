@@ -49,35 +49,35 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/buy-now-inquiries', [BuyNowInquiryController::class, 'index']);
     Route::patch('/buy-now-inquiries/{id}/status', [BuyNowInquiryController::class, 'updateStatus']);
 });
-Route::middleware('auth:sanctum')->post('user/close', [AuthController::class,'closeAccount']);
+Route::middleware('auth:sanctum')->post('user/close', [AuthController::class, 'closeAccount']);
 
 Route::middleware('auth:sanctum')
-     ->apiResource('vehicle-verifications', VehicleVerificationController::class);
+    ->apiResource('vehicle-verifications', VehicleVerificationController::class);
 Route::get('products/filter', [AuctionController::class, 'filtered']);
 
-Route::middleware('auth:sanctum')->group(function(){
+Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('property-verifications', PropertyVerificationController::class)
-     ->only(['index','store','show','update','destroy']);
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
 
-    Route::post('property-verifications/{pv}/accept',   [PropertyVerificationController::class,'accept']);
-    Route::post('property-verifications/{pv}/decline',  [PropertyVerificationController::class,'decline']);
+    Route::post('property-verifications/{pv}/accept', [PropertyVerificationController::class, 'accept']);
+    Route::post('property-verifications/{pv}/decline', [PropertyVerificationController::class, 'decline']);
 });
 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('corporate-verifications', CorporateVerificationController::class);
-    Route::post('corporate-verifications/{id}/accept',  [CorporateVerificationController::class, 'accept']);
+    Route::post('corporate-verifications/{id}/accept', [CorporateVerificationController::class, 'accept']);
     Route::post('corporate-verifications/{id}/decline', [CorporateVerificationController::class, 'decline']);
 });
 Route::middleware('auth:sanctum')->apiResource(
-  'individual-verifications',
-  IndividualVerificationController::class
+    'individual-verifications',
+    IndividualVerificationController::class
 );
 
 Route::get('/seo/{slug}', [SeoController::class, 'show']);
 
-    Route::middleware('auth:sanctum')->post("/identity", [IdentityController::class, "store"]);
-	Route::middleware('auth:sanctum')->get("/get-identity", [IdentityController::class, "get_identity"]);
+Route::middleware('auth:sanctum')->post("/identity", [IdentityController::class, "store"]);
+Route::middleware('auth:sanctum')->get("/get-identity", [IdentityController::class, "get_identity"]);
 
 Route::get('/stats', [SliderController::class, 'getStats']);
 Route::post('/forgot-password', [PasswordController::class, 'sendResetLink']);
@@ -92,8 +92,8 @@ Route::post('/google-register', [AuthController::class, 'googleRegister']);
 Route::middleware('auth:sanctum')->get('/users/{id}', [UserController::class, 'verifyUser']);
 
 
-  Route::post('/verify-code', [VerificationCodeController::class, 'verifyCode']);
-    Route::post('/send-verification', [VerificationCodeController::class, 'sendVerificationCode']);
+Route::post('/verify-code', [VerificationCodeController::class, 'verifyCode']);
+Route::post('/send-verification', [VerificationCodeController::class, 'sendVerificationCode']);
 Route::post('/contact', [ContactController::class, 'store']);
 
 
@@ -110,7 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('/notifications/{id}', [NotificationController::class, 'deleteNotification']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount']);
-   Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
 
 
 });
@@ -166,21 +166,21 @@ Route::get('/get-all-categories', [AuctionCategoryController::class, 'all_catego
 
 //Route::get('/wallet', [WalletController::class, 'balance']);
 Route::middleware('auth:sanctum')->group(function () {
-  
+
     Route::post('/change-password', [ProfileController::class, 'updatePassword']);
     Route::post('/auctions_store', [AuctionController::class, 'api_store']);
     Route::post('/auctions_save_draft', [AuctionController::class, 'api_save_draft']);
     Route::get('/auctions_get_draft', [AuctionController::class, 'api_get_draft']);
     // Edit/Update Auction API (for frontend edit form)
-Route::post('auctions_update/{id}', [AuctionController::class, 'api_update']);
-Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
+    Route::post('auctions_update/{id}', [AuctionController::class, 'api_update']);
+    Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
     Route::post('/listings/{id}/cancel', [AuctionController::class, 'cancel']);
     Route::get('/listings', [AuctionController::class, 'listings']);
     Route::post('/bids', [BidController::class, 'placeBid']);
     Route::post('/favorites/add', [FavoritesController::class, 'add']);
     Route::get('/favorites', [FavoritesController::class, 'index']);
     Route::post('/favorites/check', [FavoritesController::class, 'check']);
-    
+
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/add', [CartController::class, 'add']);
@@ -188,16 +188,18 @@ Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
     Route::put('/cart/update/{id}', [CartController::class, 'update']);
     Route::get('/cart/count', [CartController::class, 'count']);
     Route::delete('/cart/clear', [CartController::class, 'clear']);
-    
+
     // Checkout routes
     Route::post('/checkout/create-payment-intent', [CheckoutController::class, 'createPaymentIntent']);
     Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
+    Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
     Route::get('/order/{orderNumber}', [CheckoutController::class, 'getOrderByNumber']);
+    Route::get('/my-orders', [CheckoutController::class, 'myOrders']);
     Route::get('/account-settings', [ProfileController::class, 'getProfile']);
     Route::post('/user/update', [ProfileController::class, 'updateProfile']);
     Route::get('/user/address', [ProfileController::class, 'getAddress']);
     Route::post('/user/address', [ProfileController::class, 'updateAddress']);
-    Route::post('/user/address-mobile', [ProfileController::class, 'updateAddressMobile']); 
+    Route::post('/user/address-mobile', [ProfileController::class, 'updateAddressMobile']);
     Route::get('/user/notifications', [ProfileController::class, 'getNotificationSettings']);
     Route::post('/user/notifications', [ProfileController::class, 'updateNotificationSettings']);
     Route::post('/user/change-password', [ProfileController::class, 'updatePassword']);
@@ -211,7 +213,7 @@ Route::get('auctions/{id}', [AuctionController::class, 'api_show']);
     Route::get('/auctions', [AuctionController::class, 'getAuctionsByStatus']);
     Route::post('/payment-methods', [PaymentController::class, 'savePaymentMethod']);  // Save payment method
     Route::delete('/payment-methods/{id}', [PaymentController::class, 'deletePaymentMethod'])->middleware('auth:sanctum');
-Route::patch('/payment-methods/{id}', [PaymentController::class, 'updatePaymentMethod'])->middleware('auth:sanctum');
+    Route::patch('/payment-methods/{id}', [PaymentController::class, 'updatePaymentMethod'])->middleware('auth:sanctum');
 
     Route::get('/payment-methods', [PaymentController::class, 'getPaymentMethods']);   // List payment methods
     Route::post('/payment-methods/default', [PaymentController::class, 'setDefaultPaymentMethod']); // Set default
@@ -221,7 +223,7 @@ Route::patch('/payment-methods/{id}', [PaymentController::class, 'updatePaymentM
     Route::put('/payment-requests/{id}/status', [PaymentRequestController::class, 'updateStatus']); // Update status (Admin only)
 
     Route::get('/wallet', [WalletController::class, 'getWallet']);
-        Route::post('/wallet/deduct', [WalletController::class, 'deductMoney']);
+    Route::post('/wallet/deduct', [WalletController::class, 'deductMoney']);
     Route::post('/wallet/add', [WalletController::class, 'addMoney']);
     Route::get('/wallet/transactions', [WalletController::class, 'getTransactions']);
     Route::post('/wallet/stripe-payment', [WalletController::class, 'stripePayment']);
@@ -274,10 +276,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // });
 });
 
-Route::prefix('mobile')->name('api.auth.')->middleware(['auth:sanctum'])->group(function(){
-    
-    
+Route::prefix('mobile')->name('api.auth.')->middleware(['auth:sanctum'])->group(function () {
+
+
     Route::get('/user-profile', [ProfileController::class, 'getProfileMobile']);
-    
-    
+
+
 });

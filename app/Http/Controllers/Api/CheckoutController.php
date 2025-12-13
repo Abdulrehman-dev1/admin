@@ -497,4 +497,53 @@ class CheckoutController extends Controller
             'order' => $orderData,
         ]);
     }
+    /**
+     * Get all orders for the authenticated user
+     */
+    public function myOrders(Request $request)
+    {
+        $user = $request->user();
+
+        $orders = Order::where('user_id', $user->id)
+            ->with(['items.auction' => function ($query) {
+                $query->select('id', 'title', 'image', 'slug');
+            }])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Format orders
+        $formattedOrders = $orders->map(function ($order) {
+            $orderData = $order->toArray();
+            
+             // Format items
+            $orderData['items'] = $order->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'auction_id' => $item->auction_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'subtotal' => $item->subtotal,
+                    'product_name' => $item->auction->title ?? 'Product',
+                    'auction' => [
+                        'id' => $item->auction->id ?? null,
+                        'title' => $item->auction->title ?? 'Product',
+                        'image' => $item->auction->image ?? null,
+                        'slug' => $item->auction->slug ?? null,
+                    ],
+                ];
+            });
+
+             // Ensure receipt_image is properly formatted
+            if (isset($orderData['receipt_image']) && ($orderData['receipt_image'] === '0' || $orderData['receipt_image'] === 0 || empty($orderData['receipt_image']))) {
+                $orderData['receipt_image'] = null;
+            }
+            
+            return $orderData;
+        });
+
+        return response()->json([
+            'success' => true,
+            'orders' => $formattedOrders,
+        ]);
+    }
 }
