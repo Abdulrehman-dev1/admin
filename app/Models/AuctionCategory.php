@@ -8,20 +8,31 @@ use Illuminate\Support\Str;
 
 class AuctionCategory extends Model
 {
-    use HasFactory,SoftDeletes;
+    use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'image', 'parent_id','sub_category_id'];
+    protected $fillable = [
+        'name',
+        'image',
+        'parent_id',
+        'sub_category_id',
+        'meta_title',
+        'meta_description',
+        'seo_content',
+        'seo_short_content',
+        'schema_markup',
+        'slug'
+    ];
 
-   
-   protected static function booted()
-{
-    static::saving(function ($cat) {
-        if (empty($cat->slug)) {
-            $cat->slug = Str::slug($cat->name, '-');
-        }
-    });
-}
-   
+
+    protected static function booted()
+    {
+        static::saving(function ($cat) {
+            if (empty($cat->slug)) {
+                $cat->slug = Str::slug($cat->name, '-');
+            }
+        });
+    }
+
     // Parent category relation
     public function parentCategory()
     {
@@ -35,10 +46,10 @@ class AuctionCategory extends Model
     {
         return $this->subCategories()->with('childrenRecursive');
     }
-	public function subCategories()
+    public function subCategories()
     {
         return $this->hasMany(self::class, 'parent_id')
-                    ->whereNull('sub_category_id');
+            ->whereNull('sub_category_id');
     }
 
     // 3rd-level: child items (sub → children)
@@ -51,10 +62,10 @@ class AuctionCategory extends Model
     {
         return $this->image ? asset('storage/' . $this->image) : asset('assets/default-category.png');
     }
-  public function auctions()
-{
-    return $this->hasMany(\App\Models\Auction::class, 'category_id');
-}
+    public function auctions()
+    {
+        return $this->hasMany(\App\Models\Auction::class, 'category_id');
+    }
 
 }
 

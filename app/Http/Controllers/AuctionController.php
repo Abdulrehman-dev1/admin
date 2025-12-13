@@ -1730,13 +1730,45 @@ class AuctionController extends Controller
 
         // category filters
         if ($request->filled('category') && $request->input('category') != 'all') {
-            $categorySlug = $request->input('category');
-            $categoryId = AuctionCategory::where('slug', $categorySlug)->first();
-            $q->where(function ($subQuery) use ($categoryId) {
-                $subQuery->where('category_id', $categoryId->id)
-                    ->orWhere('sub_category_id', $categoryId->id)
-                    ->orWhere('child_category_id', $categoryId->id);
-            });
+            $input = $request->input('category');
+            \Log::info("AuctionFilter: Input category: " . $input);
+
+            // 1. Try finding by slug
+            $category = AuctionCategory::where('slug', $input)->first();
+
+            // 2. If not found and input is numeric, try finding by ID
+            if (!$category && is_numeric($input)) {
+                $category = AuctionCategory::find($input);
+            }
+
+            if ($category) {
+                // Category found - filter by it
+                $catId = $category->id;
+                \Log::info("AuctionFilter: Category Found: " . $category->name . " (ID: $catId)");
+
+                $q->where(function ($subQuery) use ($catId) {
+                    $subQuery->where('category_id', $catId)
+                        ->orWhere('sub_category_id', $catId)
+                        ->orWhere('child_category_id', $catId);
+                });
+            } else {
+                \Log::info("AuctionFilter: Category NOT Found for input: " . $input);
+                // Category not found - return empty result
+                $q->where('id', 0);
+            }
+        }
+
+        \Log::info("AuctionFilter: Query SQL: " . $q->toSql());
+        \Log::info("AuctionFilter: Bindings: ", $q->getBindings());
+
+        try {
+            $count = $q->clone()->count();
+            \Log::info("AuctionFilter: Matching Record Count: " . $count);
+            if ($count > 0) {
+                \Log::info("AuctionFilter: First Record ID: " . $q->clone()->first()->id);
+            }
+        } catch (\Exception $e) {
+            \Log::error("AuctionFilter: Error counting: " . $e->getMessage());
         }
 
         // NEW: brands filter (matches first word - partial match)

@@ -33,6 +33,22 @@
       @enderror
     </div>
 
+    {{-- Slug --}}
+    <div class="mb-3">
+      <label for="slug" class="form-label">Slug (Optional)</label>
+      <input 
+        type="text" 
+        name="slug" 
+        id="slug"
+        class="form-control @error('slug') is-invalid @enderror"
+        value="{{ old('slug', $category->slug ?? '') }}"
+      >
+      <div class="form-text">Leave empty to auto-generate from name.</div>
+      @error('slug')
+        <div class="invalid-feedback">{{ $message }}</div>
+      @enderror
+    </div>
+
     {{-- Parent --}}
     <div class="mb-3">
       <label for="parent_id" class="form-label">Parent Category (Optional)</label>
@@ -100,6 +116,68 @@
       @endif
     </div>
 
+    {{-- SEO Section --}}
+    <div class="card mb-4 mt-5">
+      <div class="card-header bg-light">
+          <h5 class="mb-0">SEO Configuration</h5>
+      </div>
+      <div class="card-body">
+          {{-- Meta Title --}}
+          <div class="mb-3">
+              <label for="meta_title" class="form-label">Meta Title</label>
+              <input type="text" name="meta_title" id="meta_title"
+                  class="form-control @error('meta_title') is-invalid @enderror"
+                  value="{{ old('meta_title', $category->meta_title ?? '') }}">
+              @error('meta_title')
+                  <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+          </div>
+
+          {{-- Meta Description --}}
+          <div class="mb-3">
+              <label for="meta_description" class="form-label">Meta Description</label>
+              <textarea name="meta_description" id="meta_description" rows="3"
+                  class="form-control rich-editor @error('meta_description') is-invalid @enderror">{{ old('meta_description', $category->meta_description ?? '') }}</textarea>
+              @error('meta_description')
+                  <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+          </div>
+
+          {{-- SEO Content --}}
+          <div class="mb-3">
+              <label for="seo_content" class="form-label">SEO Content (Displayed on Page)</label>
+              <textarea name="seo_content" id="seo_content" rows="5"
+                  class="form-control rich-editor @error('seo_content') is-invalid @enderror">{{ old('seo_content', $category->seo_content ?? '') }}</textarea>
+              <div class="form-text">This content will be displayed on the category page. Supports text.</div>
+              @error('seo_content')
+                  <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+          </div>
+
+          {{-- SEO Short Content --}}
+          <div class="mb-3">
+              <label for="seo_short_content" class="form-label">SEO Short Content</label>
+              <textarea name="seo_short_content" id="seo_short_content" rows="3"
+                  class="form-control rich-editor @error('seo_short_content') is-invalid @enderror">{{ old('seo_short_content', $category->seo_short_content ?? '') }}</textarea>
+              <div class="form-text">Short version of SEO content. Supports text.</div>
+              @error('seo_short_content')
+                  <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+          </div>
+
+          {{-- Schema Markup --}}
+          <div class="mb-3">
+              <label for="schema_markup" class="form-label">Schema Markup (JSON-LD)</label>
+              <textarea name="schema_markup" id="schema_markup" rows="5"
+                  class="form-control @error('schema_markup') is-invalid @enderror" style="font-family: monospace; font-size: 0.9em;">{{ old('schema_markup', $category->schema_markup ?? '') }}</textarea>
+              <div class="form-text">Paste valid JSON-LD schema here (without &lt;script&gt; tags logic, just the JSON object or array).</div>
+              @error('schema_markup')
+                  <div class="invalid-feedback">{{ $message }}</div>
+              @enderror
+          </div>
+      </div>
+    </div>
+
     <button type="submit" 
             class="btn {{ isset($category) ? 'btn-primary' : 'btn-success' }}">
       {{ isset($category) ? 'Update' : 'Create' }}
@@ -134,5 +212,37 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(console.error);
   });
 });
+</script>
+
+{{-- CKEditor Integration --}}
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+(function () {
+  const editors = [];
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  $$('.rich-editor').forEach(el => {
+    ClassicEditor.create(el, { })
+    .then(editor => {
+      // Sync on change
+      editor.model.document.on('change:data', () => {
+        el.value = editor.getData();
+      });
+      // Store reference
+      editors.push({ editor, el });
+    })
+    .catch(err => console.error('CKE init error:', err));
+  });
+
+  // Force sync on submit
+  const form = document.querySelector('form');
+  if (form) {
+    form.addEventListener('submit', () => {
+      editors.forEach(({ editor, el }) => {
+        el.value = editor.getData();
+      });
+    });
+  }
+})();
 </script>
 @endpush
