@@ -64,17 +64,11 @@ class UserController extends Controller
 
     public function create()
     {
-        // Option A: hard‑coded list
-        $roles = [
-            'admin',
-            'user',
-            // …add as needed
-        ];
+        $roles = \Spatie\Permission\Models\Role::pluck('name', 'name')->all();
 
         $user = new User();  // for old('role', $user->role ?? '')
         return view('users.create', compact('roles', 'user'));
     }
-
 
     /**
      * Store a newly created user in storage.
@@ -88,19 +82,16 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8',
             'phone' => 'required|string|max:20',
-            'role' => 'required|string|in:admin,user',
-            'country_id' => 'required|exists:countries,id',
-            'city_id' => 'required|exists:cities,id',
-            'address' => 'nullable|string|max:500',
+            'role' => 'required|string|exists:roles,name',
         ]);
 
         $data['password'] = bcrypt($data['password']);
 
         $user = User::create($data);
+        $user->assignRole($data['role']);
 
         return redirect()
             ->route('users.index')
@@ -125,7 +116,7 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        $roles = ['admin', 'user'];
+        $roles = \Spatie\Permission\Models\Role::pluck('name', 'name')->all();
         return view('users.create', compact('roles', 'user'));
     }
 
@@ -140,14 +131,10 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => "required|string|max:255|unique:users,username,{$user->id}",
             'email' => "required|email|max:255|unique:users,email,{$user->id}",
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|string|min:8',
             'phone' => 'required|string|max:20',
-            'role' => 'required|string|in:admin,user',
-            'country_id' => 'required|exists:countries,id',
-            'city_id' => 'required|exists:cities,id',
-            'address' => 'nullable|string|max:500',
+            'role' => 'required|string|exists:roles,name',
         ]);
 
         if (!empty($data['password'])) {
@@ -157,6 +144,7 @@ class UserController extends Controller
         }
 
         $user->update($data);
+        $user->syncRoles([$data['role']]);
 
         return redirect()
             ->route('users.index')

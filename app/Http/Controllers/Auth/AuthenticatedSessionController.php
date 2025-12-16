@@ -28,6 +28,34 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Get the authenticated user
+        $user = Auth::user();
+
+        // Define permission-to-route mapping in order of priority
+        $permissionRoutes = [
+            'dashboard-list' => 'dashboard',
+            'user-list' => 'users.index',
+            'role-list' => 'roles.index',
+            'auction-list' => 'auctions.index',
+            'category-list' => 'auction_categories.index',
+            'blog-list' => 'blogs.index',
+            'seo-list' => 'seo.index',
+            'scraper-list' => 'scraper.index',
+            'olx-scraper-list' => 'olx-scraper.index',
+            'slider-list' => 'sliders.index',
+            'order-list' => 'orders.index',
+            'wallet-list' => 'wallets.index',
+            'transaction-list' => 'transactions.index',
+        ];
+
+        // Find the first route the user has permission to access
+        foreach ($permissionRoutes as $permission => $route) {
+            if ($user->can($permission)) {
+                return redirect()->route($route);
+            }
+        }
+
+        // Fallback: if no permissions match, redirect to dashboard (will show 403 if no access)
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

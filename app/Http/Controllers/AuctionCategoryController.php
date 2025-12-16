@@ -282,7 +282,23 @@ class AuctionCategoryController extends Controller
             // ✅ Eager load ONLY subcategories that have active items (self or children)
             ->with([
                 'subCategories' => function ($q) {
-                    $q->where(function ($qq) {
+                    // Explicitly select all fields including SEO fields
+                    $q->select([
+                        'id',
+                        'name',
+                        'slug',
+                        'image',
+                        'parent_id',
+                        'sub_category_id',
+                        'meta_title',
+                        'meta_description',
+                        'seo_content',
+                        'seo_short_content',
+                        'schema_markup',
+                        'created_at',
+                        'updated_at'
+                    ])
+                        ->where(function ($qq) {
                         $qq->whereHas('auctions', function ($a) {
                             $a->where('status', 'active');
                         })
@@ -293,10 +309,26 @@ class AuctionCategoryController extends Controller
                         // ✅ Eager load ONLY child categories that have active items
                         ->with([
                             'childCategories' => function ($cq) {
-                                $cq->whereHas('auctions', function ($a) {
-                                    $a->where('status', 'active');
-                                });
-                            }
+                        // Explicitly select all fields including SEO fields
+                        $cq->select([
+                            'id',
+                            'name',
+                            'slug',
+                            'image',
+                            'parent_id',
+                            'sub_category_id',
+                            'meta_title',
+                            'meta_description',
+                            'seo_content',
+                            'seo_short_content',
+                            'schema_markup',
+                            'created_at',
+                            'updated_at'
+                        ])
+                            ->whereHas('auctions', function ($a) {
+                            $a->where('status', 'active');
+                        });
+                    }
                         ]);
                 },
             ])

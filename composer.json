@@ -16,6 +16,7 @@
         "onesignal/onesignal-php-api": "*@dev",
         "paypal/paypal-server-sdk": "^0.6.1",
         "paypal/rest-api-sdk-php": "^1.6",
+        "spatie/laravel-permission": "^6.24",
         "stripe/stripe-php": "^16.4",
         "twilio/sdk": "^8.3"
     },

@@ -23,170 +23,186 @@
 ">
 
                         <!-- Dashboard -->
-                        <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                            <a href="{{ route('dashboard') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('dashboard-list')
+                            <li class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                                <a href="{{ route('dashboard') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Dashboard</span>
                                     </span>
-                                    <span class="menu-bar__name">Dashboard</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
                         <!-- Scraper -->
-                        <li class="{{ request()->routeIs('scraper.*') ? 'active' : '' }}">
-                            <a href="{{ route('scraper.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path d="M1 2h14v2H1zM1 7h14v2H1zM1 12h14v2H1z" />
-                                        </svg>
+                        @can('scraper-list')
+                            <li class="{{ request()->routeIs('scraper.*') ? 'active' : '' }}">
+                                <a href="{{ route('scraper.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path d="M1 2h14v2H1zM1 7h14v2H1zM1 12h14v2H1z" />
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Property Scraper</span>
                                     </span>
-                                    <span class="menu-bar__name">Property Scraper</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
                         <!-- OLX Scraper -->
-                        <li class="{{ request()->routeIs('olx-scraper.*') ? 'active' : '' }}">
-                            <a href="{{ route('olx-scraper.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path d="M1 2h14v2H1zM1 7h14v2H1zM1 12h14v2H1z" />
-                                        </svg>
+                        @can('olx-scraper-list')
+                            <li class="{{ request()->routeIs('olx-scraper.*') ? 'active' : '' }}">
+                                <a href="{{ route('olx-scraper.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path d="M1 2h14v2H1zM1 7h14v2H1zM1 12h14v2H1z" />
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">OLX Scraper</span>
                                     </span>
-                                    <span class="menu-bar__name">OLX Scraper</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
-                        <!-- Auctions -->
-                        <li class="{{ request()->routeIs('auctions.*') ? 'active' : '' }}">
-                            <a href="{{ route('auctions.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('auction-list')
+                            <!-- Auctions -->
+                            <li class="{{ request()->routeIs('auctions.*') ? 'active' : '' }}">
+                                <a href="{{ route('auctions.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Auctions</span>
                                     </span>
-                                    <span class="menu-bar__name">Auctions</span>
-                                </span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('auctionstatus.*') ? 'active' : '' }}">
-                            <a href="{{ route('auctionstatus.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                                </a>
+                            </li>
+                        @endcan
+                        @can('auction-verification-list')
+                            <li class="{{ request()->routeIs('auctionstatus.*') ? 'active' : '' }}">
+                                <a href="{{ route('auctionstatus.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Lot Verification</span>
                                     </span>
-                                    <span class="menu-bar__name">Lot Verification</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
                         <!-- new -->
 
                         <!-- Slider -->
-                        <li class="{{ request()->routeIs('sliders.*') ? 'active' : '' }}">
-                            <a href="{{ route('sliders.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Slider SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('slider-list')
+                            <!-- Slider -->
+                            <li class="{{ request()->routeIs('sliders.*') ? 'active' : '' }}">
+                                <a href="{{ route('sliders.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Slider SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Slider</span>
                                     </span>
-                                    <span class="menu-bar__name">Slider</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
 
                         <!-- Auctions -->
-                        <li class="{{ request()->routeIs('auction_categories.*') ? 'active' : '' }}">
-                            <a href="{{ route('auction_categories.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('category-list')
+                            <!-- Auctions -->
+                            <li class="{{ request()->routeIs('auction_categories.*') ? 'active' : '' }}">
+                                <a href="{{ route('auction_categories.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Categories</span>
                                     </span>
-                                    <span class="menu-bar__name">Categories</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
 
                         <!-- Auctions 
     <li class="{{ request()->routeIs('faq_questions.*') ? 'active' : '' }}">
@@ -292,6 +308,7 @@
             </span>
         </a>
     </li> -->
+                        @role('admin')
                         <li class="{{ request()->routeIs('individual-verifications.index') ? 'active' : '' }}">
                             <a href="{{ route('individual-verifications.index') }}">
                                 <span class="menu-bar__text">
@@ -316,6 +333,8 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
+                        @role('admin')
                         <li class="{{ request()->routeIs('corporate-verifications.*') ? 'active' : '' }}">
                             <a href="{{ route('corporate-verifications.index') }}">
                                 <span class="menu-bar__text">
@@ -340,6 +359,7 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
                         <!--<div class="dropdown py-2">-->
                         <!--  <a-->
                         <!--    href="#"-->
@@ -404,6 +424,7 @@
                         <!--  </ul>-->
                         <!--</div>-->
 
+                        @role('admin')
                         <li class="">
                             <a href="{{ route('payment-requests-admin') }}">
                                 <span class="menu-bar__text">
@@ -424,8 +445,10 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
                         <!-- Payment Verification -->
+                        @role('admin')
                         <li class="{{ request()->routeIs('payment-verifications.*') ? 'active' : '' }}">
                             <a href="{{ route('payment-verifications.index') }}">
                                 <span class="menu-bar__text">
@@ -446,8 +469,10 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
                         <!-- Orders -->
+                        @role('admin')
                         <li class="{{ request()->routeIs('orders.*') ? 'active' : '' }}">
                             <a href="{{ route('orders.index') }}">
                                 <span class="menu-bar__text">
@@ -468,6 +493,7 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
                         <!-- Auctions -->
                         {{-- <li class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
@@ -547,32 +573,35 @@
                                 </span>
                             </a>
                         </li> --}}
-                        <!-- Auctions -->
-                        <li class="{{ request()->routeIs('blogs.*') ? 'active' : '' }}">
-                            <a href="{{ route('blogs.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('blog-list')
+                            <!-- Auctions -->
+                            <li class="{{ request()->routeIs('blogs.*') ? 'active' : '' }}">
+                                <a href="{{ route('blogs.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Blogs</span>
                                     </span>
-                                    <span class="menu-bar__name">Blogs</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
+                        @role('admin')
                         <li class="{{ request()->routeIs('referrals.*') ? 'active' : '' }}">
                             <a href="{{ route('referrals.index') }}">
                                 <span class="menu-bar__text">
@@ -598,7 +627,9 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
+                        @role('admin')
                         <!-- Buy Now Inquire -->
                         <li class="{{ request()->routeIs('buy-now-inquiries.*') ? 'active' : '' }}">
                             <a href="{{ route('buy-now-inquiries.index') }}">
@@ -625,81 +656,116 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
-                        <li class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
-                            <a href="{{ route('users.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                        @can('role-list')
+                            <li class="{{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                                <a href="{{ route('roles.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Roles Icon (using same as Dashboard for now or generic) -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Roles & Perms</span>
                                     </span>
-                                    <span class="menu-bar__name">User Management</span>
-                                </span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('utm_campaign_users.index') ? 'active' : '' }}">
-                            <a href="{{ route('utm_campaign_users.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                                </a>
+                            </li>
+                        @endcan
+                        @can('user-list')
+                            <li class="{{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                <a href="{{ route('users.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">User Management</span>
                                     </span>
-                                    <span class="menu-bar__name">UTM Campaign Users</span>
-                                </span>
-                            </a>
-                        </li>
-                        <li class="{{ request()->routeIs('seo.*') ? 'active' : '' }}">
-                            <a href="{{ route('seo.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
-                                                d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
-                                            </path>
-                                        </svg>
+                                </a>
+                            </li>
+                        @endcan
+                        @can('user-list')
+                            <li class="{{ request()->routeIs('utm_campaign_users.index') ? 'active' : '' }}">
+                                <a href="{{ route('utm_campaign_users.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">UTM Campaign Users</span>
                                     </span>
-                                    <span class="menu-bar__name">Seo Management</span>
-                                </span>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        @endcan
+                        @can('seo-list')
+                            <li class="{{ request()->routeIs('seo.*') ? 'active' : '' }}">
+                                <a href="{{ route('seo.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Seo Management</span>
+                                    </span>
+                                </a>
+                            </li>
+                        @endcan
+                        @role('admin')
                         <li class="{{ request()->routeIs('wallets.*') ? 'active' : '' }}">
                             <a href="{{ route('wallets.index') }}">
                                 <span class="menu-bar__text">
@@ -725,9 +791,11 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
 
 
+                        @role('admin')
                         <!-- Auctions -->
                         <li class="{{ request()->routeIs('transactions.*') ? 'active' : '' }}">
                             <a href="{{ route('transactions.index') }}">
@@ -754,6 +822,8 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
+                        @role('admin')
                         <li class="{{ request()->routeIs('promotions.*') ? 'active' : '' }}">
                             <a href="{{ route('promotions.index') }}">
                                 <span class="menu-bar__text">
@@ -779,6 +849,7 @@
                                 </span>
                             </a>
                         </li>
+                        @endrole
 
                         <!-- Auctions -->
                         <!-- <li class="">-->

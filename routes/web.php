@@ -6,7 +6,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\CargoTypeController;
-//use App\Http\Controllers\RoleController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionsController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AuctionController;
@@ -60,22 +60,22 @@ Route::get('/send-test-mail', function () {
 });
 
 
-Route::get('/scraper', [ScraperController::class, 'index'])->name('scraper.index');
-Route::post('/scraper/preview', [ScraperController::class, 'preview'])->name('scraper.preview');
-Route::post('/scraper/save', [ScraperController::class, 'save'])->name('scraper.save');
+Route::get('/scraper', [ScraperController::class, 'index'])->name('scraper.index')->middleware('permission:scraper-list');
+Route::post('/scraper/preview', [ScraperController::class, 'preview'])->name('scraper.preview')->middleware('permission:scraper-list');
+Route::post('/scraper/save', [ScraperController::class, 'save'])->name('scraper.save')->middleware('permission:scraper-list');
 
 // OLX Scraper Routes
-Route::get('/olx-scraper', [OlxScraperController::class, 'index'])->name('olx-scraper.index');
-Route::post('/olx-scraper/preview', [OlxScraperController::class, 'preview'])->name('olx-scraper.preview');
-Route::post('/olx-scraper/save', [OlxScraperController::class, 'save'])->name('olx-scraper.save');
+Route::get('/olx-scraper', [OlxScraperController::class, 'index'])->name('olx-scraper.index')->middleware('permission:olx-scraper-list');
+Route::post('/olx-scraper/preview', [OlxScraperController::class, 'preview'])->name('olx-scraper.preview')->middleware('permission:olx-scraper-list');
+Route::post('/olx-scraper/save', [OlxScraperController::class, 'save'])->name('olx-scraper.save')->middleware('permission:olx-scraper-list');
 
 // routes/web.php
 Route::middleware(['auth'])->group(function () {
-    Route::resource('blogs', BlogController::class);
+    Route::resource('blogs', BlogController::class)->middleware('permission:blog-list');
 });
 
 
-Route::prefix('referrals')->group(function () {
+Route::prefix('referrals')->middleware('permission:referral-list')->group(function () {
     Route::get('/', [ReferralController::class, 'index'])->name('referrals.index');
     Route::get('/{id}', [ReferralController::class, 'show'])->name('referrals.show');
 });
@@ -122,7 +122,7 @@ Route::post(
 )->name('property-verifications.decline');
 
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'permission:corporate-verification-list'])->group(function () {
     // Resource routes for index, create, store, show, edit, update, destroy
     Route::resource('corporate-verifications', CorporateVerificationController::class)
         ->names('corporate-verifications');
@@ -141,44 +141,128 @@ Route::middleware(['auth'])->group(function () {
         ->name('corporate-verifications.decline');
 });
 
-Route::middleware('auth')->group(function () {
-    // resource will auto-generate index, create, store, show, edit, update, destroy
+Route::get('/debug-perms', function () {
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    $user = auth()->user();
+    if (!$user)
+        return 'Not logged in';
+
+    // Auto-fix: If user has roles but NO permissions, assign default ones to the role
+    if ($user->roles->count() > 0 && $user->getAllPermissions()->isEmpty()) {
+        $role = $user->roles->first();
+        // Give basic permissions to see the panel
+        $permissions = \Spatie\Permission\Models\Permission::whereIn('name', [
+            'role-list',
+            'role-edit',
+            'user-list',
+            'permission-list'
+        ])->get();
+        if ($role && $permissions->count() > 0) {
+            $role->syncPermissions($permissions);
+            // Clear cache again after update
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+            $user->refresh();
+        }
+    }
+
+    return [
+        'user' => $user->name,
+        'roles' => $user->getRoleNames(),
+        'permissions' => $user->getAllPermissions()->pluck('name'),
+        'can_user_list' => $user->can('user-list'),
+        'can_role_list' => $user->can('role-list'),
+        'status' => 'Permissions attempt-fixed if they were empty.',
+    ];
+});
+
+Route::get('/debug-permissions-list', function () {
+    $permissions = \Spatie\Permission\Models\Permission::all(['id', 'name']);
+    return [
+        'total' => $permissions->count(),
+        'permissions' => $permissions->toArray()
+    ];
+});
+
+Route::get('/fix-admin-role', function () {
+    $adminUsers = \App\Models\User::where('role', 'admin')->get();
+    $adminRole = \Spatie\Permission\Models\Role::where('name', 'admin')->first();
+
+    foreach ($adminUsers as $user) {
+        $user->syncRoles(['admin']);
+    }
+
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+    return [
+        'message' => 'Admin role assigned to ' . $adminUsers->count() . ' users',
+        'users' => $adminUsers->pluck('name', 'email')
+    ];
+});
+
+Route::get('/clean-invalid-permissions', function () {
+    $validPermissionIds = \Spatie\Permission\Models\Permission::pluck('id')->toArray();
+    $roles = \Spatie\Permission\Models\Role::all();
+
+    foreach ($roles as $role) {
+        $currentPermissions = $role->permissions->pluck('id')->toArray();
+        $invalidPermissions = array_diff($currentPermissions, $validPermissionIds);
+
+        if (count($invalidPermissions) > 0) {
+            // Remove invalid permissions
+            \DB::table('role_has_permissions')
+                ->where('role_id', $role->id)
+                ->whereIn('permission_id', $invalidPermissions)
+                ->delete();
+        }
+    }
+
+    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+    return ['message' => 'Invalid permissions cleaned from all roles'];
+});
+
+Route::middleware(['auth'])->group(function () {
+    // Resource routes for index, create, store, show, edit, update, destroy
     Route::resource(
         'individual-verifications',
         IndividualVerificationController::class
-    );
+    )->middleware('permission:individual-verification-list');
     Route::get('payment-requests-admin', [App\Http\Controllers\PaymentRequestController::class, 'Adminindex'])
-        ->name('payment-requests-admin');
+        ->name('payment-requests-admin')->middleware('permission:payment-request-list');
     Route::get('wallets', [WalletController::class, 'index'])
-        ->name('wallets.index');
+        ->name('wallets.index')->middleware('permission:wallet-list');
     Route::put('wallets/{wallet}', [WalletController::class, 'update'])
-        ->name('wallets.update');
+        ->name('wallets.update')->middleware('permission:wallet-list');
     Route::put(
         'payment-requests/{payment_request}',
         [PaymentRequestController::class, 'update']
-    )->name('payment-requests.update');
+    )->name('payment-requests.update')->middleware('permission:payment-request-list');
 
     // Payment Verification Routes
-    Route::get('payment-verifications', [PaymentVerificationController::class, 'index'])
-        ->name('payment-verifications.index');
-    Route::get('payment-verifications/{id}', [PaymentVerificationController::class, 'show'])
-        ->name('payment-verifications.show');
-    Route::post('payment-verifications/{id}/approve', [PaymentVerificationController::class, 'approve'])
-        ->name('payment-verifications.approve');
-    Route::post('payment-verifications/{id}/decline', [PaymentVerificationController::class, 'decline'])
-        ->name('payment-verifications.decline');
+    Route::middleware('permission:payment-verification-list')->group(function () {
+        Route::get('payment-verifications', [PaymentVerificationController::class, 'index'])
+            ->name('payment-verifications.index');
+        Route::get('payment-verifications/{id}', [PaymentVerificationController::class, 'show'])
+            ->name('payment-verifications.show');
+        Route::post('payment-verifications/{id}/approve', [PaymentVerificationController::class, 'approve'])
+            ->name('payment-verifications.approve');
+        Route::post('payment-verifications/{id}/decline', [PaymentVerificationController::class, 'decline'])
+            ->name('payment-verifications.decline');
+    });
     // Receipt image route
     Route::get('receipts/{filename}', [PaymentVerificationController::class, 'receipt'])
         ->name('receipts.show')
         ->where('filename', '[A-Za-z0-9._-]+');
 
     // Orders Routes
-    Route::get('orders', [OrderController::class, 'index'])
-        ->name('orders.index');
-    Route::get('orders/{id}', [OrderController::class, 'show'])
-        ->name('orders.show');
-    Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
-        ->name('orders.update-status');
+    Route::middleware('permission:order-list')->group(function () {
+        Route::get('orders', [OrderController::class, 'index'])
+            ->name('orders.index');
+        Route::get('orders/{id}', [OrderController::class, 'show'])
+            ->name('orders.show');
+        Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
+            ->name('orders.update-status');
+    });
 });
 
 //Route::get('payment-requests-admin', [PaymentRequestController::class, 'Adminindex']);
@@ -231,29 +315,29 @@ Route::put('/auctionstatus/{id}', [AuctionStatusController::class, 'update'])
     ->name('auctionstatus.update');
 
 Route::resource('auctionstatus', AuctionStatusController::class)
-    ->only(['index', 'edit', 'update']);
+    ->only(['index', 'edit', 'update'])->middleware('permission:auction-verification-list');
 
 Route::prefix('admin')
     ->middleware('auth')
     ->group(function () {
-        Route::resource('seo', SeoController::class); //  use the imported class
+        Route::resource('seo', SeoController::class)->middleware('permission:seo-list'); //  use the imported class
     });
 
 
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'permission:dashboard-list'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])
         ->name('dashboard');
     // any other routes behind the login wall…
 });
 Route::get('/promotions', [PromotionController::class, 'index'])
-    ->name('promotions.index');
+    ->name('promotions.index')->middleware('permission:promotion-list');
 
 
 Route::get('/slider-categories/create', [SliderCategoryController::class, 'create'])->name('slider_categories.create');
 Route::post('/slider-categories', [SliderCategoryController::class, 'store'])->name('slider_categories.store');
 
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware('permission:identity-list')->group(function () {
     Route::get('/identities', [IdentityController::class, 'index'])->name('identities.index');
     Route::get('/identities/create', [IdentityController::class, 'create'])->name('identities.create');
     Route::post('/identities', [IdentityController::class, 'store'])->name('identities.store');
@@ -267,7 +351,7 @@ Route::prefix('admin')->group(function () {
 //     return view('index');
 // });
 
-Route::resource('sliders', SliderController::class);
+Route::resource('sliders', SliderController::class)->middleware('permission:slider-list');
 
 Route::get('/notification', function () {
     return view('notification.index');
@@ -301,30 +385,32 @@ Route::post('/verify-code', [AuthController::class, 'verifyCode']);
 Route::post('/updated/{user}', [UserController::class, 'updateStatus'])
     ->name('user.status.update');
 Route::middleware('auth')->group(function () {
-    //   Route::resource('roles', RoleController::class);
-    //   Route::get('users/{user}/roles', [RoleController::class, 'assignRoleForm'])->name('users.roles');
-    //   Route::post('users/{user}/roles', [RoleController::class, 'assignRole'])->name('users.roles.store');
-    //   Route::resource('permissions', PermissionsController::class);
+    Route::resource('roles', RoleController::class)->middleware('permission:role-list');
+    Route::get('users/{user}/roles', [RoleController::class, 'assignRoleForm'])->name('users.roles')->middleware('permission:role-edit');
+    Route::post('users/{user}/roles', [RoleController::class, 'assignRole'])->name('users.roles.store')->middleware('permission:role-edit');
+    Route::resource('permissions', PermissionsController::class)->middleware('permission:permission-list');
     Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSubcategories']);
     Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildern']);
-    Route::get('utm-campaign-users', [UserController::class, 'utmCampaign'])->name('utm_campaign_users.index');
-    Route::resource('users', UserController::class);
+    Route::get('utm-campaign-users', [UserController::class, 'utmCampaign'])->name('utm_campaign_users.index')->middleware('permission:user-list');
+    Route::resource('users', UserController::class)->middleware('permission:user-list');
     Route::get('/profile', [UserController::class, 'show'])->name('user.profile');
     Route::get('/profile/edit', [ProfileController::class, 'editProfile'])->name('user.profile.edit');
     Route::post('/profile/update', [ProfileController::class, 'updateProfile'])->name('user.profile.update');
-    Route::resource('auction_categories', AuctionCategoryController::class);
+    Route::resource('auction_categories', AuctionCategoryController::class)->middleware('permission:category-list');
     Route::resource('faq_questions', FaqQuestionController::class);
     Route::resource('testimonies', TestimonyController::class);
-    Route::resource('auctions', AuctionController::class);
+    Route::resource('auctions', AuctionController::class)->middleware('permission:auction-list');
     Route::resource('content-pages', ContentPageController::class);
     Route::resource('master-settings', MasterSettingController::class);
     Route::resource('createletters', CreateLetterController::class);
-    Route::resource('transactions', TransactionController::class);
+    Route::resource('transactions', TransactionController::class)->middleware('permission:transaction-list');
     Route::resource('emailtemplates', EmailTemplateController::class);
-    Route::get('buy-now-inquiries', [BuyNowInquiryController::class, 'index'])->name('buy-now-inquiries.index');
-    Route::get('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'show'])->name('buy-now-inquiries.show');
-    Route::post('buy-now-inquiries/{id}/update-status', [BuyNowInquiryController::class, 'updateStatus'])->name('buy-now-inquiries.update-status');
-    Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
+    Route::middleware('permission:buy-now-inquiry-list')->group(function () {
+        Route::get('buy-now-inquiries', [BuyNowInquiryController::class, 'index'])->name('buy-now-inquiries.index');
+        Route::get('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'show'])->name('buy-now-inquiries.show');
+        Route::post('buy-now-inquiries/{id}/update-status', [BuyNowInquiryController::class, 'updateStatus'])->name('buy-now-inquiries.update-status');
+        Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
+    });
 
     Route::get('/get-subcategories/{parent}', [AuctionCategoryController::class, 'getSubCategories']);
     Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'getChildCategories']);
