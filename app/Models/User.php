@@ -13,6 +13,7 @@ use App\Models\Country;
 use App\Models\Wallet;
 use App\Models\Address;
 use App\Models\IndividualVerification;
+use App\Models\CorporateVerification;
 use App\Models\NewNotification;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -112,6 +113,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(IndividualVerification::class);
     }
+
+    public function corporateVerification()
+    {
+        return $this->hasOne(CorporateVerification::class);
+    }
+
     public function NewNotification()
     {
         return $this->hasMany(NewNotification::class);

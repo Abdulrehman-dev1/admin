@@ -39,6 +39,11 @@ class DashboardController extends Controller
         $todayUserChangeCount = $this->getTodayUserChangeCount();
         $todayUserChangePercent = $this->getTodayUserChangePercent();
 
+        $verifiedUserCount = $this->getVerifiedUserCount();
+        $verifiedUserData = $this->getVerifiedUserMonthlyData();
+        $verifiedUserChangeCount = $this->getVerifiedUserChangeCount();
+        $verifiedUserChangePercent = $this->getVerifiedUserChangePercent();
+
         $topAuctions = $this->getTopAuctions();
 
         // — Last‑15‑day auction status series —
@@ -100,6 +105,12 @@ class DashboardController extends Controller
             'todayUserData' => $todayUserData,
             'todayUserChangeCount' => $todayUserChangeCount,
             'todayUserChangePercent' => $todayUserChangePercent,
+
+            // verified users
+            'verifiedUserCount' => $verifiedUserCount,
+            'verifiedUserData' => $verifiedUserData,
+            'verifiedUserChangeCount' => $verifiedUserChangeCount,
+            'verifiedUserChangePercent' => $verifiedUserChangePercent,
 
             // top auctions
             'topAuctions' => $topAuctions,
@@ -323,6 +334,61 @@ class DashboardController extends Controller
         $today = User::whereDate('created_at', Carbon::today())->count();
         $yesterday = User::whereDate('created_at', Carbon::yesterday())->count();
         return $yesterday > 0 ? round((($today - $yesterday) / $yesterday) * 100, 1) : 0;
+    }
+
+
+    // ────── Verified Users metrics ──────
+
+    protected function getVerifiedUserCount(): int
+    {
+        return User::where(function ($query) {
+            $query->whereHas('IndividualVerification', function ($q) {
+                $q->where('status', 'verified');
+            })->orWhereHas('corporateVerification', function ($q) {
+                $q->where('status', 'verified');
+            });
+        })->count();
+    }
+
+    protected function getVerifiedUserMonthlyData(): array
+    {
+        $year = Carbon::now()->year;
+        $data = [];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $count = User::where(function ($query) use ($year, $m) {
+                $query->whereHas('IndividualVerification', function ($q) use ($year, $m) {
+                    $q->where('status', 'verified')
+                        ->whereYear('created_at', $year)
+                        ->whereMonth('created_at', $m);
+                })->orWhereHas('corporateVerification', function ($q) use ($year, $m) {
+                    $q->where('status', 'verified')
+                        ->whereYear('created_at', $year)
+                        ->whereMonth('created_at', $m);
+                });
+            })->count();
+
+            $data[] = $count;
+        }
+
+        return $data;
+    }
+
+    protected function getVerifiedUserChangeCount(): int
+    {
+        $data = $this->getVerifiedUserMonthlyData();
+        $now = Carbon::now()->month;
+        $curr = $data[$now - 1] ?? 0;
+        $prev = $now > 1 ? ($data[$now - 2] ?? 0) : 0;
+        return $curr - $prev;
+    }
+
+    protected function getVerifiedUserChangePercent(): float
+    {
+        $change = $this->getVerifiedUserChangeCount();
+        $now = Carbon::now()->month;
+        $prev = $now > 1 ? ($this->getVerifiedUserMonthlyData()[$now - 2] ?? 0) : 0;
+        return $prev > 0 ? round(($change / $prev) * 100, 1) : 0;
     }
 
     // ────── Top 3 auctions by max bid ──────

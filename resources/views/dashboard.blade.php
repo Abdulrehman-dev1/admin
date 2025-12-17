@@ -15,7 +15,7 @@
     }
   </style>
   <div class="row nftmax-gap-30">
-    <div class="col-lg-3 col-md-6 col-12">
+    <div class="col-lg-4 col-md-6 col-12">
       <div class="nftmax-history mg-top-40">
         <div class="nftmax-history__main">
           <div class="nftmax-history__content">
@@ -43,7 +43,7 @@
 
 
     </div>
-    <div class="col-lg-3 col-md-6 col-12">
+    <div class="col-lg-4 col-md-6 col-12">
 
 
       <div class="nftmax-history mg-top-40">
@@ -71,7 +71,7 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-md-6 col-12">
+    <div class="col-lg-4 col-md-6 col-12">
 
       <div class="nftmax-history mg-top-40">
         <div class="nftmax-history__main">
@@ -98,7 +98,11 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-md-6 col-12">
+  </div>
+
+  <!-- Second Row: Today's Users and Verified Users -->
+  <div class="row nftmax-gap-30 mt-3">
+    <div class="col-lg-4 col-md-6 col-12">
       <div class="nftmax-history mg-top-40">
         <div class="nftmax-history__main">
           <div class="nftmax-history__content">
@@ -126,7 +130,34 @@
 
 
     </div>
+    <div class="col-lg-4 col-md-6 col-12">
+      <div class="nftmax-history mg-top-40">
+        <div class="nftmax-history__main">
+          <div class="nftmax-history__content">
+            <div class="nftmax-history__icon nftmax-history__icon-one">
+              <img src="{{ asset('img/history-icon-1.png') }}" alt="#">
+            </div>
+            <div class="nftmax-history__text">
+              <h4 class="nftmax-history__number">
+                <span class="number">{{ $verifiedUserCount }}</span>
+              </h4>
+              <p class="nftmax-history__text">Total Verified Users</p>
+              <p class="nftmax-history__amount {{ $verifiedUserChangeCount >= 0 ? '' : 'nftmax-history__amount-debit' }}">
+                {{ $verifiedUserChangeCount >= 0 ? '+' : '' }}{{ $verifiedUserChangeCount }}
+                ({{ $verifiedUserChangePercent }}%)
+              </p>
+            </div>
+          </div>
+          <div class="nftmax-history__canvas">
+            <div class="charts-main__one">
+              <canvas id="myChart_history_five"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
   <div class="row nftmax-gap-sq30 mt-3">
 
     <h2 class="fs">Top 3 Highest Bids</h2>
@@ -412,11 +443,11 @@
     const currentDay = currentDate.getDate();
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMonth = monthNames[currentDate.getMonth()];
-    
+
     for (let i = 1; i <= currentDay; i++) {
       todayUserLabels.push(currentMonth + ' ' + i);
     }
-    
+
     const todayUserData = @json($todayUserData);
 
     new Chart(ctxFour, {
@@ -452,6 +483,49 @@
         }
       }
     });
+
+    // Verified Users Chart (myChart_history_five)
+    const ctxFive = document
+      .getElementById('myChart_history_five')
+      .getContext('2d');
+
+    const verifiedUserLabels = @json($labels);
+    const verifiedUserData = @json($verifiedUserData);
+
+    new Chart(ctxFive, {
+      type: 'line',
+      data: {
+        labels: verifiedUserLabels,
+        datasets: [{
+          label: 'Verified Users',
+          data: verifiedUserData,
+          borderColor: '#27AE60',
+          tension: 0.5,
+          borderWidth: 4,
+          pointRadius: 5,
+          pointBackgroundColor: '#27AE60',
+          pointBorderColor: '#d5dff54f',
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            grid: { display: false, drawBorder: false },
+            ticks: { display: false }
+          },
+          y: {
+            grid: { display: false, drawBorder: false },
+            ticks: { display: false }
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          title: { display: false }
+        }
+      }
+    });
+
     const ctx = document
       .getElementById('myChart_three')
       .getContext('2d');

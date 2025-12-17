@@ -50,7 +50,10 @@
 @endswitch
 
           </td>
-          <td>{{ $cv->created_at->format('Y-m-d') }}</td>
+          <td>
+            {{ $cv->created_at ? $cv->created_at->format('d M Y') : 'N/A' }}<br>
+            <small class="text-muted">{{ $cv->created_at ? $cv->created_at->format('h:i A') : '' }}</small>
+          </td>
           <td>
             <a href="{{ route('corporate-verifications.edit', $cv->id) }}" class="btn btn-sm btn-info">Edit</a>
 

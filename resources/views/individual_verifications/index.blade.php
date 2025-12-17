@@ -13,6 +13,7 @@
                 <th>Name</th>
                 
                 <th>Status</th>
+                <th>Created At</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -54,6 +55,10 @@
   @endswitch
 </div>
 </td>
+                <td>
+                  {{ $item->created_at ? $item->created_at->format('d M Y') : 'N/A' }}<br>
+                  <small class="text-muted">{{ $item->created_at ? $item->created_at->format('h:i A') : '' }}</small>
+                </td>
                 <td>
       <a href="{{ route('individual-verifications.edit', $item->id) }}"
          class="btn btn-sm btn-info">
