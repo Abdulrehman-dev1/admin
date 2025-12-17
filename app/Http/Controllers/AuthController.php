@@ -78,12 +78,12 @@ class AuthController extends Controller
             // 1️⃣ Fetch Apple public keys
             $client = new GuzzleClient();
             $response = $client->get('https://appleid.apple.com/auth/keys');
-$keys = json_decode($response->getBody(), true);
+            $keys = json_decode($response->getBody(), true);
 
-$decoded = JWT::decode(
-    $request->identity_token,
-    JWK::parseKeySet($keys)
-);
+            $decoded = JWT::decode(
+                $request->identity_token,
+                JWK::parseKeySet($keys)
+            );
             // 3️⃣ Validate audience (Bundle ID)
             if ($decoded->aud !== 'com.xpertbid.app') {
                 return response()->json([
@@ -100,9 +100,22 @@ $decoded = JWT::decode(
                 ->where('provider_id', $appleId)
                 ->first();
 
-            // 5️⃣ If new Apple user → create
+            // 2️⃣ If not found, try find by email (VERY IMPORTANT)
+            if (!$user && $email) {
+                $user = User::where('email', $email)->first();
+
+                // If found by email, LINK Apple account
+                if ($user) {
+                    $user->update([
+                        'provider' => 'apple',
+                        'provider_id' => $appleId,
+                    ]);
+                }
+            }
+
+            // 3️⃣ If STILL not found → create new user
             if (!$user) {
-                // Referral code generation (same pattern as register)
+                // generate referral code
                 $baseName = 'appleuser';
                 $randomNum = rand(100, 999);
                 $referralCode = $baseName . $randomNum;
@@ -114,7 +127,7 @@ $decoded = JWT::decode(
 
                 $user = User::create([
                     'name' => 'Apple User',
-                    'email' => $email,
+                    'email' => $email, // safe now
                     'provider' => 'apple',
                     'provider_id' => $appleId,
                     'password' => Hash::make(Str::random(16)),
@@ -124,15 +137,12 @@ $decoded = JWT::decode(
                     'utm_campaign' => $request->utm_campaign,
                 ]);
 
-                Auth::login($user);
-                $token = $user->createToken('AppleRegister')->plainTextToken;
-
                 if ($email) {
                     Mail::to($user->email)->send(new UserSignupConfirmation());
                 }
                 Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
-                return response()->json([
+                    return response()->json([
                     'user' => $user,
                     'token' => $token,
                 ]);
