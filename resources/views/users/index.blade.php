@@ -203,7 +203,7 @@
           <th class="nftmax-table__column-2 nftmax-table__h2">Email</th>
           <th class="nftmax-table__column-3 nftmax-table__h3">Verification</th>
           <th class="nftmax-table__column-4 nftmax-table__h4">UTM Campaign</th>
-          <th class="nftmax-table__column-5 nftmax-table__h5">Block</th>
+          <th class="nftmax-table__column-5 nftmax-table__h5">Created At</th>
           <th class="nftmax-table__column-5 nftmax-table__h6">Actions</th>
         </tr>
       </thead>
@@ -229,23 +229,10 @@
               <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
             </td>
             <td class="nftmax-table__column-5 nftmax-table__data-5">
-              <form action="{{ route('user.status.update', $user) }}" method="POST" style="display:inline">
-                @csrf
-
-                @php
-                  // Checked when status == 'enable'
-                  $checked = $user->status === 'enable';
-                @endphp
-
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" id="statusSwitch{{ $user->id }}" name="status" {{ $checked ? 'checked' : '' }} onchange="this.form.submit()">
-                  <label class="form-check-label" for="statusSwitch{{ $user->id }}">
-                    {{ $checked ? 'On' : 'Off' }}
-                  </label>
-                </div>
-              </form>
-
-
+              <p class="nftmax-table__text">
+                {{ $user->created_at ? $user->created_at->format('d M Y') : 'N/A' }}<br>
+                <small class="text-muted">{{ $user->created_at ? $user->created_at->format('h:i A') : '' }}</small>
+              </p>
             </td>
             <td>
               <div class="nftmax__actions ">
@@ -262,7 +249,7 @@
           </tr>
         @empty
           <tr>
-            <td colspan="5" class="nftmax-table__no-data">No users found.</td>
+            <td colspan="6" class="nftmax-table__no-data">No users found.</td>
           </tr>
         @endforelse
       </tbody>

@@ -13,91 +13,102 @@ class DashboardController extends Controller
     public function index()
     {
         // — Core dashboard metrics —
-        $userCount              = $this->getUserCount();
-        $changeCount            = $this->getUserChangeCount();
-        $changePercent          = $this->getUserChangePercent();
-        $labels                 = $this->getMonthlyLabels();
-        $data                   = $this->getMonthlyRegistrationData();
+        $userCount = $this->getUserCount();
+        $changeCount = $this->getUserChangeCount();
+        $changePercent = $this->getUserChangePercent();
+        $labels = $this->getMonthlyLabels();
+        $data = $this->getMonthlyRegistrationData();
 
-        $productCount           = $this->getProductCount();
-        $productData            = $this->getProductMonthlyData();
-        $productChangeCount     = $this->getProductChangeCount();
-        $productChangePercent   = $this->getProductChangePercent();
+        $productCount = $this->getProductCount();
+        $productData = $this->getProductMonthlyData();
+        $productChangeCount = $this->getProductChangeCount();
+        $productChangePercent = $this->getProductChangePercent();
 
-        $featuredCount          = $this->getFeaturedCount();
-        $featuredData           = $this->getFeaturedMonthlyData();
-        $featuredChangeCount    = $this->getFeaturedChangeCount();
-        $featuredChangePercent  = $this->getFeaturedChangePercent();
+        $featuredCount = $this->getFeaturedCount();
+        $featuredData = $this->getFeaturedMonthlyData();
+        $featuredChangeCount = $this->getFeaturedChangeCount();
+        $featuredChangePercent = $this->getFeaturedChangePercent();
 
-        $walletTotal            = $this->getWalletTotal();
-        $walletData             = $this->getWalletMonthlyData();
-        $walletChangeCount      = $this->getWalletChangeCount();
-        $walletChangePercent    = $this->getWalletChangePercent();
+        $walletTotal = $this->getWalletTotal();
+        $walletData = $this->getWalletMonthlyData();
+        $walletChangeCount = $this->getWalletChangeCount();
+        $walletChangePercent = $this->getWalletChangePercent();
 
-        $topAuctions            = $this->getTopAuctions();
+        $todayUserCount = $this->getTodayUserCount();
+        $todayUserData = $this->getTodayUserMonthlyData();
+        $todayUserChangeCount = $this->getTodayUserChangeCount();
+        $todayUserChangePercent = $this->getTodayUserChangePercent();
+
+        $topAuctions = $this->getTopAuctions();
 
         // — Last‑15‑day auction status series —
-    $auctionLabels  = [];
-$activeSeries   = [];
-$wonSeries      = [];
-$inactiveSeries = [];
+        $auctionLabels = [];
+        $activeSeries = [];
+        $wonSeries = [];
+        $inactiveSeries = [];
 
-for ($i = 29; $i >= 0; $i--) {
-    $day   = Carbon::today()->subDays($i);
-    $date  = $day->toDateString();
-    $auctionLabels[] = $day->format('M j');
+        for ($i = 29; $i >= 0; $i--) {
+            $day = Carbon::today()->subDays($i);
+            $date = $day->toDateString();
+            $auctionLabels[] = $day->format('M j');
 
-    // 1) Active by status
-    $activeSeries[] = Auction::whereDate('created_at', $date)
-                             ->where('status', 'active')
-                             ->count();
+            // 1) Active by status
+            $activeSeries[] = Auction::whereDate('created_at', $date)
+                ->where('status', 'active')
+                ->count();
 
-    // 2) Won whenever winner_id is not null
-    $wonSeries[]    = Auction::whereDate('created_at', $date)
-                             ->whereNotNull('winner_id')
-                             ->count();
+            // 2) Won whenever winner_id is not null
+            $wonSeries[] = Auction::whereDate('created_at', $date)
+                ->whereNotNull('winner_id')
+                ->count();
 
-    // 3) Inactive = not active AND no winner
-    $inactiveSeries[] = Auction::whereDate('created_at', $date)
-                               ->where('status', '!=', 'active')
-                               ->whereNull('winner_id')
-                               ->count();
-}
+            // 3) Inactive = not active AND no winner
+            $inactiveSeries[] = Auction::whereDate('created_at', $date)
+                ->where('status', '!=', 'active')
+                ->whereNull('winner_id')
+                ->count();
+        }
 
         return view('dashboard', [
             // user
-            'userCount'          => $userCount,
-            'changeCount'        => $changeCount,
-            'changePercent'      => $changePercent,
-            'labels'             => $labels,
-            'data'               => $data,
+            'userCount' => $userCount,
+            'changeCount' => $changeCount,
+            'changePercent' => $changePercent,
+            'labels' => $labels,
+            'data' => $data,
 
             // products
-            'productCount'       => $productCount,
-            'productData'        => $productData,
+            'productCount' => $productCount,
+            'productData' => $productData,
             'productChangeCount' => $productChangeCount,
             'productChangePercent' => $productChangePercent,
 
             // featured
-            'featuredCount'        => $featuredCount,
-            'featuredData'         => $featuredData,
-            'featuredChangeCount'  => $featuredChangeCount,
-            'featuredChangePercent'=> $featuredChangePercent,
+            'featuredCount' => $featuredCount,
+            'featuredData' => $featuredData,
+            'featuredChangeCount' => $featuredChangeCount,
+            'featuredChangePercent' => $featuredChangePercent,
 
             // wallet
-            'walletTotal'          => $walletTotal,
-            'walletData'           => $walletData,
-            'walletChangeCount'    => $walletChangeCount,
-            'walletChangePercent'  => $walletChangePercent,
+            'walletTotal' => $walletTotal,
+            'walletData' => $walletData,
+            'walletChangeCount' => $walletChangeCount,
+            'walletChangePercent' => $walletChangePercent,
+
+            // today's users
+            'todayUserCount' => $todayUserCount,
+            'todayUserData' => $todayUserData,
+            'todayUserChangeCount' => $todayUserChangeCount,
+            'todayUserChangePercent' => $todayUserChangePercent,
 
             // top auctions
-            'topAuctions'          => $topAuctions,
+            'topAuctions' => $topAuctions,
 
             // auction status series
-             'auctionLabels'   => $auctionLabels,
-                'activeSeries'    => $activeSeries,
-                'wonSeries'       => $wonSeries,
-                'inactiveSeries'  => $inactiveSeries,
+            'auctionLabels' => $auctionLabels,
+            'activeSeries' => $activeSeries,
+            'wonSeries' => $wonSeries,
+            'inactiveSeries' => $inactiveSeries,
         ]);
     }
 
@@ -110,20 +121,20 @@ for ($i = 29; $i >= 0; $i--) {
 
     protected function getMonthlyLabels(): array
     {
-        return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     }
 
     protected function getMonthlyRegistrationData(): array
     {
         $year = Carbon::now()->year;
         $regs = User::select(
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('COUNT(*) as count')
-                )
-                ->whereYear('created_at', $year)
-                ->groupBy('month')
-                ->pluck('count','month')
-                ->toArray();
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('COUNT(*) as count')
+        )
+            ->whereYear('created_at', $year)
+            ->groupBy('month')
+            ->pluck('count', 'month')
+            ->toArray();
 
         $data = [];
         for ($m = 1; $m <= 12; $m++) {
@@ -135,7 +146,7 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getUserChangeCount(): int
     {
         $data = $this->getMonthlyRegistrationData();
-        $now  = Carbon::now()->month;
+        $now = Carbon::now()->month;
         $curr = $data[$now - 1] ?? 0;
         $prev = $now > 1 ? ($data[$now - 2] ?? 0) : 0;
         return $curr - $prev;
@@ -144,8 +155,8 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getUserChangePercent(): float
     {
         $change = $this->getUserChangeCount();
-        $now    = Carbon::now()->month;
-        $prev   = $now > 1 ? ($this->getMonthlyRegistrationData()[$now - 2] ?? 0) : 0;
+        $now = Carbon::now()->month;
+        $prev = $now > 1 ? ($this->getMonthlyRegistrationData()[$now - 2] ?? 0) : 0;
         return $prev > 0 ? round(($change / $prev) * 100, 1) : 0;
     }
 
@@ -160,13 +171,13 @@ for ($i = 29; $i >= 0; $i--) {
     {
         $year = Carbon::now()->year;
         $prods = Auction::select(
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('COUNT(*) as count')
-                )
-                ->whereYear('created_at', $year)
-                ->groupBy('month')
-                ->pluck('count','month')
-                ->toArray();
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('COUNT(*) as count')
+        )
+            ->whereYear('created_at', $year)
+            ->groupBy('month')
+            ->pluck('count', 'month')
+            ->toArray();
 
         $data = [];
         for ($m = 1; $m <= 12; $m++) {
@@ -178,7 +189,7 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getProductChangeCount(): int
     {
         $data = $this->getProductMonthlyData();
-        $now  = Carbon::now()->month;
+        $now = Carbon::now()->month;
         $curr = $data[$now - 1] ?? 0;
         $prev = $now > 1 ? ($data[$now - 2] ?? 0) : 0;
         return $curr - $prev;
@@ -187,8 +198,8 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getProductChangePercent(): float
     {
         $change = $this->getProductChangeCount();
-        $now    = Carbon::now()->month;
-        $prev   = $now > 1 ? ($this->getProductMonthlyData()[$now - 2] ?? 0) : 0;
+        $now = Carbon::now()->month;
+        $prev = $now > 1 ? ($this->getProductMonthlyData()[$now - 2] ?? 0) : 0;
         return $prev > 0 ? round(($change / $prev) * 100, 1) : 0;
     }
 
@@ -203,14 +214,14 @@ for ($i = 29; $i >= 0; $i--) {
     {
         $year = Carbon::now()->year;
         $feats = Auction::select(
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('COUNT(*) as count')
-                )
-                ->whereNotNull('featured_name')
-                ->whereYear('created_at', $year)
-                ->groupBy('month')
-                ->pluck('count','month')
-                ->toArray();
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('COUNT(*) as count')
+        )
+            ->whereNotNull('featured_name')
+            ->whereYear('created_at', $year)
+            ->groupBy('month')
+            ->pluck('count', 'month')
+            ->toArray();
 
         $data = [];
         for ($m = 1; $m <= 12; $m++) {
@@ -222,7 +233,7 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getFeaturedChangeCount(): int
     {
         $data = $this->getFeaturedMonthlyData();
-        $now  = Carbon::now()->month;
+        $now = Carbon::now()->month;
         $curr = $data[$now - 1] ?? 0;
         $prev = $now > 1 ? ($data[$now - 2] ?? 0) : 0;
         return $curr - $prev;
@@ -231,8 +242,8 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getFeaturedChangePercent(): float
     {
         $change = $this->getFeaturedChangeCount();
-        $now    = Carbon::now()->month;
-        $prev   = $now > 1 ? ($this->getFeaturedMonthlyData()[$now - 2] ?? 0) : 0;
+        $now = Carbon::now()->month;
+        $prev = $now > 1 ? ($this->getFeaturedMonthlyData()[$now - 2] ?? 0) : 0;
         return $prev > 0 ? round(($change / $prev) * 100, 1) : 0;
     }
 
@@ -246,14 +257,14 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getWalletMonthlyData(): array
     {
         $year = Carbon::now()->year;
-        $raw  = Wallet::select(
-                    DB::raw('MONTH(created_at) as month'),
-                    DB::raw('SUM(balance)     as total')
-                )
-                ->whereYear('created_at', $year)
-                ->groupBy('month')
-                ->pluck('total','month')
-                ->toArray();
+        $raw = Wallet::select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(balance)     as total')
+        )
+            ->whereYear('created_at', $year)
+            ->groupBy('month')
+            ->pluck('total', 'month')
+            ->toArray();
 
         $data = [];
         for ($m = 1; $m <= 12; $m++) {
@@ -265,7 +276,7 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getWalletChangeCount(): float
     {
         $data = $this->getWalletMonthlyData();
-        $now  = Carbon::now()->month;
+        $now = Carbon::now()->month;
         $curr = $data[$now - 1] ?? 0;
         $prev = $now > 1 ? ($data[$now - 2] ?? 0) : 0;
         return $curr - $prev;
@@ -274,9 +285,44 @@ for ($i = 29; $i >= 0; $i--) {
     protected function getWalletChangePercent(): float
     {
         $change = $this->getWalletChangeCount();
-        $now    = Carbon::now()->month;
-        $prev   = $now > 1 ? ($this->getWalletMonthlyData()[$now - 2] ?? 0) : 0;
+        $now = Carbon::now()->month;
+        $prev = $now > 1 ? ($this->getWalletMonthlyData()[$now - 2] ?? 0) : 0;
         return $prev > 0 ? round(($change / $prev) * 100, 1) : 0;
+    }
+
+    // ────── Today's User metrics ──────
+
+    protected function getTodayUserCount(): int
+    {
+        return User::whereDate('created_at', Carbon::today())->count();
+    }
+
+    protected function getTodayUserMonthlyData(): array
+    {
+        $year = Carbon::now()->year;
+        $dailyData = [];
+
+        // Get daily user counts for the current month
+        for ($day = 1; $day <= Carbon::now()->day; $day++) {
+            $date = Carbon::create($year, Carbon::now()->month, $day);
+            $dailyData[] = User::whereDate('created_at', $date)->count();
+        }
+
+        return $dailyData;
+    }
+
+    protected function getTodayUserChangeCount(): int
+    {
+        $today = User::whereDate('created_at', Carbon::today())->count();
+        $yesterday = User::whereDate('created_at', Carbon::yesterday())->count();
+        return $today - $yesterday;
+    }
+
+    protected function getTodayUserChangePercent(): float
+    {
+        $today = User::whereDate('created_at', Carbon::today())->count();
+        $yesterday = User::whereDate('created_at', Carbon::yesterday())->count();
+        return $yesterday > 0 ? round((($today - $yesterday) / $yesterday) * 100, 1) : 0;
     }
 
     // ────── Top 3 auctions by max bid ──────
