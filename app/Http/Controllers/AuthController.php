@@ -12,6 +12,9 @@ use App\Mail\UserSignupConfirmation;
 use App\Mail\AdminNewUserRegistration;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
+use Firebase\JWT\JWT;
+use Firebase\JWT\JWK;
+use GuzzleHttp\Client as GuzzleClient;
 use Google_Client;
 
 class AuthController extends Controller
@@ -62,6 +65,107 @@ class AuthController extends Controller
             'user' => $user,
             'token' => $token,
         ]);
+    }
+
+
+    public function appleLogin(Request $request)
+    {
+        $request->validate([
+            'identity_token' => 'required|string',
+        ]);
+
+        try {
+            // 1️⃣ Fetch Apple public keys
+            $client = new GuzzleClient();
+            $response = $client->get('https://appleid.apple.com/auth/keys');
+            $keys = json_decode($response->getBody(), true);
+
+            // 2️⃣ Decode & verify identity token
+            $decoded = JWT::decode(
+                $request->identity_token,
+                JWK::parseKeySet($keys),
+                ['RS256']
+            );
+
+            // 3️⃣ Validate audience (Bundle ID)
+            if ($decoded->aud !== 'com.xpertbid.app') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid Apple token audience'
+                ], 401);
+            }
+
+            $appleId = $decoded->sub;
+            $email = $decoded->email ?? null;
+
+            // 4️⃣ Find user by provider + provider_id
+            $user = User::where('provider', 'apple')
+                ->where('provider_id', $appleId)
+                ->first();
+
+            // 5️⃣ If new Apple user → create
+            if (!$user) {
+                // Referral code generation (same pattern as register)
+                $baseName = 'appleuser';
+                $randomNum = rand(100, 999);
+                $referralCode = $baseName . $randomNum;
+
+                while (User::where('referral_code', $referralCode)->exists()) {
+                    $randomNum = rand(100, 999);
+                    $referralCode = $baseName . $randomNum;
+                }
+
+                $user = User::create([
+                    'name' => 'Apple User',
+                    'email' => $email,
+                    'provider' => 'apple',
+                    'provider_id' => $appleId,
+                    'password' => Hash::make(Str::random(16)),
+                    'referral_code' => $referralCode,
+                    'utm_source' => $request->utm_source,
+                    'utm_medium' => $request->utm_medium,
+                    'utm_campaign' => $request->utm_campaign,
+                ]);
+
+                Auth::login($user);
+                $token = $user->createToken('AppleRegister')->plainTextToken;
+
+                if ($email) {
+                    Mail::to($user->email)->send(new UserSignupConfirmation());
+                }
+                Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
+
+                return response()->json([
+                    'user' => $user,
+                    'token' => $token,
+                ]);
+            }
+
+            // 6️⃣ Closed account check
+            if ($user->status === 'closed') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Account is closed. Please contact support'
+                ], 403);
+            }
+
+            // 7️⃣ Existing Apple user → login
+            $user->tokens()->delete();
+            Auth::login($user);
+            $token = $user->createToken('AuthToken')->plainTextToken;
+
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Apple login failed',
+                'details' => $e->getMessage(),
+            ], 401);
+        }
     }
 
 

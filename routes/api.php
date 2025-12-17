@@ -36,6 +36,9 @@ Route::get('/currencies', [CurrencyController::class, 'index']);
 Route::get('/blogs', [BlogApiController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogApiController::class, 'show']);
 
+
+Route::post('/apple-login', [AuthController::class, 'appleLogin']);
+
 Route::middleware('auth:sanctum')->post('/validate-referral', [ProfileController::class, 'validateReferral']);
 Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
     return $request->user();
