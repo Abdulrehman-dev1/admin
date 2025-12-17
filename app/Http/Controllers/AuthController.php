@@ -78,15 +78,12 @@ class AuthController extends Controller
             // 1️⃣ Fetch Apple public keys
             $client = new GuzzleClient();
             $response = $client->get('https://appleid.apple.com/auth/keys');
-            $keys = json_decode($response->getBody(), true);
+$keys = json_decode($response->getBody(), true);
 
-            // 2️⃣ Decode & verify identity token
-            $decoded = JWT::decode(
-                $request->identity_token,
-                JWK::parseKeySet($keys),
-                ['RS256']
-            );
-
+$decoded = JWT::decode(
+    $request->identity_token,
+    JWK::parseKeySet($keys)
+);
             // 3️⃣ Validate audience (Bundle ID)
             if ($decoded->aud !== 'com.xpertbid.app') {
                 return response()->json([
