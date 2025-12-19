@@ -16,16 +16,19 @@ class CartController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+
         $cartItems = Cart::where('user_id', $user->id)
-            ->with(['auction' => function ($query) {
-                $query->select('id', 'title', 'slug', 'image', 'minimum_bid', 'buy_now_price', 'is_buynow', 'list_type', 'status', 'description');
-            }])
+            ->with([
+                'auction' => function ($query) {
+                    $query->select('id', 'title', 'slug', 'image', 'minimum_bid', 'buy_now_price', 'is_buynow', 'list_type', 'status', 'description');
+                }
+            ])
             ->get()
             ->map(function ($cartItem) {
                 return [
                     'id' => $cartItem->id,
                     'auction_id' => $cartItem->auction_id,
+                    'type' => $cartItem->type,
                     'quantity' => $cartItem->quantity,
                     'price' => $cartItem->price,
                     'auction' => [
@@ -63,6 +66,7 @@ class CartController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'auction_id' => 'required|integer|exists:auctions,id',
+            'type' => 'nullable|string|in:product,featured',
         ]);
 
         if ($validator->fails()) {
@@ -79,6 +83,7 @@ class CartController extends Controller
         // Check if product is already in cart
         $existingCartItem = Cart::where('user_id', $user->id)
             ->where('auction_id', $auction->id)
+            ->where('type', $request->type ?? 'product')
             ->first();
 
         if ($existingCartItem) {
@@ -88,8 +93,13 @@ class CartController extends Controller
             ], 400);
         }
 
-        // Determine price - use buy_now_price if available, otherwise minimum_bid
-        $price = $auction->buy_now_price ?? $auction->minimum_bid ?? 0;
+        // Determine price
+        if ($request->type === 'featured') {
+            $price = 15000; // Fixed PKR base price for Featured Listing promotion (converted to 200 AED / 55 USD by frontend)
+        } else {
+            // use buy_now_price if available, otherwise minimum_bid for regular products
+            $price = $auction->buy_now_price ?? $auction->minimum_bid ?? 0;
+        }
 
         if ($price <= 0) {
             return response()->json([
@@ -101,6 +111,7 @@ class CartController extends Controller
         $cartItem = Cart::create([
             'user_id' => $user->id,
             'auction_id' => $auction->id,
+            'type' => $request->type ?? 'product',
             'quantity' => 1,
             'price' => $price,
         ]);
@@ -118,7 +129,7 @@ class CartController extends Controller
     public function remove(Request $request, $id)
     {
         $user = $request->user();
-        
+
         $cartItem = Cart::where('id', $id)
             ->where('user_id', $user->id)
             ->first();
@@ -156,7 +167,7 @@ class CartController extends Controller
         }
 
         $user = $request->user();
-        
+
         $cartItem = Cart::where('id', $id)
             ->where('user_id', $user->id)
             ->first();
@@ -185,7 +196,7 @@ class CartController extends Controller
     public function count(Request $request)
     {
         $user = $request->user();
-        
+
         $count = Cart::where('user_id', $user->id)->count();
 
         return response()->json([
@@ -200,7 +211,7 @@ class CartController extends Controller
     public function clear(Request $request)
     {
         $user = $request->user();
-        
+
         Cart::where('user_id', $user->id)->delete();
 
         return response()->json([

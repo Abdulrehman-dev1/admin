@@ -114,6 +114,8 @@ class CheckoutController extends Controller
             $orderData['items'] = json_decode($request->items, true);
         }
 
+        $hasPromotion = $orderData['has_promotion'] ?? false;
+
         $validator = Validator::make($orderData, [
             'items' => 'required|array|min:1',
             'items.*.auction_id' => 'required|integer|exists:auctions,id',
@@ -124,23 +126,23 @@ class CheckoutController extends Controller
             'billing_name' => 'required|string|max:255',
             'billing_email' => 'required|email|max:255',
             'billing_phone' => 'required|string|max:20',
-            'billing_address_line1' => 'required|string|max:500',
+            'billing_address_line1' => $hasPromotion ? 'nullable|string|max:500' : 'required|string|max:500',
             'billing_address_line2' => 'nullable|string|max:500',
-            'billing_city' => 'required|string|max:100',
-            'billing_state' => 'required|string|max:100',
-            'billing_postal_code' => 'required|string|max:20',
-            'billing_country' => 'required|string|max:100',
+            'billing_city' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
+            'billing_state' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
+            'billing_postal_code' => $hasPromotion ? 'nullable|string|max:20' : 'required|string|max:20',
+            'billing_country' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
 
             // Shipping Details
-            'shipping_name' => 'required|string|max:255',
-            'shipping_email' => 'required|email|max:255',
-            'shipping_phone' => 'required|string|max:20',
-            'shipping_address_line1' => 'required|string|max:500',
+            'shipping_name' => $hasPromotion ? 'nullable|string|max:255' : 'required|string|max:255',
+            'shipping_email' => $hasPromotion ? 'nullable|email|max:255' : 'required|email|max:255',
+            'shipping_phone' => $hasPromotion ? 'nullable|string|max:20' : 'required|string|max:20',
+            'shipping_address_line1' => $hasPromotion ? 'nullable|string|max:500' : 'required|string|max:500',
             'shipping_address_line2' => 'nullable|string|max:500',
-            'shipping_city' => 'required|string|max:100',
-            'shipping_state' => 'required|string|max:100',
-            'shipping_postal_code' => 'required|string|max:20',
-            'shipping_country' => 'required|string|max:100',
+            'shipping_city' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
+            'shipping_state' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
+            'shipping_postal_code' => $hasPromotion ? 'nullable|string|max:20' : 'required|string|max:20',
+            'shipping_country' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
 
             // Payment Details
             'payment_method' => 'required|in:stripe,cod,bank_transfer',
@@ -157,13 +159,6 @@ class CheckoutController extends Controller
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        // Validate receipt for bank transfer
-        if ($orderData['payment_method'] === 'bank_transfer' && !$request->hasFile('receipt_image')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment receipt is required for bank transfer',
-            ], 422);
-        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -307,38 +302,100 @@ class CheckoutController extends Controller
             } elseif ($orderData['payment_method'] === 'cod') {
                 $paymentStatus = 'pending';
             }
+            // SECURITY: Recalculate totals and enforce promotion prices on the backend
+            $calculatedSubtotal = 0;
+            $processedItems = [];
+            foreach ($orderData['items'] as $item) {
+                $itemPrice = (float) ($item['price'] ?? 0);
+                $itemType = $item['type'] ?? 'product';
+
+                // Force FREE price for promotions
+                if ($itemType === 'featured') {
+                    $itemPrice = 0; // FREE for now
+                }
+
+                $itemQuantity = (int) ($item['quantity'] ?? 1);
+                $itemSubtotal = $itemPrice * $itemQuantity;
+
+                $calculatedSubtotal += $itemSubtotal;
+
+                $processedItems[] = [
+                    'auction_id' => $item['auction_id'],
+                    'type' => $itemType,
+                    'quantity' => $itemQuantity,
+                    'price' => $itemPrice,
+                    'subtotal' => $itemSubtotal,
+                ];
+            }
+
+            // Update orderData with backend-verified items and totals
+            $orderData['items'] = $processedItems;
+            $orderData['subtotal'] = $calculatedSubtotal;
+            $orderData['tax'] = (float) ($orderData['tax'] ?? 0);
+            $orderData['shipping_cost'] = (float) ($orderData['shipping_cost'] ?? 0);
+            $orderData['total'] = $orderData['subtotal'] + $orderData['tax'] + $orderData['shipping_cost'];
+
+            // VALIDATION: Validate receipt for bank transfer (only if total > 0)
+            if ($orderData['payment_method'] === 'bank_transfer' && $orderData['total'] > 0 && !$request->hasFile('receipt_image')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Payment receipt is required for bank transfer',
+                ], 422);
+            }
+
+            // Determine payment status and order status
+            $paymentStatus = 'pending';
+            $orderStatus = 'pending';
+
+            if ($orderData['payment_method'] === 'stripe') {
+                $paymentStatus = 'paid';
+            } elseif ($orderData['payment_method'] === 'bank_transfer') {
+                $paymentStatus = 'pending';
+            } elseif ($orderData['payment_method'] === 'cod') {
+                $paymentStatus = 'pending';
+            }
+
+            // For Free Promotions: Auto-complete the order
+            if ($hasPromotion && $orderData['total'] <= 0) {
+                $paymentStatus = 'paid';
+                $orderStatus = 'completed';
+                if (!isset($orderData['payment_method']) || empty($orderData['payment_method'])) {
+                    $orderData['payment_method'] = 'free_promotion';
+                }
+            }
 
             // Create order
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => Order::generateOrderNumber(),
+                'is_promotion' => $hasPromotion,
                 'billing_name' => $orderData['billing_name'],
                 'billing_email' => $orderData['billing_email'],
                 'billing_phone' => $orderData['billing_phone'],
-                'billing_address_line1' => $orderData['billing_address_line1'],
+                'billing_address_line1' => $orderData['billing_address_line1'] ?? ($hasPromotion ? null : 'N/A'),
                 'billing_address_line2' => $orderData['billing_address_line2'] ?? null,
-                'billing_city' => $orderData['billing_city'],
-                'billing_state' => $orderData['billing_state'],
-                'billing_postal_code' => $orderData['billing_postal_code'],
-                'billing_country' => $orderData['billing_country'],
-                'shipping_name' => $orderData['shipping_name'],
-                'shipping_email' => $orderData['shipping_email'],
-                'shipping_phone' => $orderData['shipping_phone'],
-                'shipping_address_line1' => $orderData['shipping_address_line1'],
+                'billing_city' => $orderData['billing_city'] ?? ($hasPromotion ? null : 'N/A'),
+                'billing_state' => $orderData['billing_state'] ?? ($hasPromotion ? null : 'N/A'),
+                'billing_postal_code' => $orderData['billing_postal_code'] ?? ($hasPromotion ? null : 'N/A'),
+                'billing_country' => $orderData['billing_country'] ?? ($hasPromotion ? null : 'N/A'),
+                'shipping_name' => $orderData['shipping_name'] ?? $orderData['billing_name'],
+                'shipping_email' => $orderData['shipping_email'] ?? $orderData['billing_email'],
+                'shipping_phone' => $orderData['shipping_phone'] ?? $orderData['billing_phone'],
+                'shipping_address_line1' => $orderData['shipping_address_line1'] ?? ($hasPromotion ? null : 'N/A'),
                 'shipping_address_line2' => $orderData['shipping_address_line2'] ?? null,
-                'shipping_city' => $orderData['shipping_city'],
-                'shipping_state' => $orderData['shipping_state'],
-                'shipping_postal_code' => $orderData['shipping_postal_code'],
-                'shipping_country' => $orderData['shipping_country'],
+                'shipping_city' => $orderData['shipping_city'] ?? ($hasPromotion ? null : 'N/A'),
+                'shipping_state' => $orderData['shipping_state'] ?? ($hasPromotion ? null : 'N/A'),
+                'shipping_postal_code' => $orderData['shipping_postal_code'] ?? ($hasPromotion ? null : 'N/A'),
+                'shipping_country' => $orderData['shipping_country'] ?? ($hasPromotion ? null : 'N/A'),
                 'subtotal' => $orderData['subtotal'],
-                'tax' => $orderData['tax'] ?? 0,
-                'shipping_cost' => $orderData['shipping_cost'] ?? 0,
+                'tax' => $orderData['tax'],
+                'shipping_cost' => $orderData['shipping_cost'],
                 'total' => $orderData['total'],
                 'payment_method' => $orderData['payment_method'],
                 'payment_status' => $paymentStatus,
                 'transaction_id' => $orderData['transaction_id'] ?? $orderData['payment_intent_id'] ?? null,
                 'receipt_image' => $receiptImagePath,
-                'status' => 'pending',
+                'status' => $orderStatus,
                 'notes' => $orderData['notes'] ?? null,
             ]);
 
@@ -348,16 +405,29 @@ class CheckoutController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'auction_id' => $item['auction_id'],
+                    'type' => $item['type'] ?? 'product',
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
-                    'subtotal' => $item['price'] * $item['quantity'],
+                    'subtotal' => $item['subtotal'],
                 ]);
+
+                // Update Auction featured_name if it's a promotion
+                if (($item['type'] ?? 'product') === 'featured') {
+                    \App\Models\Auction::where('id', $item['auction_id'])
+                        ->update(['featured_name' => 'home_featured']);
+                }
+
                 $auctionIds[] = $item['auction_id'];
             }
 
-            // Close all auctions that were ordered
-            if (!empty($auctionIds)) {
-                Auction::whereIn('id', $auctionIds)->update(['status' => 'closed']);
+            // Close all auctions that were ordered (only products, not promotions)
+            $productAuctionIds = collect($orderData['items'])
+                ->filter(fn($item) => ($item['type'] ?? 'product') === 'product')
+                ->pluck('auction_id')
+                ->toArray();
+
+            if (!empty($productAuctionIds)) {
+                Auction::whereIn('id', $productAuctionIds)->update(['status' => 'closed']);
             }
 
             // Clear cart if items were from cart
@@ -505,17 +575,19 @@ class CheckoutController extends Controller
         $user = $request->user();
 
         $orders = Order::where('user_id', $user->id)
-            ->with(['items.auction' => function ($query) {
-                $query->select('id', 'title', 'image', 'slug');
-            }])
+            ->with([
+                'items.auction' => function ($query) {
+                    $query->select('id', 'title', 'image', 'slug');
+                }
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 
         // Format orders
         $formattedOrders = $orders->map(function ($order) {
             $orderData = $order->toArray();
-            
-             // Format items
+
+            // Format items
             $orderData['items'] = $order->items->map(function ($item) {
                 return [
                     'id' => $item->id,
@@ -533,11 +605,11 @@ class CheckoutController extends Controller
                 ];
             });
 
-             // Ensure receipt_image is properly formatted
+            // Ensure receipt_image is properly formatted
             if (isset($orderData['receipt_image']) && ($orderData['receipt_image'] === '0' || $orderData['receipt_image'] === 0 || empty($orderData['receipt_image']))) {
                 $orderData['receipt_image'] = null;
             }
-            
+
             return $orderData;
         });
 
