@@ -662,9 +662,83 @@ class AuctionController extends Controller
 
     public function bid(Request $request, $auctionId)
     {
-        $verificationResult = $this->checkVerificationGate('bid');
-        if ($verificationResult !== true) {
-            return $verificationResult;
+        // ------------------------------------------------------------
+        // Verification gate: allow if EITHER Individual OR Corporate is approved
+        // ------------------------------------------------------------
+        $userId = auth()->id();
+
+        $individual = IndividualVerification::where('user_id', $userId)->first();
+        $corporate = CorporateVerification::where('user_id', $userId)->first();
+
+        // helper closures
+        $isApproved = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['approved', 'verified'], true);
+        };
+        $isPending = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
+        };
+        $isRejected = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
+        };
+
+        $verificationUrl = 'https://xpertbid.com/account?tab=identity_verification';
+
+        // Case A: neither record exists
+        if (!$individual && !$corporate) {
+
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'You need to complete verification before placing a bid. Please verify your identity (individual or corporate).',
+                'verify_url' => $verificationUrl,
+                'which' => 'none',
+            ], 403);
+        }
+
+        // Case B: approved if either side approved
+        if ($isApproved($individual) || $isApproved($corporate)) {
+            // pass
+        } else {
+            // Not approved anywhere — tell most relevant state
+            if ($isPending($individual) || $isPending($corporate)) {
+
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification has been submitted and is currently pending review.',
+                    'verify_url' => $verificationUrl,
+                    'which' => $isPending($corporate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+
+            if ($isRejected($individual) || $isRejected($corporate)) {
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification was rejected. Please resubmit the required documents.',
+                    'verify_url' => $verificationUrl,
+                    'which' => $isRejected($corporate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+
+            // Fallback: some unknown status
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'Verification is not complete. Please complete verification to proceed.',
+                'verify_url' => $verificationUrl,
+                'which' => ($individual ? 'individual' : 'corporate'),
+                'debug_status' => [
+                    'individual' => $individual->status ?? null,
+                    'corporate' => $corporate->status ?? null,
+                ],
+            ], 403);
         }
 
         $user = auth()->user();
@@ -765,9 +839,83 @@ class AuctionController extends Controller
 
         $validatedData = $request->validate($rules, $messages);
 
-        $verificationResult = $this->checkVerificationGate('listing');
-        if ($verificationResult !== true) {
-            return $verificationResult;
+        // ------------------------------------------------------------
+        // 2) Verification gate: allow if EITHER Individual OR Corporate is approved
+        // ------------------------------------------------------------
+        $userId = auth()->id();
+
+        $individual = IndividualVerification::where('user_id', $userId)->first();
+        $corporate = CorporateVerification::where('user_id', $userId)->first();
+
+        // helper closures
+        $isApproved = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['approved', 'verified'], true);
+        };
+        $isPending = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
+        };
+        $isRejected = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
+        };
+
+        $verificationUrl = 'https://xpertbid.com/account?tab=identity_verification';
+
+        // Case A: neither record exists
+        if (!$individual && !$corporate) {
+
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'You need to complete verification before creating a listing. Please verify your identity (individual or corporate).',
+                'verify_url' => $verificationUrl,
+                'which' => 'none',
+            ], 403);
+        }
+
+        // Case B: approved if either side approved
+        if ($isApproved($individual) || $isApproved($corporate)) {
+            // pass
+        } else {
+            // Not approved anywhere — tell most relevant state
+            if ($isPending($individual) || $isPending($corporate)) {
+
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification has been submitted and is currently pending review.',
+                    'verify_url' => $verificationUrl,
+                    'which' => $isPending($corporate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+
+            if ($isRejected($individual) || $isRejected($corporate)) {
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification was rejected. Please resubmit the required documents.',
+                    'verify_url' => $verificationUrl,
+                    'which' => $isRejected($corporate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+
+            // Fallback: some unknown status
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'Verification is not complete. Please complete verification to proceed.',
+                'verify_url' => $verificationUrl,
+                'which' => ($individual ? 'individual' : 'corporate'),
+                'debug_status' => [
+                    'individual' => $individual->status ?? null,
+                    'corporate' => $corporate->status ?? null,
+                ],
+            ], 403);
         }
 
         // ------------------------------------------------------------
@@ -1904,79 +2052,5 @@ class AuctionController extends Controller
                 'message' => 'Failed to get draft: ' . $e->getMessage(),
             ], 500);
         }
-    }
-
-    private function checkVerificationGate($action = 'listing')
-    {
-        $userId = auth()->id();
-        $individual = IndividualVerification::where('user_id', $userId)->first();
-        $corporate = CorporateVerification::where('user_id', $userId)->first();
-
-        // helper closures
-        $isApproved = function ($rec) {
-            if (!$rec) return false;
-            return in_array(strtolower($rec->status), ['approved', 'verified'], true);
-        };
-        $isPending = function ($rec) {
-            if (!$rec) return false;
-            return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
-        };
-        $isRejected = function ($rec) {
-            if (!$rec) return false;
-            return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
-        };
-
-        $verificationUrl = 'https://xpertbid.com/account?tab=identity_verification';
-        $actionText = ($action === 'bid') ? 'placing a bid' : ($action === 'listing' ? 'creating or updating a listing' : 'proceeding');
-
-        // Case A: neither record exists
-        if (!$individual && !$corporate) {
-            return response()->json([
-                'success' => false,
-                'is_verified' => false,
-                'message' => "You need to complete verification before {$actionText}. Please verify your identity (individual or corporate).",
-                'verify_url' => $verificationUrl,
-                'which' => 'none',
-            ], 403);
-        }
-
-        // Case B: approved if either side approved
-        if ($isApproved($individual) || $isApproved($corporate)) {
-            return true;
-        }
-
-        // Case C: Not approved anywhere — tell most relevant state
-        if ($isPending($individual) || $isPending($corporate)) {
-            return response()->json([
-                'success' => false,
-                'is_verified' => false,
-                'message' => 'Your verification has been submitted and is currently pending review.',
-                'verify_url' => $verificationUrl,
-                'which' => $isPending($corporate) ? 'corporate' : 'individual',
-            ], 403);
-        }
-
-        if ($isRejected($individual) || $isRejected($corporate)) {
-            return response()->json([
-                'success' => false,
-                'is_verified' => false,
-                'message' => 'Your verification was rejected. Please resubmit the required documents.',
-                'verify_url' => $verificationUrl,
-                'which' => $isRejected($corporate) ? 'corporate' : 'individual',
-            ], 403);
-        }
-
-        // Fallback: some unknown status
-        return response()->json([
-            'success' => false,
-            'is_verified' => false,
-            'message' => 'Verification is not complete. Please complete verification to proceed.',
-            'verify_url' => $verificationUrl,
-            'which' => ($individual ? 'individual' : 'corporate'),
-            'debug_status' => [
-                'individual' => $individual->status ?? null,
-                'corporate' => $corporate->status ?? null,
-            ],
-        ], 403);
     }
 }
