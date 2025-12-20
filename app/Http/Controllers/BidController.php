@@ -37,94 +37,173 @@ class BidController extends Controller
             ]);
         }
     }
-    
-public function placeBid(Request $request)
-{
-    // 1) Validate input
-    $request->validate([
-        'auction_id' => 'required|exists:auctions,id',
-        'bid_amount' => 'required|numeric|min:1',
-    ], [
-        'bid_amount.required' => 'Please enter your bid amount.',
-        'bid_amount.numeric'  => 'Bid amount must be a valid number.',
-        'bid_amount.min'      => 'Your bid must be at least 1.',
-    ]);
 
-    $userId = auth()->id();
+    public function placeBid(Request $request)
+    {
+        // ------------------------------------------------------------
+        // Verification gate: allow if EITHER Individual OR Corporate is approved
+        // ------------------------------------------------------------
+        $userIdForGate = auth()->id();
 
-    // 2) Load auction and ensure active & not ended
-    $auction = Auction::findOrFail($request->auction_id);
+        $individualGate = IndividualVerification::where('user_id', $userIdForGate)->first();
+        $corporateGate = CorporateVerification::where('user_id', $userIdForGate)->first();
 
-    if ($auction->status !== 'active' || now()->greaterThan($auction->end_date)) {
-        return response()->json([
-            'success' => false,
-            'message' => 'This auction has ended or is no longer active.',
-        ], 400);
-    }
+        // helper closures
+        $isApprovedGate = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['approved', 'verified'], true);
+        };
+        $isPendingGate = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
+        };
+        $isRejectedGate = function ($rec) {
+            if (!$rec)
+                return false;
+            return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
+        };
 
-    // 3) Enforce min bid and strictly higher than current highest
-    $minBid = (float) ($auction->minimum_bid ?? 0);
+        $verificationUrlGate = 'https://xpertbid.com/account?tab=identity_verification';
 
-    $currentHighestBid = Bid::where('auction_id', $auction->id)
-        ->orderBy('bid_amount', 'desc')
-        ->first();
+        // Case A: neither record exists
+        if (!$individualGate && !$corporateGate) {
 
-    $newAmount = (float) $request->bid_amount;
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'You need to complete verification before placing a bid. Please verify your identity (individual or corporate).',
+                'verify_url' => $verificationUrlGate,
+                'which' => 'none',
+            ], 403);
+        }
 
-    if ($newAmount < $minBid) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Your bid must be greater than or equal to the minimum bid.',
-            'min_bid' => $minBid,
-        ], 400);
-    }
+        // Case B: approved if either side approved
+        if ($isApprovedGate($individualGate) || $isApprovedGate($corporateGate)) {
+            // pass
+        } else {
+            // Not approved anywhere — tell most relevant state
+            if ($isPendingGate($individualGate) || $isPendingGate($corporateGate)) {
 
-    if ($currentHighestBid && $newAmount <= (float) $currentHighestBid->bid_amount) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Your bid must be higher than the current highest bid.',
-            'current_highest' => (float) $currentHighestBid->bid_amount,
-        ], 400);
-    }
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification has been submitted and is currently pending review.',
+                    'verify_url' => $verificationUrlGate,
+                    'which' => $isPendingGate($corporateGate) ? 'corporate' : 'individual',
+                ], 403);
+            }
 
-    // 4) Create bid (no verification/wallet checks)
-    DB::beginTransaction();
-    try {
-        $bid = Bid::create([
-            'user_id'    => $userId,
-            'auction_id' => $auction->id,
-            'bid_amount' => $newAmount, // Expecting AED amount from frontend
+            if ($isRejectedGate($individualGate) || $isRejectedGate($corporateGate)) {
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification was rejected. Please resubmit the required documents.',
+                    'verify_url' => $verificationUrlGate,
+                    'which' => $isRejectedGate($corporateGate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+
+            // Fallback: some unknown status
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'Verification is not complete. Please complete verification to proceed.',
+                'verify_url' => $verificationUrlGate,
+                'which' => ($individualGate ? 'individual' : 'corporate'),
+                'debug_status' => [
+                    'individual' => $individualGate->status ?? null,
+                    'corporate' => $corporateGate->status ?? null,
+                ],
+            ], 403);
+        }
+
+        // 1) Validate input
+        $request->validate([
+            'auction_id' => 'required|exists:auctions,id',
+            'bid_amount' => 'required|numeric|min:1',
+        ], [
+            'bid_amount.required' => 'Please enter your bid amount.',
+            'bid_amount.numeric' => 'Bid amount must be a valid number.',
+            'bid_amount.min' => 'Your bid must be at least 1.',
         ]);
 
-        // Optional: notify or email
-        // $this->sendBidNotification($auction->id, $userId);
-        // Mail::to(auth()->user()->email)->send(new BidPlacedConfirmation(...));
+        $userId = auth()->id();
 
-        DB::commit();
+        // 2) Load auction and ensure active & not ended
+        $auction = Auction::findOrFail($request->auction_id);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Bid placed successfully!',
-            'bid_id'  => $bid->id,
-        ]);
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'An error occurred while processing your bid: ' . $e->getMessage(),
-        ], 500);
+        if ($auction->status !== 'active' || now()->greaterThan($auction->end_date)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This auction has ended or is no longer active.',
+            ], 400);
+        }
+
+        // 3) Enforce min bid and strictly higher than current highest
+        $minBid = (float) ($auction->minimum_bid ?? 0);
+
+        $currentHighestBid = Bid::where('auction_id', $auction->id)
+            ->orderBy('bid_amount', 'desc')
+            ->first();
+
+        $newAmount = (float) $request->bid_amount;
+
+        if ($newAmount < $minBid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your bid must be greater than or equal to the minimum bid.',
+                'min_bid' => $minBid,
+            ], 400);
+        }
+
+        if ($currentHighestBid && $newAmount <= (float) $currentHighestBid->bid_amount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Your bid must be higher than the current highest bid.',
+                'current_highest' => (float) $currentHighestBid->bid_amount,
+            ], 400);
+        }
+
+        // 4) Create bid (no verification/wallet checks)
+        DB::beginTransaction();
+        try {
+            $bid = Bid::create([
+                'user_id' => $userId,
+                'auction_id' => $auction->id,
+                'bid_amount' => $newAmount, // Expecting AED amount from frontend
+            ]);
+
+            // Optional: notify or email
+            // $this->sendBidNotification($auction->id, $userId);
+            // Mail::to(auth()->user()->email)->send(new BidPlacedConfirmation(...));
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bid placed successfully!',
+                'bid_id' => $bid->id,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing your bid: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-    
+
     public function sendBidNotification($auctionId, $currentUserId)
     {
         // Get auction details
         $auction = Auction::find($auctionId);
         // New highest bid for the auction
         $newHighestBid = Bid::where('auction_id', $auctionId)
-                            ->orderBy('bid_amount', 'desc')
-                            ->first()->bid_amount;
+            ->orderBy('bid_amount', 'desc')
+            ->first()->bid_amount;
         // Dashboard link for the user
         $dashboardLink = url('https://www.xpertbid.com/userDashboard');
 
@@ -140,18 +219,18 @@ public function placeBid(Request $request)
         foreach ($previousBidders as $bidderId) {
             // Create database notification
             NewNotification::create([
-                'user_id'    => $bidderId,
+                'user_id' => $bidderId,
                 'auction_id' => $auctionId,
-                'title'      => "Someone placed a higher bid than you in Auction #$auctionId",
-                'message'    => "Someone placed a higher bid than you in Auction #$auctionId",
-                'type'       => 'bid',
-                'image_url'  => '/assets/images/message-text.svg',
+                'title' => "Someone placed a higher bid than you in Auction #$auctionId",
+                'message' => "Someone placed a higher bid than you in Auction #$auctionId",
+                'type' => 'bid',
+                'image_url' => '/assets/images/message-text.svg',
             ]);
 
             // Get the highest bid amount that this bidder placed
             $userBidAmount = Bid::where('auction_id', $auctionId)
-                                ->where('user_id', $bidderId)
-                                ->max('bid_amount');
+                ->where('user_id', $bidderId)
+                ->max('bid_amount');
 
             // Retrieve bidder details
             $user = User::find($bidderId);

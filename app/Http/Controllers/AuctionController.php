@@ -631,7 +631,7 @@ class AuctionController extends Controller
     {
         $country = Country::where("sortname", $country_id)->first();
         if (!$country) {
-            return response()->json(['state' => $state, 'success' => false], 200);
+            return response()->json(['state' => [], 'success' => false], 200);
         }
         $state = State::where('country_id', $country->id)->get();
         return response()->json(['state' => $state, 'success' => true], 200);
@@ -646,7 +646,7 @@ class AuctionController extends Controller
     {
 
         if (!$state_id) {
-            return response()->json(['city' => $city, 'success' => false], 200);
+            return response()->json(['city' => [], 'success' => false], 200);
         }
 
         $city = City::where('state_id', $state_id)->get();
@@ -1094,9 +1094,72 @@ class AuctionController extends Controller
 
         $oldStatus = (string) ($auction->status ?? ''); // capture old status early
 
-        $verificationResult = $this->checkVerificationGate('listing');
-        if ($verificationResult !== true) {
-            return $verificationResult;
+        // 3) Unified verification gate (Individual OR Corporate)
+        $userIdForUpdate = auth()->id();
+        $individualUpdate = IndividualVerification::where('user_id', $userIdForUpdate)->first();
+        $corporateUpdate = CorporateVerification::where('user_id', $userIdForUpdate)->first();
+
+        $normUpdate = function ($rec) {
+            return strtolower($rec->status ?? '');
+        };
+        $isApprovedUpdate = function ($rec) use ($normUpdate) {
+            if (!$rec)
+                return false;
+            return in_array($normUpdate($rec), ['approved', 'verified'], true);
+        };
+        $isPendingUpdate = function ($rec) use ($normUpdate) {
+            if (!$rec)
+                return false;
+            return in_array($normUpdate($rec), ['pending', 'not_verified', 'submitted'], true);
+        };
+        $isRejectedUpdate = function ($rec) use ($normUpdate) {
+            if (!$rec)
+                return false;
+            return in_array($normUpdate($rec), ['rejected', 'declined'], true);
+        };
+
+        $verificationUrlUpdate = 'https://xpertbid.com/account?tab=identity_verification';
+
+        if (!$individualUpdate && !$corporateUpdate) {
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'You need to complete verification before updating a listing. Please verify your identity (individual or corporate).',
+                'verify_url' => $verificationUrlUpdate,
+                'which' => 'none',
+            ], 403);
+        }
+
+        if (!($isApprovedUpdate($individualUpdate) || $isApprovedUpdate($corporateUpdate))) {
+            if ($isPendingUpdate($individualUpdate) || $isPendingUpdate($corporateUpdate)) {
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification has been submitted and is currently pending review.',
+                    'verify_url' => $verificationUrlUpdate,
+                    'which' => $isPendingUpdate($corporateUpdate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+            if ($isRejectedUpdate($individualUpdate) || $isRejectedUpdate($corporateUpdate)) {
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Your verification was rejected. Please resubmit the required documents.',
+                    'verify_url' => $verificationUrlUpdate,
+                    'which' => $isRejectedUpdate($corporateUpdate) ? 'corporate' : 'individual',
+                ], 403);
+            }
+            return response()->json([
+                'success' => false,
+                'is_verified' => false,
+                'message' => 'Verification is not complete. Please complete verification to proceed.',
+                'verify_url' => $verificationUrlUpdate,
+                'which' => ($individualUpdate ? 'individual' : 'corporate'),
+                'debug_status' => [
+                    'individual' => $individualUpdate->status ?? null,
+                    'corporate' => $corporateUpdate->status ?? null,
+                ],
+            ], 403);
         }
 
         // 4) Album handling
