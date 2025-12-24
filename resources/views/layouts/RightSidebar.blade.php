@@ -140,6 +140,22 @@
                                 </a>
                             </li>
                         @endcan
+                        @role('admin')
+                            <li class="{{ request()->routeIs('bids.*') ? 'active' : '' }}">
+                                <a href="{{ route('bids.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M1 2h14v2H1zM1 7h14v2H1zM1 12h14v2H1z" />
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Bids</span>
+                                    </span>
+                                </a>
+                            </li>
+                        @endrole
 
                         <!-- new -->
 

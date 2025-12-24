@@ -41,11 +41,11 @@ class AuctionStatusController extends Controller
 
     return view('auctionstatus.index', compact('auctions', 'allowedStatuses'));
 }
-   public function edit($id)
+    public function edit($id)
 {
     // Auction + related user, category, property & vehicle details la lo
     $auction = \App\Models\Auction::with([
-        'user', // User relation
+        'user.IndividualVerification', // User relation with verification context
         'category', // Auction category
           'subCategory',
     'childCategory',

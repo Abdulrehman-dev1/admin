@@ -106,6 +106,15 @@
             <ul class="list-group mb-4">
                 <li class="list-group-item"><b>Name:</b> {{ $auction->user->name ?? '-' }}</li>
                 <li class="list-group-item"><b>Email:</b> {{ $auction->user->email ?? '-' }}</li>
+                <li class="list-group-item"><b>Phone:</b> 
+                    @if(!empty($auction->user->phone))
+                        {{ $auction->user->phone }}
+                    @elseif(!empty($auction->user->IndividualVerification->contact_number))
+                        {{ $auction->user->IndividualVerification->contact_number }}
+                    @else
+                        -
+                    @endif
+                </li>
             </ul>
 @if($auction->property_verification)
     <h5>Property Verification</h5>

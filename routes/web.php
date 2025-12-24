@@ -21,6 +21,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SliderController;
 use App\Http\Controllers\PaymentRequestController;
+use App\Http\Controllers\BidController;
 // routes/web.php
 use App\Http\Controllers\IdentityController;
 use App\Http\Controllers\SliderCategoryController;
@@ -219,6 +220,24 @@ Route::get('/clean-invalid-permissions', function () {
     app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
     return ['message' => 'Invalid permissions cleaned from all roles'];
+});
+
+Route::get('/fix-bids-permission', function () {
+    try {
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        
+        $permission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'bid-list']);
+        $adminRole = \Spatie\Permission\Models\Role::where('name', 'admin')->first();
+        
+        if ($adminRole) {
+            $adminRole->givePermissionTo($permission);
+            return 'Permission "bid-list" created and assigned to "admin" role. Please visit the Bids tab now.';
+        }
+        
+        return 'Admin role not found.';
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -448,6 +467,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}/{type}', [LocationController::class, 'update'])->name('locations.update');
         Route::delete('/{id}/{type}', [LocationController::class, 'destroy'])->name('locations.destroy');
     });
+
+    Route::get('bids', [BidController::class, 'index'])->name('bids.index');
+    Route::get('bids/{id}', [BidController::class, 'show'])->name('bids.show');
 });
 
 

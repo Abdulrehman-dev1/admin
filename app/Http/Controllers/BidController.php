@@ -242,4 +242,22 @@ class BidController extends Controller
         }
     }
 
+    public function index()
+    {
+        $bids = Bid::with(['user.IndividualVerification', 'auction'])->latest()->get();
+        return view('bids.index', compact('bids'));
+    }
+
+    public function show($id)
+    {
+        $bid = Bid::with(['user.IndividualVerification', 'auction.user'])->findOrFail($id);
+        
+        // All bids for this specific auction
+        $auctionBids = Bid::with('user.IndividualVerification')
+            ->where('auction_id', $bid->auction_id)
+            ->latest()
+            ->get();
+
+        return view('bids.show', compact('bid', 'auctionBids'));
+    }
 }
