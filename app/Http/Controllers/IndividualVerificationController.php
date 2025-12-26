@@ -12,10 +12,65 @@ use App\Mail\IndividualVerificationStatusUpdated;
 
 class IndividualVerificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Pull all verifications with related user
-        $verifications = IndividualVerification::with('user')->latest()->get();
+        $query = IndividualVerification::with('user');
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('full_legal_name', 'LIKE', "%$search%")
+                  ->orWhere('id', 'LIKE', "%$search%")
+                  ->orWhere('contact_number', 'LIKE', "%$search%")
+                  ->orWhere('email_address', 'LIKE', "%$search%")
+                  ->orWhereHas('user', function($uq) use ($search) {
+                      $uq->where('name', 'LIKE', "%$search%")
+                        ->orWhere('email', 'LIKE', "%$search%");
+                  });
+            });
+        }
+
+        // Date Range filtering
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Status filtering
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('full_legal_name', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('full_legal_name', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $verifications = $query->paginate(15)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('individual_verifications.table_partial', compact('verifications'))->render();
+        }
+
         return view('individual_verifications.index', compact('verifications'));
     }
 

@@ -1,101 +1,293 @@
 @extends('layouts.app')
 
-@section('title', 'Roles List')
-
+@section('content')
 <style>
-    .btn-add-role:hover {
-        background: linear-gradient(135deg, #4144D9 0%, #5356FB 100%) !important;
+    /* Compact Pagination Styles */
+    .pagination {
+      display: flex;
+      padding-left: 0;
+      list-style: none;
+      justify-content: center;
+      gap: 4px;
+    }
+    .page-item .page-link {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px !important;
+      border: 1px solid #eee;
+      color: #5356FB;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s;
+      background: #fff;
+    }
+    .page-item.active .page-link {
+      background: #5356FB !important;
+      color: #fff !important;
+      border-color: #5356FB !important;
+    }
+    .page-item.disabled .page-link {
+      color: #ccc;
+    }
+    nav .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between > div:first-child,
+    nav .d-flex.justify-content-between.flex-fill.d-sm-none {
+        display: none !important;
+    }
+    nav[role="navigation"] {
+        width: auto !important;
+    }
+
+    /* Modern & Compact Filter Card */
+    .nftmax-filter-card {
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+    .filter-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #878F9A;
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .nftmax-filter-input {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #E3E4E8;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374557;
+      transition: all 0.2s;
+      background-color: #FAFAFB;
+      width: 100%;
+    }
+    .nftmax-filter-input:focus {
+      border-color: #5356FB;
+      background-color: #fff;
+      box-shadow: 0 0 0 3px rgba(83, 86, 251, 0.05);
+      outline: none;
+    }
+    select.nftmax-filter-input {
+       appearance: none;
+       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%235356FB' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+       background-repeat: no-repeat;
+       background-position: right 12px center;
+    }
+    
+    .btn-filter-submit {
+      height: 40px;
+      background: #5356FB;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      padding: 0 24px;
+    }
+    .btn-filter-submit:hover { background: #4245e0; }
+    .btn-filter-reset {
+      height: 40px;
+      background: #F3F4F6;
+      border: none;
+      color: #374557;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      text-decoration: none;
+      padding: 0 20px;
+    }
+
+    /* Advanced Table Styles */
+    .nftmax-table {
+        border-collapse: separate !important;
+        border-spacing: 0 8px !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
+    }
+    .nftmax-table thead th {
+        background: transparent !important;
+        border: none !important;
+        color: #878F9A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 1px;
+        padding: 12px 20px !important;
+    }
+    .nftmax-table tbody tr {
+        background: #fff !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .nftmax-table tbody tr:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(83, 86, 251, 0.4) !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        background: #fcfcfd !important;
     }
-
-    .btn-add-role:active {
-        transform: translateY(0);
+    .nftmax-table td {
+        border: none !important;
+        padding: 15px 20px !important;
+        vertical-align: middle !important;
     }
+    .nftmax-table td:first-child { border-radius: 10px 0 0 10px !important; }
+    .nftmax-table td:last-child { border-radius: 0 10px 10px 0 !important; }
 
-    .btn-primary:hover {
-        background: #4144D9 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(83, 86, 251, 0.3);
+    /* Action Icons */
+    .action-icon {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        color: #5356FB;
+        background: rgba(83, 86, 251, 0.1);
+        border: none;
     }
+    .action-icon:hover { background: #5356FB; color: #fff; }
+    .action-icon.edit { color: #FFB800; background: rgba(255, 184, 0, 0.1); }
+    .action-icon.edit:hover { background: #FFB800; color: #fff; }
 
-    .btn-danger:hover {
-        background: #DC2626 !important;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    /* Add Button Premium */
+    .btn-add-premium {
+      height: 40px;
+      background: linear-gradient(135deg, #5356FB 0%, #6366F1 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      padding: 0 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(83, 86, 251, 0.2);
+      text-decoration: none;
+      font-size: 13px;
     }
-
-    .btn-primary:active,
-    .btn-danger:active {
-        transform: translateY(0);
+    .btn-add-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(83, 86, 251, 0.3);
+      color: white;
     }
 </style>
 
-@section('content')
-    <div class="nftmax-table mg-top-40">
-        <div class="nftmax__container">
-            <div class="nftmax-table__heading">
-                <h3 class="nftmax-table__title mb-0">Roles List</h3>
-                <a href="{{ route('roles.create') }}" class="btn-add-role"
-                    style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #5356FB 0%, #6366F1 100%); color: white; border: none; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; transition: all 0.3s; box-shadow: 0 2px 8px rgba(83, 86, 251, 0.2);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add Role
-                </a>
-            </div>
-            <table id="nftmax-table__main" class="nftmax-table__main nftmax-table__product-history">
-                <thead class="nftmax-table__head">
-                    <tr>
-                        <th class="nftmax-table__h1">#</th>
-                        <th class="nftmax-table__h2">Role Name</th>
-                        <th class="nftmax-table__h3">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="nftmax-table__body">
-                    @forelse ($roles as $index => $role)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $role->name }}</td>
-                            <td>
-                                <div style="display: flex; gap: 8px;">
-                                    <a href="{{ route('roles.edit', $role->id) }}" class="btn btn-sm btn-primary"
-                                        style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #5356FB; color: white; border: none; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.2s;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                        Edit
-                                    </a>
-                                    <form action="{{ route('roles.destroy', $role->id) }}" method="POST"
-                                        style="display: inline;"
-                                        onsubmit="return confirm('Are you sure you want to delete this role?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger"
-                                            style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #EF4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s;">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path
-                                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                                </path>
-                                            </svg>
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="nftmax-table__no-data">No roles found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+<div class="container">
+    <div class="row align-items-center mb-3">
+        <div class="col">
+            <h1 class="h4 mb-0" style="font-weight: 800; color: #1A1D2F;">Roles Management</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ route('roles.create') }}" class="btn-add-premium">
+                <i class="fas fa-plus"></i> Add New Role
+            </a>
         </div>
     </div>
+
+    <!-- Compact Filter Form -->
+    <div class="card nftmax-filter-card">
+        <div class="card-body p-3">
+            <form id="filterForm" action="{{ route('roles.index') }}" method="GET">
+                <div class="row g-2 mb-3">
+                    <div class="col-lg-8 col-md-6">
+                        <label class="filter-group-label">Search Roles</label>
+                        <input type="text" name="search" class="form-control nftmax-filter-input" placeholder="Role Name..." value="{{ request('search') }}" autocomplete="off">
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <label class="filter-group-label">Sort By</label>
+                        <select name="sort" class="form-select nftmax-filter-input">
+                            <option value="newest_to_oldest" {{ request('sort') == 'newest_to_oldest' ? 'selected' : '' }}>Newest Created</option>
+                            <option value="oldest_to_newest" {{ request('sort') == 'oldest_to_newest' ? 'selected' : '' }}>Oldest Created</option>
+                            <option value="a_to_z" {{ request('sort') == 'a_to_z' ? 'selected' : '' }}>Name: A to Z</option>
+                            <option value="z_to_a" {{ request('sort') == 'z_to_a' ? 'selected' : '' }}>Name: Z to A</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-filter-submit">Apply Filters</button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('roles.index') }}" class="btn btn-filter-reset">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 10px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    @endif
+
+    <div id="roles-table-container">
+        <div class="table-responsive">
+            @include('roles.table_partial')
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        const container = $('#roles-table-container');
+
+        // Manual Filter on Form Submit
+        $('#filterForm').on('submit', function(e) {
+            e.preventDefault();
+            fetchRoles();
+        });
+
+        function fetchRoles() {
+            const formData = $('#filterForm').serialize();
+            const url = "{{ route('roles.index') }}?" + formData;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                }
+            });
+        }
+
+        // Handle pagination clicks via AJAX
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+    });
+</script>
 @endsection

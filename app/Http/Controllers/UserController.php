@@ -18,15 +18,52 @@ class UserController extends Controller
     {
         $query = User::with('IndividualVerification');
 
-        if ($request->has('date_from') && $request->date_from != '') {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->has('date_to') && $request->date_to != '') {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%$search%")
+                  ->orWhere('email', 'LIKE', "%$search%")
+                  ->orWhere('phone', 'LIKE', "%$search%")
+                  ->orWhere('id', 'LIKE', "%$search%");
+            });
         }
 
-        $users = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
-        //dd($users);
+        // Date Range (Join Date)
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $users = $query->paginate(10)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('users.table_partial', compact('users'))->render();
+        }
+
         return view('users.index', compact('users'));
     }
 
@@ -39,16 +76,53 @@ class UserController extends Controller
     {
         $query = User::with('IndividualVerification')->whereNotNull('utm_campaign');
 
-        if ($request->has('date_from') && $request->date_from != '') {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->has('date_to') && $request->date_to != '') {
-            $query->whereDate('created_at', '<=', $request->date_to);
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', "%$search%")
+                  ->orWhere('email', 'LIKE', "%$search%")
+                  ->orWhere('phone', 'LIKE', "%$search%")
+                  ->orWhere('id', 'LIKE', "%$search%");
+            });
         }
 
-        $users = $query->orderBy('id', 'desc')->paginate(10)->withQueryString();
+        // Date Range (Join Date)
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
         $pageTitle = 'UTM Campaign Users';
         $filterRoute = route('utm_campaign_users.index');
+
+        if ($request->ajax()) {
+            return view('users.table_partial', compact('users'))->render();
+        }
 
         return view('users.index', compact('users', 'pageTitle', 'filterRoute'));
     }

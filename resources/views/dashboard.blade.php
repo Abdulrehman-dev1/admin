@@ -1,592 +1,343 @@
 @extends('layouts.app')
+
 @section('content')
-  <style>
-    .nftmax-body {
-      background: transparent !important;
-      padding: 30px;
-      padding-top: 0px !important;
-      border-radius: 15px;
-      box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.00);
-      margin-top: 0px !important;
+<style>
+    /* Premium Dashboard Styles from previous iteration + New Specifics */
+    :root {
+        --primary-indigo: #6366F1;
+        --success-emerald: #10B981;
+        --bg-color: #F3F4F6;
+        --card-bg: #ffffff;
+        --text-dark: #1F2937;
+        --text-light: #6B7280;
+    }
+    
+    body { background-color: var(--bg-color); }
+    
+    .dashboard-container { padding: 30px; }
+
+    /* 6 Boxes Grid */
+    .stat-box {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .stat-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-light);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 5px;
+    }
+    .stat-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 10px;
+    }
+    .stat-chart-container {
+        height: 60px; /* Small height for mini graphs */
+        width: 100%;
     }
 
-    .fs {
-      font-size: 40px !important;
+    /* Top 3 Bids Product Card */
+    .product-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.2s;
+        border: 1px solid #E5E7EB;
+        height: 100%;
     }
-  </style>
-  <div class="row nftmax-gap-30">
-    <div class="col-lg-4 col-md-6 col-12">
-      <div class="nftmax-history mg-top-40">
-        <div class="nftmax-history__main">
-          <div class="nftmax-history__content">
-            <div class="nftmax-history__icon nftmax-history__icon-three">
-              <img src="{{ asset('img/history-icon-3.png') }}" alt="#">
+    .product-card:hover { transform: translateY(-5px); }
+    .product-img-wrapper {
+        height: 180px;
+        position: relative;
+    }
+    .product-img-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .product-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.9);
+        color: var(--primary-indigo);
+    }
+    .product-details { padding: 15px; }
+    .product-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-dark);
+        margin-bottom: 5px;
+        white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .highest-bid-label { font-size: 12px; color: var(--text-light); }
+    .highest-bid-val { font-size: 18px; font-weight: 800; color: #10B981; }
+
+    /* Large Graph Section */
+    .large-graph-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-top: 30px;
+    }
+    .filter-btn-group .btn {
+        border-radius: 20px;
+        padding: 6px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-right: 5px;
+    }
+    .filter-btn-group .btn-active {
+        background-color: var(--primary-indigo);
+        color: #fff;
+    }
+    .filter-btn-group .btn-inactive {
+        background-color: #F3F4F6;
+        color: var(--text-light);
+    }
+</style>
+
+<div class="dashboard-container">
+    
+    <!-- Row 1: 6 Metric Boxes (3 per row) -->
+    <div class="row g-4 mb-5">
+        <!-- 1. Total Users -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                <div>
+                    <div class="stat-title">Total Users</div>
+                    <div class="stat-value">{{ $userCount }}</div>
+                </div>
+                <div id="chartUsers" class="stat-chart-container"></div>
             </div>
-            <div class="nftmax-history__text">
-              <h4 class="nftmax-history__number">
-                <span class="number">{{ $userCount }}</span>
-              </h4>
-              <p class="nftmax-history__text">Total Users</p>
-              <p class="nftmax-history__amount">
-                {{ $changeCount >= 0 ? '+' : '' }}{{ $changeCount }}
-                ({{ $changePercent }}%)
-              </p>
-            </div>
-          </div>
-          <div class="nftmax-history__canvas">
-            <div class="charts-main__one">
-              <canvas id="myChart_history_three"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
 
-
-    </div>
-    <div class="col-lg-4 col-md-6 col-12">
-
-
-      <div class="nftmax-history mg-top-40">
-        <div class="nftmax-history__main">
-          <div class="nftmax-history__content">
-            <div class="nftmax-history__icon nftmax-history__icon-two">
-              <img src="{{ asset('img/history-icon-2.png') }}" alt="#">
+        <!-- 2. Total Products (Auctions) -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                <div>
+                    <div class="stat-title">Total Products</div>
+                    <div class="stat-value">{{ $productCount }}</div>
+                </div>
+                <div id="chartProducts" class="stat-chart-container"></div>
             </div>
-            <div class="nftmax-history__text">
-              <h4 class="nftmax-history__number">
-                <span class="number">{{ $productCount }}</span> <!-- dynamic count -->
-              </h4>
-              <p class="nftmax-history__text">Total Products</p>
-              <p class="nftmax-history__amount">
-                {{ $productChangeCount >= 0 ? '+' : '' }}{{ $productChangeCount }}
-                ({{ $productChangePercent }}%)
-              </p>
-            </div>
-          </div>
-          <div class="nftmax-history__canvas">
-            <div class="charts-main__one">
-              <canvas id="myChart_history_two"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-    <div class="col-lg-4 col-md-6 col-12">
 
-      <div class="nftmax-history mg-top-40">
-        <div class="nftmax-history__main">
-          <div class="nftmax-history__content">
-            <div class="nftmax-history__icon nftmax-history__icon-one">
-              <img src="{{ asset('img/history-icon-1.png') }}" alt="#">
+        <!-- 3. Auction Listings -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                <div>
+                    <div class="stat-title">Auction Listings</div>
+                    <div class="stat-value">{{ $auctionListingCount }}</div>
+                </div>
+                 <div id="chartAuctions" class="stat-chart-container"></div>
             </div>
-            <div class="nftmax-history__text">
-              <h4 class="nftmax-history__number">
-                <span class="number">{{ $featuredCount }}</span>
-              </h4>
-              <p class="nftmax-history__text">Total Featured</p>
-              <p class="nftmax-history__amount">
-                {{ $featuredChangeCount >= 0 ? '+' : '' }}{{ $featuredChangeCount }}
-                ({{ $featuredChangePercent }}%)
-              </p>
-            </div>
-          </div>
-          <div class="nftmax-history__canvas">
-            <div class="charts-main__one">
-              <canvas id="myChart_history_one"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Second Row: Today's Users and Verified Users -->
-  <div class="row nftmax-gap-30 mt-3">
-    <div class="col-lg-4 col-md-6 col-12">
-      <div class="nftmax-history mg-top-40">
-        <div class="nftmax-history__main">
-          <div class="nftmax-history__content">
-            <div class="nftmax-history__icon nftmax-history__icon-four">
-              <img src="{{ asset('img/history-icon-4.png') }}" alt="#">
+        <!-- 4. Normal Listings -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                 <div>
+                    <div class="stat-title">Normal Listings</div>
+                    <div class="stat-value">{{ $normalListingCount }}</div>
+                </div>
+                 <div id="chartNormal" class="stat-chart-container"></div>
             </div>
-            <div class="nftmax-history__text">
-              <h4 class="nftmax-history__number">
-                <span class="number">{{ $todayUserCount }}</span>
-              </h4>
-              <p class="nftmax-history__text">Today's Users</p>
-              <p class="nftmax-history__amount {{ $todayUserChangeCount >= 0 ? '' : 'nftmax-history__amount-debit' }}">
-                {{ $todayUserChangeCount >= 0 ? '+' : '' }}{{ $todayUserChangeCount }}
-                ({{ $todayUserChangePercent }}%)
-              </p>
-            </div>
-          </div>
-          <div class="nftmax-history__canvas">
-            <div class="charts-main__one">
-              <canvas id="myChart_history_four"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
 
-
-    </div>
-    <div class="col-lg-4 col-md-6 col-12">
-      <div class="nftmax-history mg-top-40">
-        <div class="nftmax-history__main">
-          <div class="nftmax-history__content">
-            <div class="nftmax-history__icon nftmax-history__icon-one">
-              <img src="{{ asset('img/history-icon-1.png') }}" alt="#">
+        <!-- 5. Verified Users -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                 <div>
+                    <div class="stat-title">Verified Users</div>
+                    <div class="stat-value">{{ $verifiedUserCount }}</div>
+                </div>
+                 <div id="chartVerified" class="stat-chart-container"></div>
             </div>
-            <div class="nftmax-history__text">
-              <h4 class="nftmax-history__number">
-                <span class="number">{{ $verifiedUserCount }}</span>
-              </h4>
-              <p class="nftmax-history__text">Total Verified Users</p>
-              <p class="nftmax-history__amount {{ $verifiedUserChangeCount >= 0 ? '' : 'nftmax-history__amount-debit' }}">
-                {{ $verifiedUserChangeCount >= 0 ? '+' : '' }}{{ $verifiedUserChangeCount }}
-                ({{ $verifiedUserChangePercent }}%)
-              </p>
-            </div>
-          </div>
-          <div class="nftmax-history__canvas">
-            <div class="charts-main__one">
-              <canvas id="myChart_history_five"></canvas>
-            </div>
-          </div>
         </div>
-      </div>
+
+        <!-- 6. Total Bids -->
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-box">
+                 <div>
+                    <div class="stat-title">Total Bids</div>
+                    <div class="stat-value">{{ $totalBidsCount }}</div>
+                </div>
+                 <div id="chartBids" class="stat-chart-container"></div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div class="row nftmax-gap-sq30 mt-3">
-
-    <h2 class="fs">Top 3 Highest Bids</h2>
-
-    @foreach($topAuctions as $auction)
-      @php
-        $raw = $auction->image;       // could be JSON or plain string
-        $firstImage = null;
-
-        if ($raw) {
-          if (str_starts_with($raw, '[')) {
-            // JSON array: decode and grab first element
-            $arr = json_decode($raw, true) ?: [];
-            $firstImage = $arr[0] ?? null;
-          } else {
-            // plain string path
-            $firstImage = $raw;
-          }
-        }
-
-        // Build URL: strip leading "/" then asset()
-        $imgUrl = $firstImage
-          ? asset(ltrim($firstImage, '/'))
-          : asset('img/default.png');
-      @endphp
-
-      <div class="col-lg-4 col-md-6 col-12">
-        <!-- Marketplace Single Item -->
-        <div class="trending-action__single trending-action__single--v2">
-          <div class="nftmax-trendmeta">
-            <div class="nftmax-trendmeta__main">
-              <div class="nftmax-trendmeta__author">
-                {{-- USER PROFILE IMAGE --}}
-                @php
-                  $userPic = optional($auction->user)->profile_pic
-                    ? asset('' . ltrim($auction->user->profile_pic, '/'))
-                    : asset('img/default-profile.png');
+    <!-- Row 2: Top 3 Highest Bids Product Cards -->
+     <div class="mb-5">
+        <h4 style="font-weight: 800; color: #111827; margin-bottom: 20px;">🔥 Top 3 Highest Bids</h4>
+        <div class="row g-4">
+            @foreach($topAuctions as $auction)
+                 @php
+                    $raw = $auction->image;
+                    $firstImage = null;
+                    if ($raw) {
+                    if (str_starts_with($raw, '[')) {
+                        $arr = json_decode($raw, true) ?: [];
+                        $firstImage = $arr[0] ?? null;
+                    } else {
+                        $firstImage = $raw;
+                    }
+                    }
+                    $imgUrl = $firstImage ? asset(ltrim($firstImage, '/')) : asset('img/default.png');
                 @endphp
-                <div class="nftmax-trendmeta__img">
-                  <img src="{{ $userPic }}" alt="{{ optional($auction->user)->name }}">
+                <div class="col-md-4">
+                    <div class="product-card">
+                        <div class="product-img-wrapper">
+                            <img src="{{ $imgUrl }}" alt="{{ $auction->title }}">
+                            <span class="product-badge">{{ $auction->bids->count() }} Bids</span>
+                        </div>
+                        <div class="product-details">
+                            <h5 class="product-title" title="{{ $auction->title }}">{{ $auction->title }}</h5>
+                            <div class="d-flex justify-content-between align-items-end mt-3">
+                                <div>
+                                    <div class="highest-bid-label">Highest Bid</div>
+                                    <div class="highest-bid-val">${{ number_format($auction->bids_max_bid_amount, 2) }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <img src="{{ optional($auction->user)->profile_pic ? asset(ltrim($auction->user->profile_pic, '/')) : asset('img/default-profile.png') }}" class="rounded-circle" width="30" height="30" title="Seller: {{ optional($auction->user)->name }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="nftmax-trendmeta__content">
-                  <span class="nftmax-trendmeta__small">Created by</span>
-                  <h4 class="nftmax-trendmeta__title">
-                    {{ optional($auction->user)->name ?? '—' }}
-                  </h4>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Trending Head -->
-          <div class="trending-action__head">
-            <div class="trending-action__badge">
-
-            </div>
-            <img src="{{ $imgUrl }}" alt="{{ $auction->title }}">
-          </div>
-
-          <!-- Trending Body -->
-          <div class="trending-action__body trending-marketplace__body">
-            <h2 class="trending-action__title">
-              <a href="https://www.xpertbid.com/product/{{ $auction->id }}" target="_blank" rel="noopener noreferrer">
-                {{ $auction->title }}
-              </a>
-            </h2>
-            <div class="dashboard-banner__bid dashboard-banner__bid-v2">
-              <!-- Current Bid -->
-              <div class="dashboard-banner__group dashboard-banner__group-v2">
-                <p class="dashboard-banner__group-small">Current Bid</p>
-                <h3 class="dashboard-banner__group-title">
-                  {{ number_format($auction->bids_max_bid_amount, 2) }} ETH
-                </h3>
-              </div>
-              <div class="dashboard-banner__middle-border"></div>
-              <!-- Remaining Time -->
-              <div class="dashboard-banner__group dashboard-banner__group-v2">
-                <p class="dashboard-banner__group-small">Remaining Time</p>
-                <h3 class="dashboard-banner__group-title"
-                  data-countdown="{{ \Carbon\Carbon::parse($auction->end_date)->format('Y/m/d') }}">
-                </h3>
-              </div>
-            </div>
-          </div>
+            @endforeach
         </div>
-        <!-- End Marketplace Item -->
-      </div>
-    @endforeach
-  </div>
-
-
-
-  <div class="row">
-    <div class="col-12">
-      <!-- Charts One -->
-      <div class="charts-main  mg-top-40">
-        <div class="charts-main__heading">
-          <h4 class="charts-main__title">Auction By Status</h4>
-          <div class="charts-main__middle">
-            <div class="charts-main__middle-single">
-              <p class="charts-main__middle-text">Won</p>
-            </div>
-            <div class="charts-main__middle-single">
-              <p class="charts-main__middle-text nftmax-total__sales">Active</p>
-            </div>
-            <div class="charts-main__middle-single">
-              <p class="charts-main__middle-text nftmax-last__sales">Closed</p>
-            </div>
-          </div>
-
-          <div class="nftmax-chart__dropdown">
-            <ul class="nav nav-tabs nftmax-dropdown__list" id="nav-tab">
-              <li class="nav-item dropdown">
-                <a class="nftmax-sidebar_btn nftmax-heading__tabs nav-link dropdown-toggle" href="#" role="button"
-                  aria-expanded="false">Last 30 days </a>
-
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div class="charts-main__three">
-          <div class="tab-content" id="nav-tabContent">
-            <div class="tab-pane fade show active" id="s_history" role="tabpanel" aria-labelledby="nav-home-tab">
-              <canvas id="myChart_three"></canvas>
-            </div>
-            <div class="tab-pane fade" id="s_history" role="tabpanel" aria-labelledby="nav-home-tab">
-              <canvas id="myChart_three"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- End Charts One -->
     </div>
-  </div>
-  <script src="js/jquery.min.js"></script>
-  <script src="js/jquery-migrate.js"></script>
-  <script src="js/popper.min.js"></script>
-  <script src="js/bootstrap.min.js"></script>
-  <script src="js/slickslider.min.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/countdown.min.js"></script>
-  <script src="js/final-countdown.min.js"></script>
-  <script src="js/circle-progress.min.js"></script>
-  <script src="js/main.js"></script>
 
-  <script>
+    <!-- Row 3: Large Graph with Filters -->
+    <div class="large-graph-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 style="font-weight: 800; color: #111827;">User Overview</h4>
+            <div class="filter-btn-group">
+                <button class="btn btn-active" onclick="updateLargeGraph('year', this)">Year</button>
+                <button class="btn btn-inactive" onclick="updateLargeGraph('month', this)">Month</button>
+                <button class="btn btn-inactive" onclick="updateLargeGraph('week', this)">Week</button>
+            </div>
+        </div>
+        <div id="largeAcquisitionChart" style="min-height: 400px;"></div>
+    </div>
 
-    // Grab the canvas and inject PHP arrays
-    const ctxOne = document.getElementById('myChart_history_one').getContext('2d');
-    const featLabels = @json($labels);
-    const featData = @json($featuredData);
+</div>
 
-    new Chart(ctxOne, {
-      type: 'line',
-      data: {
-        labels: featLabels,
-        datasets: [{
-          label: 'Featured Items',
-          data: featData,
-          borderColor: '#5356FB',
-          tension: 0.5,
-          borderWidth: 4,
-          pointRadius: 5,
-          pointBackgroundColor: '#5356FB',
-          pointBorderColor: '#d5dff54f',
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-          y: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-        },
-        plugins: {
-          legend: { display: false },
-          title: { display: false }
+<!-- ApexCharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- Helper for small charts ---
+        function createMiniChart(selector, name, data, color) {
+            var options = {
+                series: [{ name: name, data: data }],
+                chart: { type: 'area', height: 60, sparkline: { enabled: true } },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: { opacity: 0.2 },
+                colors: [color],
+                tooltip: { fixed: { enabled: false }, x: { show: false }, marker: { show: false } }
+            };
+            new ApexCharts(document.querySelector(selector), options).render();
         }
-      }
-    });
-    const ctxTwo = document
-      .getElementById('myChart_history_two')
-      .getContext('2d');
 
-    const prodLabels = @json($labels);
-    const prodData = @json($productData);
+        // 1. Render 6 Mini Charts
+        createMiniChart("#chartUsers", "Users", @json($data), "#6366F1");
+        createMiniChart("#chartProducts", "Products", @json($productData), "#10B981");
+        createMiniChart("#chartAuctions", "Auctions", @json($auctionListingData), "#F59E0B");
+        createMiniChart("#chartNormal", "Normal Listings", @json($normalListingData), "#EC4899");
+        createMiniChart("#chartVerified", "Verified", @json($verifiedUserData), "#3B82F6");
+        createMiniChart("#chartBids", "Bids", @json($totalBidsData), "#8B5CF6");
 
-    new Chart(ctxTwo, {
-      type: 'line',
-      data: {
-        labels: prodLabels,
-        datasets: [{
-          label: 'Products',
-          data: prodData,
-          borderColor: '#F539F8',
-          tension: 0.5,
-          borderWidth: 4,
-          pointRadius: 5,
-          pointBackgroundColor: '#F539F8',
-          pointBorderColor: '#d5dff54f',
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: { grid: { display: false, drawBorder: false }, ticks: { display: false } },
-          y: { grid: { display: false, drawBorder: false }, ticks: { display: false } },
-        },
-        plugins: {
-          legend: { display: false },
-          title: { display: false }
-        }
-      }
-    });
-    const chartLabels = @json($labels);
-    const chartData = @json($data);
-    const ctx_history_three = document.getElementById('myChart_history_three').getContext('2d');
-    const myChart_history_three = new Chart(ctx_history_three, {
-      type: 'line',
-      data: {
-        labels: chartLabels,
-        datasets: [{
-          label: 'User',
-          data: chartData,
-          borderColor: '#27AE60',
-          tension: 0.5,
-          borderWidth: 4,
-          pointRadius: 5,
-          pointBackgroundColor: '#27AE60',
-          pointBorderColor: '#d5dff54f',
-        }]
-      },
-
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            grid: {
-              display: false,
-              drawBorder: false,
+        // 2. Large Graph Logic
+        var initialData = @json($largeGraphData);
+        
+        var largeChartOptions = {
+            series: [
+                { name: 'Registered Users', data: initialData.datasets.registered },
+                { name: 'Verified Users', data: initialData.datasets.verified },
+                { name: 'Referral Users', data: initialData.datasets.referral },
+                { name: 'UTM Source', data: initialData.datasets.utm }
+            ],
+            chart: {
+                type: 'bar',
+                height: 400,
+                toolbar: { show: false },
+                fontFamily: 'Inter, sans-serif',
+                stacked: false
             },
-            ticks: {
-              display: false
-            }
-          },
-          y: {
-            grid: {
-              display: false,
-              drawBorder: false,
+            colors: ['#6366F1', '#10B981', '#F59E0B', '#EC4899'],
+            dataLabels: { enabled: false },
+            stroke: { show: true, width: 2, colors: ['transparent'] },
+            xaxis: {
+                categories: initialData.labels,
             },
-            ticks: {
-              display: false
+            yaxis: {
+                title: { text: 'Count' }
+            },
+            fill: { opacity: 1 },
+            tooltip: {
+                y: { formatter: function (val) { return val + " users" } }
+            },
+            plotOptions: {
+                bar: { horizontal: false, columnWidth: '55%', borderRadius: 4 }
             }
-          },
-        },
+        };
 
-        plugins: {
-          legend: {
-            position: 'top',
-            display: false,
-          },
-          title: {
-            display: false,
-            text: 'Visitor: 2k'
-          }
-        }
-      }
+        var largeChart = new ApexCharts(document.querySelector("#largeAcquisitionChart"), largeChartOptions);
+        largeChart.render();
+        
+        // --- Filter Update Function ---
+        window.updateLargeGraph = function(filter, btn) {
+            // Update buttons UI
+            document.querySelectorAll('.filter-btn-group .btn').forEach(b => {
+                b.classList.remove('btn-active');
+                b.classList.add('btn-inactive');
+            });
+            btn.classList.remove('btn-inactive');
+            btn.classList.add('btn-active');
+            
+            // AJAX Call to fetch new data
+            fetch("{{ route('dashboard.graph-data') }}?filter=" + filter)
+                .then(response => response.json())
+                .then(data => {
+                    largeChart.updateOptions({
+                        xaxis: {
+                            categories: data.labels
+                        }
+                    });
+                    largeChart.updateSeries([
+                        { name: 'Registered Users', data: data.datasets.registered },
+                        { name: 'Verified Users', data: data.datasets.verified },
+                        { name: 'Referral Users', data: data.datasets.referral },
+                        { name: 'UTM Source', data: data.datasets.utm }
+                    ]);
+                })
+                .catch(error => console.error('Error fetching graph data:', error));
+        };
     });
-
-    // Grab the canvas
-    const ctxFour = document
-      .getElementById('myChart_history_four')
-      .getContext('2d');
-
-    // Generate day labels for current month (e.g., "Dec 1", "Dec 2")
-    const todayUserLabels = [];
-    const currentDate = new Date();
-    const currentDay = currentDate.getDate();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const currentMonth = monthNames[currentDate.getMonth()];
-
-    for (let i = 1; i <= currentDay; i++) {
-      todayUserLabels.push(currentMonth + ' ' + i);
-    }
-
-    const todayUserData = @json($todayUserData);
-
-    new Chart(ctxFour, {
-      type: 'line',
-      data: {
-        labels: todayUserLabels,
-        datasets: [{
-          label: 'Today\'s Users',
-          data: todayUserData,
-          borderColor: '#EB5757',
-          tension: 0.5,
-          borderWidth: 4,
-          pointRadius: 5,
-          pointBackgroundColor: '#EB5757',
-          pointBorderColor: '#d5dff54f',
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-          y: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-        },
-        plugins: {
-          legend: { display: false },
-          title: { display: false }
-        }
-      }
-    });
-
-    // Verified Users Chart (myChart_history_five)
-    const ctxFive = document
-      .getElementById('myChart_history_five')
-      .getContext('2d');
-
-    const verifiedUserLabels = @json($labels);
-    const verifiedUserData = @json($verifiedUserData);
-
-    new Chart(ctxFive, {
-      type: 'line',
-      data: {
-        labels: verifiedUserLabels,
-        datasets: [{
-          label: 'Verified Users',
-          data: verifiedUserData,
-          borderColor: '#27AE60',
-          tension: 0.5,
-          borderWidth: 4,
-          pointRadius: 5,
-          pointBackgroundColor: '#27AE60',
-          pointBorderColor: '#d5dff54f',
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-          y: {
-            grid: { display: false, drawBorder: false },
-            ticks: { display: false }
-          },
-        },
-        plugins: {
-          legend: { display: false },
-          title: { display: false }
-        }
-      }
-    });
-
-    const ctx = document
-      .getElementById('myChart_three')
-      .getContext('2d');
-
-    const labels = @json($auctionLabels);
-    const activeData = @json($activeSeries);
-    const wonData = @json($wonSeries);
-    const inactiveData = @json($inactiveSeries);
-
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'Active',
-            data: activeData,
-            borderColor: '#F539F8',
-            backgroundColor: 'transparent',
-            borderWidth: 4,
-            tension: 0.5,
-            pointRadius: 3,
-            pointBackgroundColor: '#F539F8',
-          },
-          {
-            label: 'Won',
-            data: wonData,
-            borderColor: '#5356FB',
-            backgroundColor: 'transparent',
-            borderWidth: 4,
-            tension: 0.5,
-            pointRadius: 3,
-            pointBackgroundColor: '#5356FB',
-          },
-          {
-            label: 'Closed',
-            data: inactiveData,
-            borderColor: '#F2994A',
-            backgroundColor: 'transparent',
-            borderWidth: 4,
-            tension: 0.5,
-            pointRadius: 3,
-            pointBackgroundColor: '#F2994A',
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        scales: {
-          x: { grid: { display: false, drawBorder: false }, ticks: { display: true } },
-          y: { grid: { drawBorder: false }, ticks: { display: true } }
-        },
-        plugins: {
-          legend: { display: false },       // ← hide the dataset labels
-          title: { display: false }        // ← no chart title, as before
-        }
-      }
-    });
-
-
-
-
-  </script>
+</script>
 @endsection

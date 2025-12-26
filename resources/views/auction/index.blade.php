@@ -7,269 +7,433 @@
 
 
 <style>
-
-     body {
-
-      font-family: 'Arial', sans-serif;
-
-      background-color: #f4f4f9;
-
-      margin: 20px;
-
+    /* Compact Pagination Styles */
+    .pagination {
+      display: flex;
+      padding-left: 0;
+      list-style: none;
+      justify-content: center;
+      gap: 4px;
     }
-
-
-
-    h2 {
-
-      text-align: center;
-
-      color: #333;
-
-    }
-
-
-
-    .table-container {
-
-      max-width: 800px;
-
-      margin: 30px auto;
-
+    .page-item .page-link {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px !important;
+      border: 1px solid #eee;
+      color: #5356FB;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s;
       background: #fff;
-
-      border-radius: 10px;
-
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-      overflow: hidden;
-
+    }
+    .page-item.active .page-link {
+      background: #5356FB !important;
+      color: #fff !important;
+      border-color: #5356FB !important;
+    }
+    .page-item.disabled .page-link {
+      color: #ccc;
+    }
+    .page-link:hover:not(.active) {
+      background: #f8f9ff;
+    }
+    /* Hide internal pagination text to avoid duplication */
+    nav .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between > div:first-child,
+    nav .d-flex.justify-content-between.flex-fill.d-sm-none {
+        display: none !important;
+    }
+    /* Ensure the pagination nav itself doesn't add extra space */
+    nav[role="navigation"] {
+        width: auto !important;
     }
 
-
-
-    table {
-
-      width: 100%;
-
-      border-collapse: collapse;
-
+    /* Modern & Compact Filter Card */
+    .nftmax-filter-card {
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
     }
-
-
-
-    thead {
-
-      background-color: #007bff;
-
-      color: #fff;
-
-    }
-
-
-
-    th, td {
-
-      padding: 15px;
-
-      text-align: left;
-
-    }
-
-
-
-    th {
-
+    .filter-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #878F9A;
+      margin-bottom: 6px;
+      display: block;
       text-transform: uppercase;
-
-      font-size: 14px;
-
+      letter-spacing: 0.8px;
+    }
+    .nftmax-filter-input {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #E3E4E8;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374557;
+      transition: all 0.2s;
+      background-color: #FAFAFB;
+      width: 100%;
+    }
+    .nftmax-filter-input:focus {
+      border-color: #5356FB;
+      background-color: #fff;
+      box-shadow: 0 0 0 3px rgba(83, 86, 251, 0.05);
+      outline: none;
+    }
+    select.nftmax-filter-input {
+       appearance: none;
+       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%235356FB' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+       background-repeat: no-repeat;
+       background-position: right 12px center;
+    }
+    
+    .btn-filter-submit {
+      height: 40px;
+      background: #5356FB;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      padding: 0 20px;
+    }
+    .btn-filter-submit:hover {
+      background: #4245e0;
+      box-shadow: 0 4px 8px rgba(83, 86, 251, 0.2);
+    }
+    .btn-filter-reset {
+      height: 40px;
+      background: #F3F4F6;
+      border: none;
+      color: #374557;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      text-decoration: none;
+      padding: 0 20px;
+    }
+    .btn-filter-reset:hover {
+      background: #E5E7EB;
     }
 
-
-
-    tbody tr {
-
-      transition: all 0.3s ease;
-
+    /* Advanced Table Styles */
+    .nftmax-table {
+        border-collapse: separate !important;
+        border-spacing: 0 8px !important;
+        background: transparent !important;
+        border: none !important;
     }
-
-
-
-    tbody tr:nth-child(even) {
-
-      background-color: #f9f9f9;
-
+    .nftmax-table thead th {
+        background: transparent !important;
+        border: none !important;
+        color: #878F9A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 1px;
+        padding: 12px 20px !important;
     }
-
-
-
-    tbody tr:hover {
-
-      background-color: #eaf4ff;
-
-      transform: scale(1.02);
-
+    .nftmax-table tbody tr {
+        background: #fff !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
     }
-
-
-
-    td {
-
-      font-size: 14px;
-
-      color: #333;
-
+    .nftmax-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        background: #fcfcfd !important;
     }
-
-
-
- 
-
-   
-
-    .width{
-
-     display: flex;
-
-        flex-direction: column;
-
-        justify-content: space-evenly;
-
+    .nftmax-table td {
+        border: none !important;
+        padding: 15px 20px !important;
+        vertical-align: middle !important;
+        color: #1A1D2F;
+        font-weight: 600;
+        font-size: 14px;
     }
+    .nftmax-table td:first-child {
+        border-radius: 10px 0 0 10px !important;
+    }
+    .nftmax-table td:last-child {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .auction-img-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #f0f0f0;
+    }
+    .auction-img-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Premium Action Icons */
+    .action-icon {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        margin-right: 5px;
+        color: #5356FB;
+        background: #F4F7FF;
+        border: none;
+    }
+    .action-icon:hover {
+        background: #5356FB;
+        color: #fff;
+    }
+    .action-icon.view { color: #5356FB; background: rgba(83, 86, 251, 0.1); }
+    .action-icon.view:hover { background: #5356FB; color: #fff; }
+    .action-icon.edit { color: #FFB800; background: rgba(255, 184, 0, 0.1); }
+    .action-icon.edit:hover { background: #FFB800; color: #fff; }
+    .action-icon.delete { color: #FF4B4B; background: rgba(255, 75, 75, 0.1); }
+    .action-icon.delete:hover { background: #FF4B4B; color: #fff; }
 
+    /* Glassmorphism Badges */
+    .custom-badge {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .custom-badge.active { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .custom-badge.inactive { background: rgba(107, 114, 128, 0.1); color: #6b7280; }
+    .custom-badge.resubmit { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .custom-badge.closed { background: rgba(31, 41, 55, 0.1); color: #1f2937; }
+    .custom-badge.cancelled { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .custom-badge.decline { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+    .custom-badge.awarded { background: rgba(83, 86, 251, 0.1); color: #5356FB; }
+
+    /* Flatpickr Ultra-Compact & Premium */
+    .flatpickr-calendar {
+        background: #fff !important;
+        border-radius: 10px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+        border: 1px solid #E3E4E8 !important;
+        font-family: inherit !important;
+        width: 280px !important;
+    }
+    .flatpickr-calendar.rangeMode {
+        width: 560px !important;
+    }
+    .flatpickr-months {
+        padding: 5px 0 !important;
+    }
+    .flatpickr-month {
+        height: 30px !important;
+    }
+    .flatpickr-current-month {
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        padding: 0 !important;
+    }
+    .flatpickr-weekday {
+        font-size: 10px !important;
+        color: #878F9A !important;
+        font-weight: 700 !important;
+    }
+    .flatpickr-day {
+        font-size: 12px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+        max-width: 32px !important;
+        margin: 0 !important;
+        border-radius: 4px !important;
+    }
+    .flatpickr-day.inRange {
+        background: rgba(83, 86, 251, 0.08) !important;
+        box-shadow: -5px 0 0 rgba(83, 86, 251, 0.08), 5px 0 0 rgba(83, 86, 251, 0.08) !important;
+        border-radius: 0 !important;
+    }
+    .flatpickr-day.selected, 
+    .flatpickr-day.startRange, 
+    .flatpickr-day.endRange {
+        background: #5356FB !important;
+        border-color: #5356FB !important;
+        color: #fff !important;
+    }
+    .flatpickr-day.startRange {
+        border-radius: 4px 0 0 4px !important;
+    }
+    .flatpickr-day.endRange {
+        border-radius: 0 4px 4px 0 !important;
+    }
+    .flatpickr-day.today {
+        border-color: #5356FB !important;
+    }
+    .flatpickr-innerContainer {
+        padding: 5px !important;
+    }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
 
 
 <div class="container">
 
-    <h1>Auctions</h1>
+    <div class="row align-items-center mb-3">
+        <div class="col">
+            <h1 class="h4 mb-0" style="font-weight: 800; color: #1A1D2F;">Auctions</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{{ route('auctions.create') }}" class="btn btn-primary" style="background: #5356FB; border: none; border-radius: 8px; padding: 8px 16px; font-weight: 600; font-size: 13px;">
+                <i class="fas fa-plus me-2"></i>Create Auction
+            </a>
+        </div>
+    </div>
 
-    <a href="{{ route('auctions.create') }}" class="btn btn-primary mb-3">Create New Auction</a>
+    <!-- Compact Filter Form -->
+    <div class="card nftmax-filter-card">
+        <div class="card-body p-3">
+            <form action="{{ route('auctions.index') }}" method="GET">
+                <div class="row g-2 mb-3">
+                    <div class="col-lg col-md-4">
+                        <label class="filter-group-label">Search</label>
+                        <input type="text" id="live_search" name="search" class="form-control nftmax-filter-input" placeholder="ID, Title, User..." value="{{ request('search') }}" autocomplete="off">
+                    </div>
+                    <div class="col-lg col-md-4">
+                        <label class="filter-group-label">Sort By</label>
+                        <select name="sort" class="form-select nftmax-filter-input">
+                            <option value="newest_to_oldest" {{ request('sort') == 'newest_to_oldest' ? 'selected' : '' }}>Newest</option>
+                            <option value="oldest_to_newest" {{ request('sort') == 'oldest_to_newest' ? 'selected' : '' }}>Oldest</option>
+                            <option value="a_to_z" {{ request('sort') == 'a_to_z' ? 'selected' : '' }}>A-Z</option>
+                            <option value="z_to_a" {{ request('sort') == 'z_to_a' ? 'selected' : '' }}>Z-A</option>
+                        </select>
+                    </div>
+                    <div class="col-lg col-md-4">
+                        <label class="filter-group-label">Category</label>
+                        <select name="category_id" class="form-select nftmax-filter-input">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg col-md-6">
+                        <label class="filter-group-label">Date Range</label>
+                        <input type="text" id="date_range" name="date_range" class="form-control nftmax-filter-input" placeholder="Select Dates" value="{{ request('date_range') }}">
+                    </div>
+                    <div class="col-lg col-md-6">
+                        <label class="filter-group-label">Status</label>
+                        <select name="status" class="form-select nftmax-filter-input">
+                            <option value="">All Statuses</option>
+                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="resubmit" {{ request('status') == 'resubmit' ? 'selected' : '' }}>Resubmit</option>
+                            <option value="closed" {{ request('status') == 'closed' ? 'selected' : '' }}>Closed</option>
+                            <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                            <option value="decline" {{ request('status') == 'decline' ? 'selected' : '' }}>Decline</option>
+                            <option value="awarded" {{ request('status') == 'awarded' ? 'selected' : '' }}>Awarded</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-filter-submit" style="background: #5356FB; color: #fff; border: none; border-radius: 8px; padding: 8px 24px; font-weight: 600; font-size: 13px;">Apply Filters</button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('auctions.index') }}" class="btn btn-filter-reset">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 
    
 
-    <div class="table-responsive">
-
-        <table class="table table-bordered nftmax-table table-striped table-hover shadow" id="auctionsTable">
-
-            <thead class="">
-
-                <tr>
-
-                    <th>ID</th>
-
-                    <th>Image</th>
-
-                    <th>Title</th>
-
-                    <th>User</th>
-
-                    <th>Category</th>
-
-                    <th>Start Date</th>
-
-                    <th>End Date</th>
-
-                    <th>Reserve Price</th>
-
-                    <th>Status</th>
-
-                    <th>Actions</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                @foreach($auctions as $auction)
-                    @php
-                    $album = json_decode($auction->album,true);
-                    if($album){
-                      $img =$album[0];
-                    }else{
-                      $img = "";
-                    }
-                    @endphp
-                    <tr>
-
-                        <td>{{ $auction->id }}</td>
-
-                        <td><img src="{{asset($img)}}" alt="Auction Image" style="width: 50px;"></td>
-
-                        <td>{{ $auction->title }}</td>
-
-                        <td>{{ ($auction->user->name) ?? '' }}</td>
-
-                        <td>{{ ($auction->category->name) ?? '' }}</td>
-
-                        <td>{{ $auction->start_date }}</td>
-
-                        <td>{{ $auction->end_date }}</td>
-
-                        <td>${{ $auction->reserve_price }}</td>
-
-                        <td>
-
-                            <span class="badge {{ $auction->status == 'active' ? 'bg-success' : 'bg-danger' }}">
-
-                                {{ $auction->status == 'active' ? 'Active' : 'Inactive' }}
-
-                            </span>
-
-                        </td>
-
-                        <td class="width">
-
-                            <a href="{{ route('auctions.show', $auction->id) }}" class="btn btn-info btn-sm">View</a>
-
-                            <a href="{{ route('auctions.edit', $auction->id) }}" class="btn btn-warning btn-sm">Edit</a>
-
-                            <form action="{{ route('auctions.destroy', $auction->id) }}" method="POST" style="display:inline;">
-
-                                @csrf
-
-                                @method('DELETE')
-
-                                <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('Are you sure?')">Delete</button>
-
-                            </form>
-
-                        </td>
-
-                    </tr>
-
-                @endforeach
-
-            </tbody>
-
-        </table>
-
+    <div id="auction-table-container">
+        @include('auction.table_partial')
     </div>
 
 </div>
 
-
-
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-
     $(document).ready(function() {
+        const container = $('#auction-table-container');
 
-$('#auctionsTable').DataTable({
+        // Manual Search/Filter on Form Submit
+        $('form').on('submit', function(e) {
+            e.preventDefault();
+            fetchAuctions();
+        });
 
-    order: [[0, 'desc']] // Orders the first column (index 0) in descending order
+        function fetchAuctions() {
+            const formData = $('form').serialize();
+            const url = "{{ route('auctions.index') }}?" + formData;
 
-});
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                    // Re-initialize any components if needed (none for now)
+                }
+            });
+        }
 
+        // Handle pagination clicks via AJAX
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+        // Initialize Flatpickr for date range
+        flatpickr("#date_range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "F j, Y",
+            onReady: function(selectedDates, dateStr, instance) {
+                // To show 2 calendars
+                instance.calendarContainer.classList.add('two-calendars');
+            },
+            showMonths: 2 // This opens 2 months/calendars
+        });
+
+        $('#auctionsTable').DataTable({
+            paging: false,
+            searching: false,
+            info: false,
+            ordering: false
+        });
     });
-
 </script>
 
 
 
-
-
 @endsection
-

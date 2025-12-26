@@ -27,9 +27,40 @@ class RoleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $roles = Role::orderBy('id', 'DESC')->paginate(5);
+        $query = Role::query();
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where('name', 'LIKE', "%$search%");
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('id', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('id', 'desc');
+                break;
+        }
+
+        $roles = $query->paginate(10)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('roles.table_partial', compact('roles'))->render();
+        }
+
         return view('roles.index', compact('roles'));
     }
 

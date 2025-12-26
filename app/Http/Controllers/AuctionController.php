@@ -30,12 +30,75 @@ use App\Models\NewNotification;
 
 class AuctionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        //$sellers = User::where('role', 'seller')->get();
-        $auctions = Auction::get()->sortByDesc('created_at');
+        $query = Auction::with(['user', 'category']);
 
-        return view('auction.index', compact('auctions'));
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'LIKE', "%$search%")
+                  ->orWhere('id', 'LIKE', "%$search%")
+                  ->orWhere('description', 'LIKE', "%$search%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'LIKE', "%$search%");
+                  })
+                  ->orWhereHas('category', function($catQuery) use ($search) {
+                      $catQuery->where('name', 'LIKE', "%$search%");
+                  });
+            });
+        }
+
+        // Date Range filtering
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                // Single date selected?
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Status filtering
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+
+        // Category filtering
+        if ($request->has('category_id') && !empty($request->category_id)) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('title', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('title', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $auctions = $query->paginate(10)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('auction.table_partial', compact('auctions'))->render();
+        }
+
+        $categories = AuctionCategory::whereHas('auctions')->get();
+
+        return view('auction.index', compact('auctions', 'categories'));
     }
 
     public function create()

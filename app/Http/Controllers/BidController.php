@@ -242,9 +242,64 @@ class BidController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $bids = Bid::with(['user.IndividualVerification', 'auction'])->latest()->get();
+        $query = Bid::with(['user.IndividualVerification', 'auction']);
+
+        // Search functionality (Auction Title, Bid ID, User Name, User Phone)
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'LIKE', "%$search%")
+                  ->orWhere('bid_amount', 'LIKE', "%$search%")
+                  ->orWhereHas('auction', function($aq) use ($search) {
+                      $aq->where('title', 'LIKE', "%$search%");
+                  })
+                  ->orWhereHas('user', function($uq) use ($search) {
+                      $uq->where('name', 'LIKE', "%$search%")
+                        ->orWhere('phone', 'LIKE', "%$search%")
+                        ->orWhereHas('IndividualVerification', function($ivq) use ($search) {
+                            $ivq->where('contact_number', 'LIKE', "%$search%");
+                        });
+                  });
+            });
+        }
+
+        // Date Range filtering
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'high_to_low':
+                $query->orderBy('bid_amount', 'desc');
+                break;
+            case 'low_to_high':
+                $query->orderBy('bid_amount', 'asc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $bids = $query->paginate(15)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('bids.table_partial', compact('bids'))->render();
+        }
+
         return view('bids.index', compact('bids'));
     }
 

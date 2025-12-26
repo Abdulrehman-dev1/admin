@@ -347,6 +347,8 @@ Route::prefix('admin')
 Route::middleware(['auth', 'permission:dashboard-list'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('/graph-data', [DashboardController::class, 'getGraphData'])
+        ->name('dashboard.graph-data');
     // any other routes behind the login wall…
 });
 Route::get('/promotions', [PromotionController::class, 'index'])

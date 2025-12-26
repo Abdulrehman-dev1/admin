@@ -1,288 +1,332 @@
 @extends('layouts.app')
 
-@section('title', $pageTitle ?? 'Users List')
-
 @section('content')
-
-
-
-  <style>
-    /* The switch container */
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 60px;
-      height: 34px;
-    }
-
-    /* Hide default checkbox */
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    /* The slider */
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ccc;
-      transition: 0.4s;
-      border-radius: 34px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 26px;
-      width: 26px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: 0.4s;
-      border-radius: 50%;
-    }
-
-    /* When checked */
-    input:checked+.slider {
-      background-color: #4caf50;
-    }
-
-    input:checked+.slider:before {
-      transform: translateX(26px);
-    }
-
-    /* Optional: show On/Off text */
-    .switch.on .slider:after,
-    .switch.off .slider:after {
-      content: attr(data-state);
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 12px;
-      color: white;
-      width: 100%;
-      text-align: center;
-      left: 0;
-    }
-
-    /* Custom Pagination Styles */
+<style>
+    /* Compact Pagination Styles */
     .pagination {
-      justify-content: space-between;
-      margin-top: 20px;
-      gap: 6px;
+      display: flex;
+      padding-left: 0;
+      list-style: none;
+      justify-content: center;
+      gap: 4px;
     }
-
     .page-item .page-link {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       border-radius: 8px !important;
+      border: 1px solid #eee;
       color: #5356FB;
-      border: 1px solid #E3E4E8;
-      background: #fff;
-      padding: 8px 14px;
       font-weight: 600;
-      font-size: 14px;
-      box-shadow: none;
+      font-size: 13px;
+      transition: all 0.3s;
+      background: #fff;
     }
-
     .page-item.active .page-link {
-      background-color: #5356FB !important;
+      background: #5356FB !important;
+      color: #fff !important;
       border-color: #5356FB !important;
-      color: white !important;
     }
-
     .page-item.disabled .page-link {
-      color: #A0AEC0;
-      background-color: #FAFAFB;
-      border-color: #E3E4E8;
+      color: #ccc;
     }
-
-    .page-link:hover {
-      background-color: #F3F4F6;
-      color: #5356FB;
+    nav .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between > div:first-child,
+    nav .d-flex.justify-content-between.flex-fill.d-sm-none {
+        display: none !important;
     }
-
-    .page-link:focus {
-      box-shadow: 0 0 0 0.2rem rgba(83, 86, 251, 0.25);
-    }
-
-    /* Hide the 'Showing results' text if it's appearing as a simple text node next to pagination blocks in default views, 
-                               but if it's separate, we can style standard bootstrap elements. 
-                               Usually bootstrap-5 view renders a `div` with `d-md-flex`. 
-                               We target the container to center things properly. */
-    .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between {
-      /* This is the container class in default Laravel pagination view */
-      display: flex !important;
-      flex-direction: row !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      gap: 10px !important;
-    }
-
-    .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between>div:first-child {
-      /* The 'Showing x to y' text container */
-      margin-bottom: 5px;
-    }
-
-    /* FORCE FULL WIDTH FOR PAGINATION NAV */
-    nav.d-flex.justify-items-center.justify-content-between {
-      width: 100% !important;
-    }
-
     nav[role="navigation"] {
-      width: 100% !important;
+        width: auto !important;
     }
 
-    nav .d-md-flex,
-    nav .justify-content-between {
-      width: 100% !important;
+    /* Modern & Compact Filter Card */
+    .nftmax-filter-card {
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+    .filter-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #878F9A;
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .nftmax-filter-input {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #E3E4E8;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374557;
+      transition: all 0.2s;
+      background-color: #FAFAFB;
+      width: 100%;
+    }
+    .nftmax-filter-input:focus {
+      border-color: #5356FB;
+      background-color: #fff;
+      box-shadow: 0 0 0 3px rgba(83, 86, 251, 0.05);
+      outline: none;
+    }
+    select.nftmax-filter-input {
+       appearance: none;
+       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%235356FB' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+       background-repeat: no-repeat;
+       background-position: right 12px center;
+    }
+    
+    .btn-filter-submit {
+      height: 40px;
+      background: #5356FB;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      padding: 0 24px;
+    }
+    .btn-filter-submit:hover { background: #4245e0; }
+    .btn-filter-reset {
+      height: 40px;
+      background: #F3F4F6;
+      border: none;
+      color: #374557;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      text-decoration: none;
+      padding: 0 20px;
     }
 
-    /* Target the 'Showing results' paragraph specifically */
-    nav p.small.text-muted {
-      margin-bottom: 0 !important;
-      margin-top: 20px !important;
+    /* Advanced Table Styles */
+    .nftmax-table {
+        border-collapse: separate !important;
+        border-spacing: 0 8px !important;
+        background: transparent !important;
+        border: none !important;
+        width: 100% !important;
     }
-  </style>
-  <div class="nftmax-table mg-top-40">
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card nftmax-card">
-          <div class="card-body">
-            <form action="{{ $filterRoute ?? route('users.index') }}" method="GET">
-              <div class="row align-items-end">
-                <div class="col-md-4">
-                  <div class="form-group mb-0">
-                    <label for="date_from" class="form-label fw-bold" style="color: #374557; font-size: 14px;">From
-                      Date</label>
-                    <input type="date" name="date_from" id="date_from" class="form-control"
-                      value="{{ request('date_from') }}"
-                      style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-group mb-0">
-                    <label for="date_to" class="form-label fw-bold" style="color: #374557; font-size: 14px;">To
-                      Date</label>
-                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request('date_to') }}"
-                      style="height: 48px; border-radius: 10px; border: 1px solid #E3E4E8; padding: 10px 15px; background-color: #FAFAFB;">
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="form-group mb-0 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100"
-                      style="height: 48px; border-radius: 10px; background-color: #5356FB; border: none; font-weight: 600; margin-bottom: 0px;">
-                      <i class="fas fa-filter me-2"></i>Filter
-                    </button>
-                    <a href="{{ $filterRoute ?? route('users.index') }}" class="btn btn-secondary w-100"
-                      style="height: 48px; border-radius: 10px; background-color: #F3F4F6; color: #374557; border: none; font-weight: 600; display: flex; align-items: center; justify-content: center;">
-                      <i class="fas fa-undo me-2"></i>Reset
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
+    .nftmax-table thead th {
+        background: transparent !important;
+        border: none !important;
+        color: #878F9A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 1px;
+        padding: 12px 20px !important;
+    }
+    .nftmax-table tbody tr {
+        background: #fff !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .nftmax-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        background: #fcfcfd !important;
+    }
+    .nftmax-table td {
+        border: none !important;
+        padding: 15px 20px !important;
+        vertical-align: middle !important;
+    }
+    .nftmax-table td:first-child { border-radius: 10px 0 0 10px !important; }
+    .nftmax-table td:last-child { border-radius: 0 10px 10px 0 !important; }
+
+    /* Action Icons */
+    .action-icon {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        color: #5356FB;
+        background: rgba(83, 86, 251, 0.1);
+        border: none;
+    }
+    .action-icon:hover { background: #5356FB; color: #fff; }
+    .action-icon.edit { color: #FFB800; background: rgba(255, 184, 0, 0.1); }
+    .action-icon.edit:hover { background: #FFB800; color: #fff; }
+
+    /* Glassmorphism Badges */
+    .custom-badge {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+        white-space: nowrap;
+    }
+    .custom-badge.approved { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .custom-badge.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    /* Flatpickr Premium */
+    .flatpickr-calendar {
+        background: #fff !important;
+        border-radius: 10px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+        border: 1px solid #E3E4E8 !important;
+    }
+
+    /* Add Button Premium */
+    .btn-add-premium {
+      height: 40px;
+      background: linear-gradient(135deg, #5356FB 0%, #6366F1 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      padding: 0 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(83, 86, 251, 0.2);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .btn-add-premium:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(83, 86, 251, 0.3);
+      color: white;
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<div class="container">
+    <div class="row align-items-center mb-3">
+        <div class="col">
+            <h1 class="h4 mb-0" style="font-weight: 800; color: #1A1D2F;">{{ $pageTitle ?? 'User Management' }}</h1>
         </div>
+        <div class="col-auto">
+            <a href="{{ route('users.create') }}" class="btn-add-premium">
+                <i class="fas fa-plus"></i> Add New User
+            </a>
+        </div>
+    </div>
+
+    <!-- Compact Filter Form -->
+    <div class="card nftmax-filter-card">
+        <div class="card-body p-3">
+            <form id="filterForm" action="{{ $filterRoute ?? route('users.index') }}" method="GET">
+                <div class="row g-2 mb-3">
+                    <div class="col-lg-4 col-md-6">
+                        <label class="filter-group-label">Search Users</label>
+                        <input type="text" name="search" class="form-control nftmax-filter-input" placeholder="ID, Name, Email, Phone..." value="{{ request('search') }}" autocomplete="off">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-group-label">Sort By</label>
+                        <select name="sort" class="form-select nftmax-filter-input">
+                            <option value="newest_to_oldest" {{ request('sort') == 'newest_to_oldest' ? 'selected' : '' }}>Newest Joined</option>
+                            <option value="oldest_to_newest" {{ request('sort') == 'oldest_to_newest' ? 'selected' : '' }}>Oldest Joined</option>
+                            <option value="a_to_z" {{ request('sort') == 'a_to_z' ? 'selected' : '' }}>Name: A to Z</option>
+                            <option value="z_to_a" {{ request('sort') == 'z_to_a' ? 'selected' : '' }}>Name: Z to A</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-5 col-md-12">
+                        <label class="filter-group-label">Joined Date Range</label>
+                        <input type="text" id="date_range" name="date_range" class="form-control nftmax-filter-input" placeholder="Select Dates" value="{{ request('date_range') }}">
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-filter-submit">Apply Filters</button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ $filterRoute ?? route('users.index') }}" class="btn btn-filter-reset">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if(session('success'))
+      <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 10px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
+    @endif
+
+    <div id="users-table-container">
+        <div class="table-responsive">
+            @include('users.table_partial')
+        </div>
     </div>
-  </div>
-  <div class="nftmax__container">
-    <div class="nftmax-table__heading">
-      <h3 class="nftmax-table__title mb-0">{{ $pageTitle ?? 'User Management' }}</h3>
-      <a href="{{ route('users.create') }}" class="nftmax__btn nftmax__btn--primary btn btn-primary">Add User</a>
-    </div>
-    <table id="nftmax-table__main" class="nftmax-table__main nftmax-table__product-history">
-      <!-- NFTMax Table Head -->
-      <thead class="nftmax-table__head">
-        <tr>
-          <th class="nftmax-table__column-3 nftmax-table__h3">Name</th>
-          <th class="nftmax-table__column-2 nftmax-table__h2">Email</th>
-          <th class="nftmax-table__column-3 nftmax-table__h3">Verification</th>
-          <th class="nftmax-table__column-4 nftmax-table__h4">UTM Campaign</th>
-          <th class="nftmax-table__column-5 nftmax-table__h5">Created At</th>
-          <th class="nftmax-table__column-5 nftmax-table__h6">Actions</th>
-        </tr>
-      </thead>
-      <!-- NFTMax Table Body -->
-      <tbody class="nftmax-table__body">
-        @forelse ($users as $index => $user)
-          <tr>
-            <td class="nftmax-table__column-3 nftmax-table__data-3">
-              <p class="nftmax-table__text">{{ $user->name ?? 'N/A' }}</p>
-            </td>
-            <td class="nftmax-table__column-2 nftmax-table__data-2">
-              <p class="nftmax-table__text" title="{{ $user->email }}">{{ Str::limit($user->email, 15) }}</p>
-            </td>
+</div>
 
-            <td class="nftmax-table__column-4 nftmax-table__data-4">
-              @if(($user->IndividualVerification->status ?? '') === 'verified')
-                <span class="badge bg-success">Verified</span>
-              @else
-                <span class="badge bg-warning text-dark">Not Verified</span>
-              @endif
-            </td>
-            <td class="nftmax-table__column-4 nftmax-table__data-4">
-              <p class="nftmax-table__text text-muted small">{{ $user->utm_campaign ?? '-' }}</p>
-            </td>
-            <td class="nftmax-table__column-5 nftmax-table__data-5">
-              <p class="nftmax-table__text">
-                {{ $user->created_at ? $user->created_at->format('d M Y') : 'N/A' }}<br>
-                <small class="text-muted">{{ $user->created_at ? $user->created_at->format('h:i A') : '' }}</small>
-              </p>
-            </td>
-            <td>
-              <div class="nftmax__actions ">
-                <a href="{{ route('users.show', $user->id) }}" class="nftmax__btn nftmax__btn--view btn btn-primary me-1"
-                  style="background-color: #5356FB; border-color: #5356FB;">View</a>
-                <a href="{{ route('users.edit', $user->id) }}" class="nftmax__btn nftmax__btn--edit btn btn-info">Edit</a>
-                <form action="{{ route('users.destroy', $user->id) }}" method="POST" style="display:none;">
-                  @csrf
-                  @method('DELETE')
-                  <button type="submit" class="nftmax__btn nftmax__btn--delete btn  btn-danger">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        @empty
-          <tr>
-            <td colspan="6" class="nftmax-table__no-data">No users found.</td>
-          </tr>
-        @endforelse
-      </tbody>
-      <!-- End NFTMax Table Body -->
-    </table>
-    <div class="d-flex justify-content-between align-items-center mt-4 w-100">
-      {{ $users->links('pagination::bootstrap-5') }}
-    </div>
-  </div>
-  </div>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+    $(document).ready(function() {
+        const container = $('#users-table-container');
 
+        // Manual Filter on Form Submit
+        $('#filterForm').on('submit', function(e) {
+            e.preventDefault();
+            fetchUsers();
+        });
 
+        function fetchUsers() {
+            const formData = $('#filterForm').serialize();
+            const url = "{{ $filterRoute ?? route('users.index') }}?" + formData;
 
-  <script>
-    const checkbox = document.getElementById('toggleSwitch');
-    const wrapper = document.getElementById('mySwitch');
-    const slider = wrapper.querySelector('.slider');
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                }
+            });
+        }
 
-    // Initialize state
-    function updateState() {
-      if (checkbox.checked) {
-        wrapper.classList.replace('on', 'off');
-        slider.setAttribute('data-state', 'On');
-      } else {
-        wrapper.classList.replace('on', 'off');
-        slider.setAttribute('data-state', 'Off');
-      }
-    }
+        // Handle pagination clicks via AJAX
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
 
-    // On load
-    updateState();
-
-    // Toggle on click
-    checkbox.addEventListener('change', updateState);
-  </script>
+        // Initialize Flatpickr
+        flatpickr("#date_range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "F j, Y",
+            onReady: function(selectedDates, dateStr, instance) {
+                instance.calendarContainer.classList.add('two-calendars');
+            },
+            showMonths: 2
+        });
+    });
+</script>
 @endsection

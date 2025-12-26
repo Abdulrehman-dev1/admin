@@ -2,276 +2,318 @@
 
 @section('content')
 <style>
-    .nftmax-body {
+    /* Compact Pagination Styles */
+    .pagination {
+      display: flex;
+      padding-left: 0;
+      list-style: none;
+      justify-content: center;
+      gap: 4px;
+    }
+    .page-item .page-link {
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px !important;
+      border: 1px solid #eee;
+      color: #5356FB;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s;
+      background: #fff;
+    }
+    .page-item.active .page-link {
+      background: #5356FB !important;
+      color: #fff !important;
+      border-color: #5356FB !important;
+    }
+    .page-item.disabled .page-link {
+      color: #ccc;
+    }
+    nav .d-none.flex-sm-fill.d-sm-flex.align-items-sm-center.justify-content-sm-between > div:first-child,
+    nav .d-flex.justify-content-between.flex-fill.d-sm-none {
+        display: none !important;
+    }
+    nav[role="navigation"] {
+        width: auto !important;
+    }
+
+    /* Modern & Compact Filter Card */
+    .nftmax-filter-card {
+      background: #ffffff;
+      border: 1px solid #f0f0f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      margin-bottom: 20px;
+    }
+    .filter-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #878F9A;
+      margin-bottom: 6px;
+      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .nftmax-filter-input {
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #E3E4E8;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #374557;
+      transition: all 0.2s;
+      background-color: #FAFAFB;
+      width: 100%;
+    }
+    .nftmax-filter-input:focus {
+      border-color: #5356FB;
+      background-color: #fff;
+      box-shadow: 0 0 0 3px rgba(83, 86, 251, 0.05);
+      outline: none;
+    }
+    select.nftmax-filter-input {
+       appearance: none;
+       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%235356FB' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+       background-repeat: no-repeat;
+       background-position: right 12px center;
+    }
+    
+    .btn-filter-submit {
+      height: 40px;
+      background: #5356FB;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      padding: 0 24px;
+    }
+    .btn-filter-submit:hover { background: #4245e0; }
+    .btn-filter-reset {
+      height: 40px;
+      background: #F3F4F6;
+      border: none;
+      color: #374557;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      text-decoration: none;
+      padding: 0 20px;
+    }
+
+    /* Advanced Table Styles */
+    .nftmax-table {
+        border-collapse: separate !important;
+        border-spacing: 0 8px !important;
         background: transparent !important;
-        padding: 30px;
-        padding-top: 0px !important;
-        border-radius: 15px;
-        box-shadow: 0px 0px 0px rgba(0, 0, 0, 0.00);
-        margin-top: 0px !important;
-    }
-    .receipt-img {
-        max-width: 100px;
-        max-height: 100px;
-        border-radius: 8px;
-        cursor: pointer;
-        object-fit: cover;
-        border: 2px solid #e5e7eb;
-    }
-    .receipt-img:hover {
-        transform: scale(1.05);
-        transition: transform 0.3s;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        border-color: #5356FB;
-    }
-    .table-wrapper {
-        background: #fff;
-        border-radius: 15px;
-        padding: 20px;
-        box-shadow: 0px 9px 95px rgba(0, 0, 0, 0.05);
-        margin-top: 20px;
-    }
-    table.nftmax-table {
-        width: 100% !important;
-        border-collapse: collapse;
-        margin-top: 0;
-    }
-    table.nftmax-table thead {
-        background-color: transparent;
-        border-bottom: 2px solid rgba(83, 86, 251, 0.16);
-    }
-    table.nftmax-table thead th {
-        padding: 15px !important;
-        text-align: left !important;
-        font-weight: 500 !important;
-        color: #878F9A !important;
-        font-size: 14px !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
         border: none !important;
-        white-space: nowrap;
-        background: transparent !important;
+        width: 100% !important;
     }
-    table.nftmax-table tbody td {
-        padding: 18px 15px !important;
-        color: #374557 !important;
-        font-size: 14px !important;
-        border-bottom: 1px solid #e5e7eb !important;
+    .nftmax-table thead th {
+        background: transparent !important;
+        border: none !important;
+        color: #878F9A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 1px;
+        padding: 12px 20px !important;
+    }
+    .nftmax-table tbody tr {
+        background: #fff !important;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        transition: all 0.3s ease;
+    }
+    .nftmax-table tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        background: #fcfcfd !important;
+    }
+    .nftmax-table td {
+        border: none !important;
+        padding: 15px 20px !important;
         vertical-align: middle !important;
     }
-    table.nftmax-table tbody tr {
-        transition: background-color 0.2s ease;
+    .nftmax-table td:first-child { border-radius: 10px 0 0 10px !important; }
+    .nftmax-table td:last-child { border-radius: 0 10px 10px 0 !important; }
+
+    /* Action Icons */
+    .action-icon {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        color: #5356FB;
+        background: rgba(83, 86, 251, 0.1);
+        border: none;
     }
-    table.nftmax-table tbody tr:hover {
-        background-color: #F9FAFB !important;
-    }
-    table.nftmax-table tbody tr:last-child td {
-        border-bottom: none !important;
-    }
-    /* Override DataTables styling */
-    #paymentVerificationTable_wrapper {
-        width: 100%;
-    }
-    #paymentVerificationTable_wrapper .dataTables_filter {
-        margin-bottom: 15px;
-    }
-    #paymentVerificationTable_wrapper .dataTables_length {
-        margin-bottom: 15px;
-    }
-    .btn-action-group {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    .btn-action-group .btn {
-        padding: 6px 15px;
+    .action-icon:hover { background: #5356FB; color: #fff; }
+
+    /* Glassmorphism Badges */
+    .custom-badge {
+        padding: 5px 10px;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
         white-space: nowrap;
-        font-weight: 500;
+    }
+    .custom-badge.approved { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .custom-badge.pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .custom-badge.declined { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+
+    /* Flatpickr Premium */
+    .flatpickr-calendar {
+        background: #fff !important;
+        border-radius: 10px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08) !important;
+        border: 1px solid #E3E4E8 !important;
     }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3>Payment Verification</h3>
+    <div class="row align-items-center mb-3">
+        <div class="col">
+            <h1 class="h4 mb-0" style="font-weight: 800; color: #1A1D2F;">Payment Verification</h1>
+        </div>
+    </div>
+
+    <!-- Compact Filter Form -->
+    <div class="card nftmax-filter-card">
+        <div class="card-body p-3">
+            <form id="filterForm" action="{{ route('payment-verifications.index') }}" method="GET">
+                <div class="row g-2 mb-3">
+                    <div class="col-lg-4 col-md-6">
+                        <label class="filter-group-label">Search</label>
+                        <input type="text" name="search" class="form-control nftmax-filter-input" placeholder="Order #, Name, Email, Amount..." value="{{ request('search') }}" autocomplete="off">
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-group-label">Sort By</label>
+                        <select name="sort" class="form-select nftmax-filter-input">
+                            <option value="newest_to_oldest" {{ request('sort') == 'newest_to_oldest' ? 'selected' : '' }}>Newest Orders</option>
+                            <option value="oldest_to_newest" {{ request('sort') == 'oldest_to_newest' ? 'selected' : '' }}>Oldest Orders</option>
+                            <option value="total_high_to_low" {{ request('sort') == 'total_high_to_low' ? 'selected' : '' }}>Amount: High to Low</option>
+                            <option value="total_low_to_high" {{ request('sort') == 'total_low_to_high' ? 'selected' : '' }}>Amount: Low to High</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <label class="filter-group-label">Payment Status</label>
+                        <select name="status" class="form-select nftmax-filter-input">
+                            <option value="">Pending (Default)</option>
+                            <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                            <option value="declined" {{ request('status') == 'declined' ? 'selected' : '' }}>Declined</option>
+                            <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>Show All</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="filter-group-label">Date Range</label>
+                        <input type="text" id="date_range" name="date_range" class="form-control nftmax-filter-input" placeholder="Select Dates" value="{{ request('date_range') }}">
+                    </div>
+                </div>
+
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-filter-submit">Apply Filters</button>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ route('payment-verifications.index') }}" class="btn btn-filter-reset">Reset Filters</a>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+      <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 10px; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;">
+        {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     @endif
 
     @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 10px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     @endif
 
-    <div class="table-wrapper">
+    <div id="payment-table-container">
         <div class="table-responsive">
-            <table class="table nftmax-table" id="paymentVerificationTable">
-        <thead>
-            <tr>
-                <th>S.No.</th>
-                <th>Order Number</th>
-                <th>Customer Name</th>
-                <th>Email</th>
-                <th>Amount</th>
-                <th>Receipt Image</th>
-                <th>Order Date</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($orders as $key => $order)
-            <tr>
-                <td>{{ ($orders->currentPage() - 1) * $orders->perPage() + $key + 1 }}</td>
-                <td><strong>{{ $order->order_number }}</strong></td>
-                <td>{{ $order->billing_name }}</td>
-                <td>{{ $order->billing_email }}</td>
-                <td>${{ number_format($order->total, 2) }}</td>
-                <td>
-                    @if($order->receipt_image)
-                        @php
-                            $receiptFilename = basename($order->receipt_image);
-                        @endphp
-                        <img src="{{ route('receipts.show', $receiptFilename) }}" 
-                             alt="Receipt" 
-                             class="receipt-img"
-                             data-bs-toggle="modal" 
-                             data-bs-target="#receiptModal{{ $order->id }}">
-                    @else
-                        <span class="text-muted">No receipt</span>
-                    @endif
-                </td>
-                <td>{{ $order->created_at->format('d M Y, h:i A') }}</td>
-                <td>
-                    <div class="btn-action-group">
-                        <button type="button" 
-                                class="btn btn-success btn-sm" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#approveModal{{ $order->id }}">
-                            Approve
-                        </button>
-                        <button type="button" 
-                                class="btn btn-danger btn-sm" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#declineModal{{ $order->id }}">
-                            Decline
-                        </button>
-                        <a href="{{ route('payment-verifications.show', $order->id) }}" 
-                           class="btn btn-info btn-sm">
-                            View Details
-                        </a>
-                    </div>
-                </td>
-            </tr>
-
-            <!-- Receipt Image Modal -->
-            @if($order->receipt_image)
-            <div class="modal fade" id="receiptModal{{ $order->id }}" tabindex="-1" aria-labelledby="receiptModalLabel{{ $order->id }}" aria-hidden="true">
-                <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="receiptModalLabel{{ $order->id }}">Receipt - {{ $order->order_number }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body text-center">
-                            @php
-                                $receiptFilename = basename($order->receipt_image);
-                            @endphp
-                            <img src="{{ route('receipts.show', $receiptFilename) }}" 
-                                 alt="Receipt" 
-                                 style="max-width: 100%; height: auto; border-radius: 8px;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- Approve Modal -->
-            <div class="modal fade" id="approveModal{{ $order->id }}" tabindex="-1" aria-labelledby="approveModalLabel{{ $order->id }}" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="approveModalLabel{{ $order->id }}">Approve Payment</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p>Are you sure you want to approve the payment for order <strong>{{ $order->order_number }}</strong>?</p>
-                            <p class="text-muted">An email will be sent to the customer confirming payment approval and that their order is now processing.</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <form action="{{ route('payment-verifications.approve', $order->id) }}" method="POST" style="display: inline;">
-                                @csrf
-                                <button type="submit" class="btn btn-success">Approve Payment</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Decline Modal -->
-            <div class="modal fade" id="declineModal{{ $order->id }}" tabindex="-1" aria-labelledby="declineModalLabel{{ $order->id }}" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="declineModalLabel{{ $order->id }}">Decline Payment</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form action="{{ route('payment-verifications.decline', $order->id) }}" method="POST">
-                            @csrf
-                            <div class="modal-body">
-                                <p>Are you sure you want to decline the payment for order <strong>{{ $order->order_number }}</strong>?</p>
-                                <p class="text-muted">An email will be sent to the customer informing them that their order and payment have been rejected.</p>
-                                <div class="mb-3">
-                                    <label for="reason{{ $order->id }}" class="form-label">Reason (Optional)</label>
-                                    <textarea class="form-control" 
-                                              id="reason{{ $order->id }}" 
-                                              name="reason" 
-                                              rows="3" 
-                                              placeholder="Enter reason for declining payment..."></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="submit" class="btn btn-danger">Decline Payment</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </tbody>
-    </table>
+            @include('payment-verifications.table_partial')
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
     $(document).ready(function() {
-        $('#paymentVerificationTable').DataTable({
-            paging: true,
-            info: true,
-            searching: true,
-            order: [[0, 'desc']],
-            pageLength: 15,
-            responsive: true,
-            autoWidth: false,
-            columnDefs: [
-                { orderable: false, targets: [4, 5, 7] } // Disable sorting on Amount, Receipt Image, and Actions columns
-            ],
-            language: {
-                search: "Search:",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                infoEmpty: "Showing 0 to 0 of 0 entries",
-                infoFiltered: "(filtered from _MAX_ total entries)"
-            }
+        const container = $('#payment-table-container');
+
+        // Manual Filter on Form Submit
+        $('#filterForm').on('submit', function(e) {
+            e.preventDefault();
+            fetchPayments();
+        });
+
+        function fetchPayments() {
+            const formData = $('#filterForm').serialize();
+            const url = "{{ route('payment-verifications.index') }}?" + formData;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                }
+            });
+        }
+
+        // Handle pagination clicks via AJAX
+        $(document).on('click', '.pagination a', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    container.html(response);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Initialize Flatpickr
+        flatpickr("#date_range", {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "F j, Y",
+            onReady: function(selectedDates, dateStr, instance) {
+                instance.calendarContainer.classList.add('two-calendars');
+            },
+            showMonths: 2
         });
     });
 </script>

@@ -15,13 +15,65 @@ class PaymentVerificationController extends Controller
     /**
      * Display a listing of pending payment verification orders
      */
-    public function index()
+    public function index(Request $request)
     {
-        $orders = Order::where('payment_method', 'bank_transfer')
-            ->where('payment_status', 'pending')
-            ->with(['user', 'items.auction'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $query = Order::where('payment_method', 'bank_transfer')
+            ->with(['user', 'items.auction']);
+
+        // Search functionality
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('order_number', 'LIKE', "%$search%")
+                  ->orWhere('billing_name', 'LIKE', "%$search%")
+                  ->orWhere('billing_email', 'LIKE', "%$search%")
+                  ->orWhere('total', 'LIKE', "%$search%");
+            });
+        }
+
+        // Date Range filtering
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        // Status filtering (default to pending if no search/filter active)
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('payment_status', $request->status);
+        } else {
+            if (!$request->has('search') && !$request->has('date_range')) {
+                $query->where('payment_status', 'pending');
+            }
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'total_high_to_low':
+                $query->orderBy('total', 'desc');
+                break;
+            case 'total_low_to_high':
+                $query->orderBy('total', 'asc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $orders = $query->paginate(15)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('payment-verifications.table_partial', compact('orders'))->render();
+        }
 
         return view('payment-verifications.index', compact('orders'));
     }

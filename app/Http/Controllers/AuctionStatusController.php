@@ -12,35 +12,77 @@ class AuctionStatusController extends Controller
 {
    // INDEX: List all auctions with status
     public function index(Request $request)
-{
-    $search  = trim($request->q ?? '');
-    $status  = $request->status;
-    $perPage = (int) ($request->per_page ?? 10);
+    {
+        $allowedStatuses = ['inactive', 'decline', 'resubmit'];
+        $query = Auction::with(['user', 'category'])
+            ->whereIn('status', $allowedStatuses);
 
-    $allowedStatuses = ['inactive', 'decline', 'resubmit'];
+        // Search functionality
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'LIKE', "%$search%")
+                  ->orWhere('id', 'LIKE', "%$search%")
+                  ->orWhereHas('user', function($userQuery) use ($search) {
+                      $userQuery->where('name', 'LIKE', "%$search%");
+                  })
+                  ->orWhereHas('category', function($catQuery) use ($search) {
+                      $catQuery->where('name', 'LIKE', "%$search%");
+                  });
+            });
+        }
 
-    $query = Auction::with(['user', 'category'])
-        ->whereIn('status', $allowedStatuses);
+        // Date Range filtering
+        if ($request->has('date_range') && !empty($request->date_range)) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                      ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
 
-    // optional single-status filter
-    if ($status && in_array($status, $allowedStatuses, true)) {
-        $query->where('status', $status);
+        // Status filtering
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
+        }
+
+        // Category filtering
+        if ($request->has('category_id') && !empty($request->category_id)) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        // Sorting
+        $sort = $request->get('sort', 'newest_to_oldest');
+        switch ($sort) {
+            case 'oldest_to_newest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'a_to_z':
+                $query->orderBy('title', 'asc');
+                break;
+            case 'z_to_a':
+                $query->orderBy('title', 'desc');
+                break;
+            case 'newest_to_oldest':
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $auctions = $query->paginate(10)->withQueryString();
+
+        if ($request->ajax()) {
+            return view('auctionstatus.table_partial', compact('auctions'))->render();
+        }
+
+        $categories = \App\Models\AuctionCategory::whereHas('auctions', function($q) use ($allowedStatuses) {
+            $q->whereIn('status', $allowedStatuses);
+        })->get();
+
+        return view('auctionstatus.index', compact('auctions', 'allowedStatuses', 'categories'));
     }
-
-    // search across title, id, user.name, category.name
-    if ($search !== '') {
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%{$search}%")
-              ->orWhere('id', $search)
-              ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"))
-              ->orWhereHas('category', fn($cq) => $cq->where('name', 'like', "%{$search}%"));
-        });
-    }
-
-    $auctions = $query->latest()->paginate($perPage)->withQueryString();
-
-    return view('auctionstatus.index', compact('auctions', 'allowedStatuses'));
-}
     public function edit($id)
 {
     // Auction + related user, category, property & vehicle details la lo
