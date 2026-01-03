@@ -130,7 +130,7 @@ class CheckoutController extends Controller
             'billing_address_line2' => 'nullable|string|max:500',
             'billing_city' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
             'billing_state' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
-            'billing_postal_code' => $hasPromotion ? 'nullable|string|max:20' : 'required|string|max:20',
+            'billing_postal_code' => 'nullable|string|max:20',
             'billing_country' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
 
             // Shipping Details
@@ -141,7 +141,7 @@ class CheckoutController extends Controller
             'shipping_address_line2' => 'nullable|string|max:500',
             'shipping_city' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
             'shipping_state' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
-            'shipping_postal_code' => $hasPromotion ? 'nullable|string|max:20' : 'required|string|max:20',
+            'shipping_postal_code' => 'nullable|string|max:20',
             'shipping_country' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
 
             // Payment Details
