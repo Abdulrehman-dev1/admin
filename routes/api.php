@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/buy-now-inquiries/{id}/status', [BuyNowInquiryController::class, 'updateStatus']);
 });
 Route::middleware('auth:sanctum')->post('user/close', [AuthController::class, 'closeAccount']);
+Route::middleware('auth:sanctum')->post('/update-phone', [AuthController::class, 'updatePhone']);
 
 Route::middleware('auth:sanctum')
     ->apiResource('vehicle-verifications', VehicleVerificationController::class);

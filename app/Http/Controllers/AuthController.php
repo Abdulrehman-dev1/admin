@@ -25,6 +25,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
+            'phone' => 'required|string|max:20',
         ]);
 
         // Referral code generation
@@ -45,6 +46,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'phone' => $request->phone,
             'referral_code' => $referralCode,
             'provider' => 'email',   // default provider
             'provider_id' => null,
@@ -58,12 +60,29 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // Optional confirmation mail
-        Mail::to($user->email)->send(new UserSignupConfirmation());
+        // Mail::to($user->email)->send(new UserSignupConfirmation());
         Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
         return response()->json([
             'user' => $user,
             'token' => $token,
+        ]);
+    }
+
+    public function updatePhone(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string|max:20',
+        ]);
+
+        $user = $request->user();
+        $user->phone = $request->phone;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Phone number updated successfully.',
+            'user' => $user
         ]);
     }
 
