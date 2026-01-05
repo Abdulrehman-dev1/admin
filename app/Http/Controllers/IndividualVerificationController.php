@@ -133,7 +133,7 @@ class IndividualVerificationController extends Controller
             'user_id'             => $user->id,
             'full_legal_name'     => $data['full_legal_name'],
             'dob'                 => $data['dob'],
-            'nationality'         => $data['nationality'],
+            'nationality'         => $data['nationality'] ?? null,
             'residential_address' => $data['residential_address'],
             'id_front_path'       => $frontPath,
             'id_back_path'        => $backPath,
@@ -203,7 +203,7 @@ class IndividualVerificationController extends Controller
         $iv->update([
             'full_legal_name'     => $data['full_legal_name'],
             'dob'                 => $data['dob'],
-            'nationality'         => $data['nationality'],
+            'nationality'         => $data['nationality'] ?? null,
             'residential_address' => $data['residential_address'],
             'contact_number'      => $data['contact_number'],
             'email_address'       => $data['email_address'],
