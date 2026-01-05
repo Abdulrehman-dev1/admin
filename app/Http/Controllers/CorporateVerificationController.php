@@ -94,7 +94,7 @@ class CorporateVerificationController extends Controller
             'date_of_incorporation'  => 'required|date',
             'entity_type'            => 'required|string',
             'business_documents'     => 'required|array|min:1|max:3',
-            'business_documents.*'   => 'file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'business_documents.*'   => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
             'country'                => 'required|string',
         ]);
 
@@ -141,7 +141,7 @@ class CorporateVerificationController extends Controller
             'date_of_incorporation'  => 'required|date',
             'entity_type'            => 'required|string',
             'business_documents'     => 'sometimes|array|min:1|max:3',
-            'business_documents.*'   => 'file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'business_documents.*'   => 'file|mimes:jpg,jpeg,png,pdf|max:10240',
             'country'                => 'required|string',
         ]);
 
