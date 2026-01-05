@@ -96,7 +96,7 @@ class IndividualVerificationController extends Controller
         $data = $request->validate([
             'full_legal_name'     => 'required|string',
             'dob'                 => 'required|date',
-            'nationality'         => 'required|string',
+            'nationality'         => 'nullable|string',
             'residential_address' => 'required|string',
             'id_front'            => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'id_back'             => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
@@ -169,7 +169,7 @@ class IndividualVerificationController extends Controller
         $data = $request->validate([
             'full_legal_name'     => 'required|string',
             'dob'                 => 'required|date',
-            'nationality'         => 'required|string',
+            'nationality'         => 'nullable|string',
             'residential_address' => 'required|string',
             'id_front'            => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'id_back'             => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
