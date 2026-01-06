@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Auction;
+use App\Models\ProductVariation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -23,6 +24,13 @@ class CartController extends Controller
                     $query->select('id', 'title', 'slug', 'image', 'minimum_bid', 'buy_now_price', 'is_buynow', 'list_type', 'status', 'description');
                 }
             ])
+            // Eager load variation (since we don't have a direct relation defined in Cart model yet, we can't easily rely on Eloquent relation unless we add it to Cart model. 
+            // But assuming we will add 'variation' relation to Cart model or just manually load it if it's simpler here, 
+            // but correct way is to add relation to Cart model first. 
+            // Let's assume we will add 'variation' to Cart model in next step or I can add it now. 
+            // For now, I'll rely on a later step to update Cart model, but here I will assume relation exists or I'll just skip 'with' and let it lazy load or I'll add `variation` relation to Cart model in the same step.
+            // Actually I'll just assume relation `variation` exists on Cart model. I should update Cart model first? No I'll do it after this.)
+            ->with(['variation'])
             ->get()
             ->map(function ($cartItem) {
                 return [
@@ -49,6 +57,11 @@ class CartController extends Controller
                         'minimum_bid' => $cartItem->auction->minimum_bid,
                         'list_type' => $cartItem->auction->list_type,
                     ],
+                    'variation' => $cartItem->variation ? [
+                        'id' => $cartItem->variation->id,
+                        'name' => $cartItem->variation->name,
+                        'price' => $cartItem->variation->price,
+                    ] : null,
                 ];
             });
 
@@ -67,6 +80,7 @@ class CartController extends Controller
         $validator = Validator::make($request->all(), [
             'auction_id' => 'required|integer|exists:auctions,id',
             'type' => 'nullable|string|in:product,featured',
+            'variation_id' => 'nullable|integer|exists:product_variations,id',
         ]);
 
         if ($validator->fails()) {
@@ -84,6 +98,7 @@ class CartController extends Controller
         $existingCartItem = Cart::where('user_id', $user->id)
             ->where('auction_id', $auction->id)
             ->where('type', $request->type ?? 'product')
+            ->where('variation_id', $request->variation_id)
             ->first();
 
         if ($existingCartItem) {
@@ -95,10 +110,38 @@ class CartController extends Controller
 
         // Determine price
         if ($request->type === 'featured') {
-            $price = 15000; // Fixed PKR base price for Featured Listing promotion (converted to 200 AED / 55 USD by frontend)
+            $price = 15000; // Fixed PKR base price for Featured Listing promotion
         } else {
-            // use buy_now_price if available, otherwise minimum_bid for regular products
-            $price = $auction->buy_now_price ?? $auction->minimum_bid ?? 0;
+            if ($request->variation_id) {
+                $variation = ProductVariation::find($request->variation_id);
+                if ($variation && $variation->auction_id == $auction->id) {
+                    $originalPrice = $variation->price;
+                    $discountType = $variation->discount_type;
+                    $discountValue = $variation->discount_value;
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid variation selected',
+                    ], 400);
+                }
+            } else {
+                // use buy_now_price if available, otherwise minimum_bid for regular products
+                $originalPrice = $auction->buy_now_price ?? $auction->minimum_bid ?? 0;
+                $discountType = $auction->discount_type;
+                $discountValue = $auction->discount_value;
+            }
+
+            // Calculate Discount
+            $price = $originalPrice;
+            if ($discountType && $discountValue > 0) {
+                if ($discountType === 'percent') {
+                    $price = $originalPrice - ($originalPrice * ($discountValue / 100));
+                } elseif ($discountType === 'flat') {
+                    $price = $originalPrice - $discountValue;
+                }
+            }
+            if ($price < 0)
+                $price = 0;
         }
 
         if ($price <= 0) {
@@ -111,6 +154,7 @@ class CartController extends Controller
         $cartItem = Cart::create([
             'user_id' => $user->id,
             'auction_id' => $auction->id,
+            'variation_id' => $request->variation_id,
             'type' => $request->type ?? 'product',
             'quantity' => 1,
             'price' => $price,

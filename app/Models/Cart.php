@@ -9,6 +9,7 @@ class Cart extends Model
     protected $fillable = [
         'user_id',
         'auction_id',
+        'variation_id',
         'type',
         'quantity',
         'price',
@@ -26,5 +27,10 @@ class Cart extends Model
     public function auction()
     {
         return $this->belongsTo(Auction::class);
+    }
+
+    public function variation()
+    {
+        return $this->belongsTo(ProductVariation::class);
     }
 }

@@ -24,7 +24,8 @@ class Auction extends Model
         'child_category_id',
         'start_date',
         'end_date',
-        'image','current_highest_bid',
+        'image',
+        'current_highest_bid',
         'album',
         'product_condition',
         'product_year',
@@ -60,6 +61,8 @@ class Auction extends Model
         'nearby_location',
         'amenities',
         'facilities',
+        'discount_type',
+        'discount_value',
     ];
 
     public function user()
@@ -83,14 +86,14 @@ class Auction extends Model
             // jab auction soft-delete ho, uski bids bhi soft-delete ho jayein
             $auction->bids()->delete();
         });
-  
-    static::saving(function ($auction) {
-        if (empty($auction->slug)) {
-            $slug = Str::slug($auction->title, '-');
-            // Truncate slug to 255 chars (DB limit)
-            $auction->slug = Str::limit($slug, 255, '');
-        }
-    });
+
+        static::saving(function ($auction) {
+            if (empty($auction->slug)) {
+                $slug = Str::slug($auction->title, '-');
+                // Truncate slug to 255 chars (DB limit)
+                $auction->slug = Str::limit($slug, 255, '');
+            }
+        });
 
 
     }
@@ -98,10 +101,10 @@ class Auction extends Model
     // {
     //     return $this->belongsTo(SubCategory::class);
     // }
-public function subCategory()
-{
-    return $this->belongsTo(AuctionCategory::class, 'sub_category_id');
-}
+    public function subCategory()
+    {
+        return $this->belongsTo(AuctionCategory::class, 'sub_category_id');
+    }
     // public function bids()
     // {
     //     return $this->hasMany(Bid::class, 'auction_id');
@@ -120,24 +123,29 @@ public function subCategory()
     }
     // app/Models/Auction.php
 
-// Auction.php
+    // Auction.php
 
-public function property_verification()
-{
-    return $this->hasOne(\App\Models\PropertyVerification::class, 'auction_id', 'id');
-}
+    public function property_verification()
+    {
+        return $this->hasOne(\App\Models\PropertyVerification::class, 'auction_id', 'id');
+    }
 
-public function vehicle_verification()
-{
-    return $this->hasOne(\App\Models\VehicleVerification::class, 'auction_id', 'id');
-}
+    public function vehicle_verification()
+    {
+        return $this->hasOne(\App\Models\VehicleVerification::class, 'auction_id', 'id');
+    }
 
 
 
-public function childCategory()
-{
-    return $this->belongsTo(AuctionCategory::class, 'child_category_id');
-}
+    public function childCategory()
+    {
+        return $this->belongsTo(AuctionCategory::class, 'child_category_id');
+    }
+
+    public function variations()
+    {
+        return $this->hasMany(ProductVariation::class);
+    }
 
 }
 

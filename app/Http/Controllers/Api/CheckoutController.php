@@ -420,14 +420,18 @@ class CheckoutController extends Controller
                 $auctionIds[] = $item['auction_id'];
             }
 
-            // Close all auctions that were ordered (only products, not promotions)
+            // Close auctions that were ordered (only products, excluding normal_list)
             $productAuctionIds = collect($orderData['items'])
                 ->filter(fn($item) => ($item['type'] ?? 'product') === 'product')
                 ->pluck('auction_id')
                 ->toArray();
 
             if (!empty($productAuctionIds)) {
-                Auction::whereIn('id', $productAuctionIds)->update(['status' => 'closed']);
+                // Only close auctions that are NOT 'normal_list'
+                // Assuming 'normal_list' items behave like standard e-commerce products and remain active
+                Auction::whereIn('id', $productAuctionIds)
+                    ->where('list_type', '!=', 'normal_list')
+                    ->update(['status' => 'closed']);
             }
 
             // Clear cart if items were from cart

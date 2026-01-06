@@ -27,6 +27,7 @@ use App\Models\CorporateVerification;
 use Illuminate\Support\Carbon;      //  import Carbon here
 use App\Mail\AuctionStatusUpdated;
 use App\Models\NewNotification;
+use App\Models\ProductVariation;
 
 class AuctionController extends Controller
 {
@@ -37,16 +38,16 @@ class AuctionController extends Controller
         // Search functionality
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'LIKE', "%$search%")
-                  ->orWhere('id', 'LIKE', "%$search%")
-                  ->orWhere('description', 'LIKE', "%$search%")
-                  ->orWhereHas('user', function($userQuery) use ($search) {
-                      $userQuery->where('name', 'LIKE', "%$search%");
-                  })
-                  ->orWhereHas('category', function($catQuery) use ($search) {
-                      $catQuery->where('name', 'LIKE', "%$search%");
-                  });
+                    ->orWhere('id', 'LIKE', "%$search%")
+                    ->orWhere('description', 'LIKE', "%$search%")
+                    ->orWhereHas('user', function ($userQuery) use ($search) {
+                        $userQuery->where('name', 'LIKE', "%$search%");
+                    })
+                    ->orWhereHas('category', function ($catQuery) use ($search) {
+                        $catQuery->where('name', 'LIKE', "%$search%");
+                    });
             });
         }
 
@@ -55,7 +56,7 @@ class AuctionController extends Controller
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
                 $query->whereDate('created_at', '>=', $dates[0])
-                      ->whereDate('created_at', '<=', $dates[1]);
+                    ->whereDate('created_at', '<=', $dates[1]);
             } else {
                 // Single date selected?
                 $query->whereDate('created_at', $dates[0]);
@@ -163,7 +164,11 @@ class AuctionController extends Controller
             'government_fee' => ['nullable', 'string'],
             'nearby_location' => ['nullable', 'string'],
             'amenities' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'string'],
             'facilities' => ['nullable', 'string'],
+            // Discount fields
+            'discount_type' => ['nullable', 'string', 'in:percent,flat'],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
         ];
 
         $validated = $request->validate($rules);
@@ -209,7 +214,10 @@ class AuctionController extends Controller
             'government_fee',
             'nearby_location',
             'amenities',
+            'amenities',
             'facilities',
+            'discount_type',
+            'discount_value',
         ]);
 
         // For normal_list, set default values
@@ -233,7 +241,28 @@ class AuctionController extends Controller
         $data['image'] = $albumsArray[0] ?? null;
         $data['album'] = json_encode($albumsArray);
 
-        Auction::create($data);
+        $auction = Auction::create($data);
+
+        // Handle Variations
+        if ($listType === 'normal_list' && $request->has('variations')) {
+            $variations = $request->input('variations');
+            if (is_string($variations)) {
+                $variations = json_decode($variations, true);
+            }
+            if (is_array($variations)) {
+                foreach ($variations as $variation) {
+                    if (!empty($variation['name']) && !empty($variation['price'])) {
+                        ProductVariation::create([
+                            'auction_id' => $auction->id,
+                            'name' => $variation['name'],
+                            'price' => $variation['price'],
+                            'discount_type' => $variation['discount_type'] ?? null,
+                            'discount_value' => $variation['discount_value'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        }
 
         return redirect()->route('auctions.index')->with('success', 'Auction created successfully');
     }
@@ -297,6 +326,7 @@ class AuctionController extends Controller
     }
     public function edit(Auction $auction)
     {
+        $auction->load('variations'); // Load variations relationship
         $users = User::all();
         $categories = AuctionCategory::whereNull('parent_id')
             ->whereNull('sub_category_id')
@@ -351,7 +381,11 @@ class AuctionController extends Controller
             'government_fee' => ['nullable', 'string'],
             'nearby_location' => ['nullable', 'string'],
             'amenities' => ['nullable', 'string'],
+            'amenities' => ['nullable', 'string'],
             'facilities' => ['nullable', 'string'],
+            // Discount fields
+            'discount_type' => ['nullable', 'string', 'in:percent,flat'],
+            'discount_value' => ['nullable', 'numeric', 'min:0'],
         ];
 
         $validated = $request->validate($rules);
@@ -378,6 +412,8 @@ class AuctionController extends Controller
         $validated['create_category'] = $request->input('create_category');
         $validated['list_type'] = $listType;
         $validated['product_condition'] = $request->input('product_condition');
+        $validated['discount_type'] = $request->input('discount_type');
+        $validated['discount_value'] = $request->input('discount_value');
 
         // For normal_list, set default values
         if ($listType === 'normal_list') {
@@ -399,6 +435,31 @@ class AuctionController extends Controller
 
         // NEW fields are already in $validated — just update:
         $auction->update($validated);
+
+        // Handle Variations Update
+        if ($listType === 'normal_list' && $request->has('variations')) {
+            $variations = $request->input('variations');
+            if (is_string($variations)) {
+                $variations = json_decode($variations, true);
+            }
+
+            // For simplicity, delete old and create new
+            $auction->variations()->delete();
+
+            if (is_array($variations)) {
+                foreach ($variations as $variation) {
+                    if (!empty($variation['name']) && !empty($variation['price'])) {
+                        ProductVariation::create([
+                            'auction_id' => $auction->id,
+                            'name' => $variation['name'],
+                            'price' => $variation['price'],
+                            'discount_type' => $variation['discount_type'] ?? null,
+                            'discount_value' => $variation['discount_value'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        }
 
         return redirect()->route('auctions.index')->with('success', 'Auction updated successfully');
     }
@@ -618,7 +679,7 @@ class AuctionController extends Controller
     {
         $id = Auction::where('slug', $slug)->value('id');
 
-        $pro = Auction::find($id);
+        $pro = Auction::with('variations')->find($id);
         // Eager load user relationship to get profile_pic
         $bids = Bid::where('auction_id', $id)->with('user')->latest()->get();
         $user = User::find(optional($pro)->user_id);
@@ -852,6 +913,8 @@ class AuctionController extends Controller
             'nearby_location' => 'nullable|string',
             'amenities' => 'nullable|string',
             'facilities' => 'nullable|string',
+            'discount_type' => 'nullable|in:percent,flat',
+            'discount_value' => 'nullable|numeric',
         ];
 
         // Auction-specific rules
@@ -1063,6 +1126,27 @@ class AuctionController extends Controller
 
         $auction = Auction::create($auctionData);
 
+        // Handle Variations
+        if ($listType === 'normal_list' && $request->has('variations')) {
+            $variations = $request->input('variations');
+            if (is_string($variations)) {
+                $variations = json_decode($variations, true);
+            }
+            if (is_array($variations)) {
+                foreach ($variations as $variation) {
+                    if (!empty($variation['name']) && !empty($variation['price'])) {
+                        ProductVariation::create([
+                            'auction_id' => $auction->id,
+                            'name' => $variation['name'],
+                            'price' => $variation['price'],
+                            'discount_type' => $variation['discount_type'] ?? null,
+                            'discount_value' => $variation['discount_value'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        }
+
         // ------------------------------------------------------------
         // 5) Send email to user (try/catch)
         // ------------------------------------------------------------
@@ -1119,6 +1203,8 @@ class AuctionController extends Controller
             'nearby_location' => 'nullable|string',
             'amenities' => 'nullable|string',
             'facilities' => 'nullable|string',
+            'discount_type' => 'nullable|in:percent,flat',
+            'discount_value' => 'nullable|numeric',
         ];
 
         // Conditional Rules
@@ -1386,6 +1472,31 @@ class AuctionController extends Controller
 
         $auction->update($auctionData);
 
+        // Handle Variations
+        if ($listType === 'normal_list' && $request->has('variations')) {
+            $variations = $request->input('variations');
+            if (is_string($variations)) {
+                $variations = json_decode($variations, true);
+            }
+
+            // For simplicity, delete old and create new
+            $auction->variations()->delete();
+
+            if (is_array($variations)) {
+                foreach ($variations as $variation) {
+                    if (!empty($variation['name']) && !empty($variation['price'])) {
+                        ProductVariation::create([
+                            'auction_id' => $auction->id,
+                            'name' => $variation['name'],
+                            'price' => $variation['price'],
+                            'discount_type' => $variation['discount_type'] ?? null,
+                            'discount_value' => $variation['discount_value'] ?? null,
+                        ]);
+                    }
+                }
+            }
+        }
+
         // 8) Email: send only if the status changed (e.g., to 'resubmit')
         $newStatus = (string) ($auction->status ?? '');
         $emailed = false;
@@ -1511,7 +1622,8 @@ class AuctionController extends Controller
         // First try to find in auctions table
         $auction = Auction::with([
             'property_verification',
-            'vehicle_verification'
+            'vehicle_verification',
+            'variations'
         ])->find($id);
 
         // If not found, try to find in auctions_1 (drafts) table
