@@ -321,6 +321,7 @@ class CheckoutController extends Controller
 
                 $processedItems[] = [
                     'auction_id' => $item['auction_id'],
+                    'variation_id' => $item['variation_id'] ?? null,
                     'type' => $itemType,
                     'quantity' => $itemQuantity,
                     'price' => $itemPrice,
@@ -405,6 +406,7 @@ class CheckoutController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'auction_id' => $item['auction_id'],
+                    'variation_id' => $item['variation_id'] ?? null,
                     'type' => $item['type'] ?? 'product',
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],

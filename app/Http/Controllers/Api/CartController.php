@@ -36,6 +36,7 @@ class CartController extends Controller
                 return [
                     'id' => $cartItem->id,
                     'auction_id' => $cartItem->auction_id,
+                    'variation_id' => $cartItem->variation_id,
                     'type' => $cartItem->type,
                     'quantity' => $cartItem->quantity,
                     'price' => $cartItem->price,
