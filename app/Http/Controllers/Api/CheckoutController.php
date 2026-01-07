@@ -20,6 +20,11 @@ use Stripe\Stripe;
 use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Password;
+
 class CheckoutController extends Controller
 {
     /**
@@ -73,12 +78,15 @@ class CheckoutController extends Controller
 
             $amountInCents = (int) ($request->amount * 100); // Convert to cents
 
+            // Handle Guest or Auth User ID for Metadata
+            $userId = $request->user() ? $request->user()->id : 'guest';
+
             $paymentIntent = PaymentIntent::create([
                 'amount' => $amountInCents,
                 'currency' => 'usd', // Stripe standard currency
                 'payment_method_types' => ['card'],
                 'metadata' => [
-                    'user_id' => $request->user()->id,
+                    'user_id' => $userId,
                 ],
             ]);
 
@@ -169,6 +177,35 @@ class CheckoutController extends Controller
         }
 
         $user = $request->user();
+
+        // GUEST CHECKOUT LOGIC
+        if (!$user) {
+            $email = $orderData['billing_email'];
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                // Create New User
+                $tempPassword = Str::random(12);
+                $user = User::create([
+                    'name' => $orderData['billing_name'],
+                    'email' => $email,
+                    'password' => Hash::make($tempPassword),
+                    'contact_number' => $orderData['billing_phone'], // Save phone if User model has it
+                    // Add other fields if necessary
+                ]);
+
+                // Send Password Reset Link to allow user to set their password
+                try {
+                    // Password::sendResetLink(['email' => $email]);
+                    // Alternatively, we can manually create a token if we want to send a custom "Welcome" email
+                    // But standard reset link is what the user asked for ("set kar ke link de den")
+                    Password::broker()->sendResetLink(['email' => $email]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send password reset link to new guest user: ' . $e->getMessage());
+                    // Continue with order creation even if email fails
+                }
+            }
+        }
 
         // Verify Stripe payment if payment method is Stripe
         if (($orderData['payment_method'] ?? null) === 'stripe') {
@@ -526,10 +563,11 @@ class CheckoutController extends Controller
      */
     public function getOrderByNumber(Request $request, $orderNumber)
     {
-        $user = $request->user();
+        // Allow public access to order confirmation (for guest checkout)
+        // $user = $request->user();
 
         $order = Order::where('order_number', $orderNumber)
-            ->where('user_id', $user->id)
+            // ->where('user_id', $user->id) // Disabled to allow guest access
             ->with([
                 'items.auction' => function ($query) {
                     $query->select('id', 'title', 'image', 'slug');

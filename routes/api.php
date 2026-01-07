@@ -46,6 +46,9 @@ Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
 
 // Buy Now Inquiry - Public route (no auth required)
 Route::post('/buy-now-inquiry', [BuyNowInquiryController::class, 'store']);
+Route::get('/order/{orderNumber}', [CheckoutController::class, 'getOrderByNumber']);
+Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
+Route::post('/checkout/create-payment-intent', [CheckoutController::class, 'createPaymentIntent']);
 
 // Admin routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -194,10 +197,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/clear', [CartController::class, 'clear']);
 
     // Checkout routes
-    Route::post('/checkout/create-payment-intent', [CheckoutController::class, 'createPaymentIntent']);
-    Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
-    Route::post('/checkout/process', [CheckoutController::class, 'processCheckout']);
-    Route::get('/order/{orderNumber}', [CheckoutController::class, 'getOrderByNumber']);
+    // Checkout routes
     Route::get('/my-orders', [CheckoutController::class, 'myOrders']);
     Route::get('/account-settings', [ProfileController::class, 'getProfile']);
     Route::post('/user/update', [ProfileController::class, 'updateProfile']);
