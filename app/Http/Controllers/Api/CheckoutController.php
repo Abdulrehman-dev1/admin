@@ -190,8 +190,8 @@ class CheckoutController extends Controller
                     'name' => $orderData['billing_name'],
                     'email' => $email,
                     'password' => Hash::make($tempPassword),
-                    'contact_number' => $orderData['billing_phone'], // Save phone if User model has it
-                    // Add other fields if necessary
+                    'phone' => $orderData['billing_phone'], // Corrected column name
+                    'referral_code' => Str::random(10), // Generate unique referral code
                 ]);
 
                 // Send Password Reset Link to allow user to set their password
