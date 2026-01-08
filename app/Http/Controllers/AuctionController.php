@@ -169,6 +169,7 @@ class AuctionController extends Controller
             // Discount fields
             'discount_type' => ['nullable', 'string', 'in:percent,flat'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
+            'is_1_rupee' => ['nullable', 'boolean'],
         ];
 
         $validated = $request->validate($rules);
@@ -218,6 +219,7 @@ class AuctionController extends Controller
             'facilities',
             'discount_type',
             'discount_value',
+            'is_1_rupee',
         ]);
 
         // For normal_list, set default values
@@ -414,6 +416,7 @@ class AuctionController extends Controller
         $validated['product_condition'] = $request->input('product_condition');
         $validated['discount_type'] = $request->input('discount_type');
         $validated['discount_value'] = $request->input('discount_value');
+        $validated['is_1_rupee'] = $request->has('is_1_rupee') ? 1 : 0;
 
         // For normal_list, set default values
         if ($listType === 'normal_list') {
@@ -430,6 +433,11 @@ class AuctionController extends Controller
             }
             if (empty($validated['end_date'])) {
                 $validated['end_date'] = null;
+            }
+        } else {
+            // For Auction list type, ensure product_condition is set (default to 'old' if missing)
+            if (empty($validated['product_condition'])) {
+                $validated['product_condition'] = 'old';
             }
         }
 
@@ -636,6 +644,27 @@ class AuctionController extends Controller
             $query->where('list_type', 'auction')
                 ->orWhereNull('list_type');
         })
+            ->where('status', 'active')
+            ->withMax('bids', 'bid_amount')
+            ->latest()
+            ->take(12)
+            ->get();
+
+        // Add owner data for each product
+        foreach ($products as $product) {
+            $user = User::find($product->user_id);
+            $product->owner = [
+                "name" => $user->name ?? '',
+                "profile" => $user->profile_pic ?? ''
+            ];
+        }
+
+        return response()->json(['product' => $products]);
+    }
+
+    public function get_one_rupee_auctions()
+    {
+        $products = Auction::where('is_1_rupee', 1)
             ->where('status', 'active')
             ->withMax('bids', 'bid_amount')
             ->latest()

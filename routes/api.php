@@ -168,6 +168,7 @@ Route::get('/get-service', [AuctionController::class, 'get_service']);
 Route::get('/get-latest-vehicles', [AuctionController::class, 'get_latest_vehicles']);
 Route::get('/get-latest-properties', [AuctionController::class, 'get_latest_properties']);
 Route::get('/get-latest-normal-lists', [AuctionController::class, 'get_latest_normal_lists']);
+Route::get('/get-one-rupee-auctions', [AuctionController::class, 'get_one_rupee_auctions']); // New Route
 Route::get('/get-latest-auctions', [AuctionController::class, 'get_latest_auctions']);
 Route::get('/get-all-categories', [AuctionCategoryController::class, 'all_categories']);
 

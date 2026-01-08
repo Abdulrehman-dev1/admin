@@ -63,6 +63,7 @@ class Auction extends Model
         'facilities',
         'discount_type',
         'discount_value',
+        'is_1_rupee',
     ];
 
     public function user()

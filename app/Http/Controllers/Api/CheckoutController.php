@@ -199,7 +199,7 @@ class CheckoutController extends Controller
                     // Password::sendResetLink(['email' => $email]);
                     // Alternatively, we can manually create a token if we want to send a custom "Welcome" email
                     // But standard reset link is what the user asked for ("set kar ke link de den")
-                    // Password::broker()->sendResetLink(['email' => $email]);
+                    Password::broker()->sendResetLink(['email' => $email]);
                 } catch (\Exception $e) {
                     Log::error('Failed to send password reset link to new guest user: ' . $e->getMessage());
                     // Continue with order creation even if email fails
@@ -502,7 +502,8 @@ class CheckoutController extends Controller
                 // 3. Send to Sellers (Vendors)
                 // Group items by Seller (Auction Owner)
                 $sellerItems = [];
-                $order->load('items.auction.user'); // Eager load relationships
+                $order->load('items.auction.user'); // Eager load relation
+                // ships
 
                 foreach ($order->items as $item) {
                     if ($item->auction && $item->auction->user) {
