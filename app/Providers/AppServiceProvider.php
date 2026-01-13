@@ -20,6 +20,7 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
 
+
 public function boot()
 {
     $target = public_path('storage');
@@ -29,6 +30,12 @@ public function boot()
         // Fallback if symlink is not supported
         File::copyDirectory($link, $target);
     }
+
+    \Illuminate\Support\Facades\Event::listen(
+        \Illuminate\Mail\Events\MessageSent::class,
+        \App\Listeners\LogSentEmail::class
+    );
 }
 
 }
+
