@@ -21,11 +21,11 @@ class UserController extends Controller
         // Search functionality
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%$search%")
-                  ->orWhere('email', 'LIKE', "%$search%")
-                  ->orWhere('phone', 'LIKE', "%$search%")
-                  ->orWhere('id', 'LIKE', "%$search%");
+                    ->orWhere('email', 'LIKE', "%$search%")
+                    ->orWhere('phone', 'LIKE', "%$search%")
+                    ->orWhere('id', 'LIKE', "%$search%");
             });
         }
 
@@ -34,7 +34,7 @@ class UserController extends Controller
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
                 $query->whereDate('created_at', '>=', $dates[0])
-                      ->whereDate('created_at', '<=', $dates[1]);
+                    ->whereDate('created_at', '<=', $dates[1]);
             } else {
                 $query->whereDate('created_at', $dates[0]);
             }
@@ -67,6 +67,69 @@ class UserController extends Controller
         return view('users.index', compact('users'));
     }
 
+    public function export(Request $request)
+    {
+        $query = User::with(['roles', 'referrer']);
+
+        // Date Range Filter
+        if ($request->has('export_date_range') && !empty($request->export_date_range)) {
+            $dates = explode(' to ', $request->export_date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('created_at', '>=', $dates[0])
+                    ->whereDate('created_at', '<=', $dates[1]);
+            } else {
+                $query->whereDate('created_at', $dates[0]);
+            }
+        }
+
+        $users = $query->get();
+
+        $filename = "users_export_" . date('Y-m-d_H-i-s') . ".csv";
+
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['ID', 'Name', 'User Type', 'Email', 'Referral Code', 'Referred By', 'Phone', 'Status', 'Created At'];
+
+        $callback = function () use ($users, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($users as $user) {
+                $row['ID'] = $user->id;
+                $row['Name'] = $user->name;
+                $row['User Type'] = $user->getRoleNames()->first() ?? 'N/A';
+                $row['Email'] = $user->email;
+                $row['Referral Code'] = $user->referral_code;
+                $row['Referred By'] = $user->referrer ? $user->referrer->name : 'N/A';
+                $row['Phone'] = $user->phone;
+                $row['Status'] = $user->status;
+                $row['Created At'] = $user->created_at;
+
+                fputcsv($file, array(
+                    $row['ID'],
+                    $row['Name'],
+                    $row['User Type'],
+                    $row['Email'],
+                    $row['Referral Code'],
+                    $row['Referred By'],
+                    $row['Phone'],
+                    $row['Status'],
+                    $row['Created At']
+                ));
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     /**
      * Display a listing of users with non-null UTM Campaign.
      *
@@ -79,11 +142,11 @@ class UserController extends Controller
         // Search functionality
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'LIKE', "%$search%")
-                  ->orWhere('email', 'LIKE', "%$search%")
-                  ->orWhere('phone', 'LIKE', "%$search%")
-                  ->orWhere('id', 'LIKE', "%$search%");
+                    ->orWhere('email', 'LIKE', "%$search%")
+                    ->orWhere('phone', 'LIKE', "%$search%")
+                    ->orWhere('id', 'LIKE', "%$search%");
             });
         }
 
@@ -92,7 +155,7 @@ class UserController extends Controller
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
                 $query->whereDate('created_at', '>=', $dates[0])
-                      ->whereDate('created_at', '<=', $dates[1]);
+                    ->whereDate('created_at', '<=', $dates[1]);
             } else {
                 $query->whereDate('created_at', $dates[0]);
             }

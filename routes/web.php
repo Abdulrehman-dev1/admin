@@ -225,15 +225,15 @@ Route::get('/clean-invalid-permissions', function () {
 Route::get('/fix-bids-permission', function () {
     try {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-        
+
         $permission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'bid-list']);
         $adminRole = \Spatie\Permission\Models\Role::where('name', 'admin')->first();
-        
+
         if ($adminRole) {
             $adminRole->givePermissionTo($permission);
             return 'Permission "bid-list" created and assigned to "admin" role. Please visit the Bids tab now.';
         }
-        
+
         return 'Admin role not found.';
     } catch (\Exception $e) {
         return 'Error: ' . $e->getMessage();
@@ -413,7 +413,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSubcategories']);
     Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildern']);
     Route::get('utm-campaign-users', [UserController::class, 'utmCampaign'])->name('utm_campaign_users.index')->middleware('permission:user-list');
+    Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class)->middleware('permission:user-list');
+    Route::post('users/{user}/update-status', [UserController::class, 'updateStatus'])->name('users.updateStatus');
     Route::get('/profile', [UserController::class, 'show'])->name('user.profile');
     Route::get('/profile/edit', [ProfileController::class, 'editProfile'])->name('user.profile.edit');
     Route::post('/profile/update', [ProfileController::class, 'updateProfile'])->name('user.profile.update');
