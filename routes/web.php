@@ -474,6 +474,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('bids', [BidController::class, 'index'])->name('bids.index');
     Route::get('bids/{id}', [BidController::class, 'show'])->name('bids.show');
+    Route::get('email-logs', [App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
+
 });
 
 
