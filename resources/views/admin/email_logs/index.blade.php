@@ -236,7 +236,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($logs as $log)
+                    @forelse($emailLogs as $log)
                         <tr>
                             <td style="white-space: nowrap;">
                                 <div style="font-size: 12px; color: #374557; font-weight: 700;">
@@ -283,10 +283,10 @@
 
         <div class="d-flex justify-content-between align-items-center mt-3 mb-4 p-3" style="background: #fff; border-radius: 10px; border: 1px solid #f0f0f0;">
             <div class="small text-muted">
-                Showing {{ $logs->firstItem() ?? 0 }}-{{ $logs->lastItem() ?? 0 }} of {{ $logs->total() ?? 0 }} results
+                Showing {{ $emailLogs->firstItem() ?? 0 }}-{{ $emailLogs->lastItem() ?? 0 }} of {{ $emailLogs->total() ?? 0 }} results
             </div>
             <div>
-                {{ $logs->links('pagination::bootstrap-5') }}
+                {{ $emailLogs->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>
