@@ -1929,8 +1929,11 @@ class AuctionController extends Controller
             return response()->json(['auctions' => []]);
         }
 
-        $auctions = Auction::where('title', 'like', "%{$query}%")
-            ->orWhere('description', 'like', "%{$query}%")
+        $auctions = Auction::where('status', 'active')
+            ->where(function($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            })
             ->limit(10)
             ->get(['id', 'title', 'slug']);
 
