@@ -416,13 +416,13 @@
             });
 
             // Initialize Flatpickr for Export Modal
-        flatpickr("#export_date_range", {
-            mode: "range",
-            dateFormat: "Y-m-d",
-            altInput: true,
-            altFormat: "F j, Y",
-            showMonths: 2
-        });    });
+            flatpickr("#export_date_range", {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                altInput: true,
+                altFormat: "F j, Y",
+                showMonths: 2
+            });
         });
 </script>
 
