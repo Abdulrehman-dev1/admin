@@ -14,5 +14,7 @@ class Seo extends Model
         'og_title',
         'og_description',
         'og_image',
+        'schema_markup',
+        'canonical_url',
     ];
 }

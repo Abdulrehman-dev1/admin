@@ -30,6 +30,8 @@ class SeoController extends Controller
             'meta_title'       => 'nullable|string',
             'meta_description' => 'nullable|string',
             'meta_keywords'    => 'nullable|string',
+            'schema_markup'    => 'nullable|string',
+            'canonical_url'    => 'nullable|url',
            
         ]);
        // dd($data);
@@ -55,6 +57,8 @@ class SeoController extends Controller
             'meta_title'       => 'nullable|string',
             'meta_description' => 'nullable|string',
             'meta_keywords'    => 'nullable|string',
+            'schema_markup'    => 'nullable|string',
+            'canonical_url'    => 'nullable|url',
           
         ]);
 

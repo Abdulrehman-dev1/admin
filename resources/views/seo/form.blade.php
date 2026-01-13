@@ -31,6 +31,18 @@
              class="form-control">
     </div>
 
+    <div class="mb-3">
+      <label>Canonical URL</label>
+      <input type="url" name="canonical_url" value="{{ old('canonical_url',$seo->canonical_url) }}"
+             class="form-control" placeholder="https://example.com/...">
+      <small class="text-muted">Leave empty to use the default page URL.</small>
+    </div>
+
+    <div class="mb-3">
+      <label>Schema Markup (JSON)</label>
+      <textarea name="schema_markup" class="form-control" rows="6" placeholder='{"@context": "https://schema.org", ...}'>{{ old('schema_markup',$seo->schema_markup) }}</textarea>
+    </div>
+
     
     <button class="btn btn-success">{{ $seo->exists ? 'Update' : 'Save' }}</button>
     <a href="{{ route('seo.index') }}" class="btn btn-secondary">Cancel</a>
