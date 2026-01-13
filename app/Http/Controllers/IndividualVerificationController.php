@@ -283,7 +283,7 @@ public function decline(Request $request, $id)
         if ($recipient) {
             Mail::to($recipient)
                 ->bcc(config('app.admin_email'))
-                ->send(new VerificationDeclinedMail($verification));
+                ->send(new VerificationDeclinedMail($verification, $request->input('decline_reason')));
             // ->queue(new VerificationDeclinedMail($verification)); // (optional) queue
         }
     } catch (\Throwable $e) {
