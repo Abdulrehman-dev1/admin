@@ -11,7 +11,7 @@
     <div class="mb-3">
       <label>Slug</label>
       <input type="text" name="slug" value="{{ old('slug',$seo->slug) }}"
-             class="form-control" @if($seo->exists) readonly @endif>
+             class="form-control">
     </div>
 
     <div class="mb-3">
