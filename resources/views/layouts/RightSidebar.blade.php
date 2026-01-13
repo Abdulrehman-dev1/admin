@@ -781,23 +781,48 @@
                             </li>
                         @endcan
                         @role('admin')
-                        <li class="{{ request()->routeIs('wallets.*') ? 'active' : '' }}">
-                            <a href="{{ route('wallets.index') }}">
-                                <span class="menu-bar__text">
-                                    <span class="nftmax-menu-icon nftmax-svg-icon__v1">
-                                        <!-- Dashboard SVG Icon -->
-                                        <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
-                                            height="16" viewBox="0 0 16 16">
-                                            <path
-                                                d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
-                                            </path>
-                                            <path
-                                                d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
-                                            </path>
-                                            <path
-                                                d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
-                                            </path>
-                                            <path
+                            <li class="{{ request()->routeIs('wallets.*') ? 'active' : '' }}">
+                                <a href="{{ route('wallets.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- Dashboard SVG Icon -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path
+                                                    d="M0.800781 2.60005V7.40005H7.40078V0.800049H2.60078C2.12339 0.800049 1.66555 0.989691 1.32799 1.32726C0.990424 1.66482 0.800781 2.12266 0.800781 2.60005H0.800781Z">
+                                                </path>
+                                                <path
+                                                    d="M13.4016 0.800049H8.60156V7.40005H15.2016V2.60005C15.2016 2.12266 15.0119 1.66482 14.6744 1.32726C14.3368 0.989691 13.879 0.800049 13.4016 0.800049V0.800049Z">
+                                                </path>
+                                                <path
+                                                    d="M0.800781 13.4001C0.800781 13.8775 0.990424 14.3353 1.32799 14.6729C1.66555 15.0105 2.12339 15.2001 2.60078 15.2001H7.40078V8.6001H0.800781V13.4001Z">
+                                                </path>
+                                                <path
+                                                    d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
+                                                </path>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Wallets</span>
+                                    </span>
+                                </a>
+                            </li>
+                        @endrole
+                        
+                        <!-- Email Logs -->
+                        @role('admin')
+                            <li class="{{ request()->routeIs('email-logs.*') ? 'active' : '' }}">
+                                <a href="{{ route('email-logs.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Email Logs</span>
+                                    </span>
+                                </a>
+                            </li>
                                                 d="M8.60156 15.2001H13.4016C13.879 15.2001 14.3368 15.0105 14.6744 14.6729C15.0119 14.3353 15.2016 13.8775 15.2016 13.4001V8.6001H8.60156V15.2001Z">
                                             </path>
                                         </svg>

@@ -63,15 +63,25 @@ class LogSentEmail
                  $parts = explode('-', $subject);
                  $type = trim($parts[0]);
             }
-            
-            EmailLog::create([
-                'user_id' => $user ? $user->id : null,
-                'recipient_email' => $recipientEmail,
-                'subject' => $subject,
-                'type' => $type,
-                'sent_at' => now(),
-                'status' => 'sent',
-            ]);
+
+            // Prevent duplicate logging (debounce check)
+            // Check if we logged this exact email to this recipient in the last 5 seconds
+            $exists = EmailLog::where('recipient_email', $recipientEmail)
+                ->where('subject', $subject)
+                ->where('created_at', '>=', now()->subSeconds(5))
+                ->exists();
+
+            if (!$exists) {
+                EmailLog::create([
+                    'user_id' => $user ? $user->id : null,
+                    'recipient_email' => $recipientEmail,
+                    'subject' => $subject,
+                    'type' => $type,
+                    'sent_at' => now(),
+                    'status' => 'sent',
+                ]);
+            }
+
 
         } catch (\Exception $e) {
             Log::error('Failed to log sent email: ' . $e->getMessage());

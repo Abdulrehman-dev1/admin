@@ -176,7 +176,7 @@ class BidController extends Controller
             ]);
 
             // Optional: notify or email
-            // $this->sendBidNotification($auction->id, $userId);
+            $this->sendBidNotification($auction->id, $userId);
             // Mail::to(auth()->user()->email)->send(new BidPlacedConfirmation(...));
 
             DB::commit();
