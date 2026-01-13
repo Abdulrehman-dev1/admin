@@ -36,16 +36,33 @@ class LogSentEmail
                 $user = User::where('email', $firstEmail)->first();
             }
 
-            // Determine type (optional, based on mailable class if available? 
-            // The event data has 'data' which might contain the mailable)
+            // Determine type
             $type = null;
-            if (isset($event->data['__laravel_notification'])) {
+            
+            // 1. Check if 'data' contains a Mailable object
+            if (is_array($event->data)) {
+                foreach ($event->data as $key => $value) {
+                    if (is_object($value) && $value instanceof \Illuminate\Mail\Mailable) {
+                        $type = class_basename($value);
+                        break;
+                    }
+                }
+            }
+
+            // 2. Check for Notification
+            if (!$type && isset($event->data['__laravel_notification'])) {
                 $type = class_basename($event->data['__laravel_notification']); 
-            } elseif (isset($event->data['__laravel_mailable'])) { // This key might vary depending on Laravel version
-                 // If using Mailable, we might check the object class
+            } elseif (!$type && isset($event->data['__laravel_mailable'])) {
+                // Some versions store it here
+                $type = class_basename($event->data['__laravel_mailable']);
             }
             
-            // If we can't get it easily from data, we leave it null or try to guess from subject
+            // 3. Fallback: Try to infer from Subject if still null
+            if (!$type && $subject) {
+                 // Example: "Order Confirmation - ..." -> "Order Confirmation"
+                 $parts = explode('-', $subject);
+                 $type = trim($parts[0]);
+            }
             
             EmailLog::create([
                 'user_id' => $user ? $user->id : null,

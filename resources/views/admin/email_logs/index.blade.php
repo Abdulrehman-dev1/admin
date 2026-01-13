@@ -57,9 +57,9 @@
                                     <td>{{ $log->type ?? 'N/A' }}</td>
                                     <td>
                                         @if($log->status === 'sent')
-                                            <span class="badge badge-success">Sent</span>
+                                            <span class="text-success font-weight-bold">Sent</span>
                                         @else
-                                            <span class="badge badge-warning">{{ ucfirst($log->status) }}</span>
+                                            <span class="text-warning font-weight-bold">{{ ucfirst($log->status) }}</span>
                                         @endif
                                     </td>
                                 </tr>
