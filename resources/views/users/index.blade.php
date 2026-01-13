@@ -427,9 +427,9 @@
 </script>
 
 <style>
-    /* Force Flatpickr to be on top of Bootstrap Modal (z-index 1055) */
-    .flatpickr-calendar {
-        z-index: 100000 !important;
+    /* Force Flatpickr to be on top of Bootstrap Modal */
+    .flatpickr-calendar, .flatpickr-calendar.open {
+        z-index: 9999999 !important;
     }
 </style>
 @endsection
