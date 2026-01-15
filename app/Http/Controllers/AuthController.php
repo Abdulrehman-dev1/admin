@@ -25,7 +25,8 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|string|min:6',
-            'phone' => 'required|string|max:20',
+            // 'phone' => 'required|string|max:20', 
+
         ]);
 
         // Referral code generation
@@ -72,7 +73,7 @@ class AuthController extends Controller
     public function updatePhone(Request $request)
     {
         $request->validate([
-            'phone' => 'required|string|max:20',
+            // 'phone' => 'required|string|max:20',
         ]);
 
         $user = $request->user();
@@ -161,7 +162,7 @@ class AuthController extends Controller
                 }
                 Mail::to(env('ADMIN_EMAIL'))->send(new AdminNewUserRegistration($user));
 
-                    return response()->json([
+                return response()->json([
                     'user' => $user,
                     'token' => $token,
                 ]);
