@@ -1819,11 +1819,11 @@ class AuctionController extends Controller
                             ->orWhere('status', 'closed');
                     })
                     ->with([
-                        'bids' => function ($query) {
-                            $query->orderBy('bid_amount', 'desc')->limit(1);
-                        },
-                        'user:id,name,profile_pic'
-                    ])
+                            'bids' => function ($query) {
+                                $query->orderBy('bid_amount', 'desc')->limit(1);
+                            },
+                            'user:id,name,profile_pic'
+                        ])
                     ->get()
                     ->map(function ($auction) {
                         $highestBid = $auction->bids->first();
@@ -1853,11 +1853,11 @@ class AuctionController extends Controller
                             });
                     })
                     ->with([
-                        'bids' => function ($query) {
-                            $query->orderBy('bid_amount', 'desc')->limit(1);
-                        },
-                        'user:id,name,profile_pic'
-                    ])
+                            'bids' => function ($query) {
+                                $query->orderBy('bid_amount', 'desc')->limit(1);
+                            },
+                            'user:id,name,profile_pic'
+                        ])
                     ->get()
                     ->map(function ($auction) {
                         // Get highest bid
@@ -1887,11 +1887,11 @@ class AuctionController extends Controller
                         $query->whereRaw('bids.bid_amount > (SELECT MAX(bids.bid_amount) FROM bids WHERE bids.auction_id = auctions.id)');
                     })
                     ->with([
-                        'bids' => function ($query) {
-                            $query->orderBy('bid_amount', 'desc')->limit(1);
-                        },
-                        'user:id,name,profile_pic'
-                    ])
+                            'bids' => function ($query) {
+                                $query->orderBy('bid_amount', 'desc')->limit(1);
+                            },
+                            'user:id,name,profile_pic'
+                        ])
                     ->get()
                     ->map(function ($auction) {
                         // Get highest bid
@@ -1929,13 +1929,14 @@ class AuctionController extends Controller
             return response()->json(['auctions' => []]);
         }
 
-        $auctions = Auction::where('status', 'active')
-            ->where(function($q) use ($query) {
+        $auctions = Auction::with('user')
+            ->where('status', 'active')
+            ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%");
+                    ->orWhere('description', 'like', "%{$query}%");
             })
             ->limit(10)
-            ->get(['id', 'title', 'slug']);
+            ->get();
 
         return response()->json(['auctions' => $auctions]);
     }
