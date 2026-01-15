@@ -207,12 +207,12 @@ class BidController extends Controller
         // Dashboard link for the user
         $dashboardLink = url('https://www.xpertbid.com/userDashboard');
 
-        // Get last 3 unique bidders excluding the current user
+        // Get last 5 unique bidders excluding the current user
         $previousBidders = Bid::where('auction_id', $auctionId)
             ->where('user_id', '!=', $currentUserId)
             ->groupBy('user_id')
             ->orderBy('created_at', 'desc')
-            ->limit(3)
+            ->limit(5)
             ->pluck('user_id');
 
         // Loop through each bidder to create a DB notification and send an email
@@ -249,19 +249,19 @@ class BidController extends Controller
         // Search functionality (Auction Title, Bid ID, User Name, User Phone)
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('id', 'LIKE', "%$search%")
-                  ->orWhere('bid_amount', 'LIKE', "%$search%")
-                  ->orWhereHas('auction', function($aq) use ($search) {
-                      $aq->where('title', 'LIKE', "%$search%");
-                  })
-                  ->orWhereHas('user', function($uq) use ($search) {
-                      $uq->where('name', 'LIKE', "%$search%")
-                        ->orWhere('phone', 'LIKE', "%$search%")
-                        ->orWhereHas('IndividualVerification', function($ivq) use ($search) {
-                            $ivq->where('contact_number', 'LIKE', "%$search%");
-                        });
-                  });
+                    ->orWhere('bid_amount', 'LIKE', "%$search%")
+                    ->orWhereHas('auction', function ($aq) use ($search) {
+                        $aq->where('title', 'LIKE', "%$search%");
+                    })
+                    ->orWhereHas('user', function ($uq) use ($search) {
+                        $uq->where('name', 'LIKE', "%$search%")
+                            ->orWhere('phone', 'LIKE', "%$search%")
+                            ->orWhereHas('IndividualVerification', function ($ivq) use ($search) {
+                                $ivq->where('contact_number', 'LIKE', "%$search%");
+                            });
+                    });
             });
         }
 
@@ -270,7 +270,7 @@ class BidController extends Controller
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
                 $query->whereDate('created_at', '>=', $dates[0])
-                      ->whereDate('created_at', '<=', $dates[1]);
+                    ->whereDate('created_at', '<=', $dates[1]);
             } else {
                 $query->whereDate('created_at', $dates[0]);
             }
@@ -306,7 +306,7 @@ class BidController extends Controller
     public function show($id)
     {
         $bid = Bid::with(['user.IndividualVerification', 'auction.user'])->findOrFail($id);
-        
+
         // All bids for this specific auction
         $auctionBids = Bid::with('user.IndividualVerification')
             ->where('auction_id', $bid->auction_id)
