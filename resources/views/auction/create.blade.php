@@ -276,6 +276,14 @@
             <option value="home_featured" {{ old('featured_name', $auction->featured_name) == 'home_featured' ? 'selected' : '' }}>Home Featured</option>
 
           </select>
+          <div class="form-group mt-2" id="sendFeaturedEmailContainer" style="display: none;">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="send_featured_email" id="send_featured_email" value="1">
+                    <label class="form-check-label" for="send_featured_email">
+                        Would you like to send featured email to user?
+                    </label>
+                </div>
+            </div>
         </div>
       </div>
 
@@ -481,6 +489,27 @@
       });
       // initial load
       applyCategoryUI();
+    }
+
+    // Featured Email Toggle
+    const featuredNameSelect = document.getElementById('featured_name');
+    const sendFeaturedEmailContainer = document.getElementById('sendFeaturedEmailContainer');
+    const sendFeaturedEmailCheckbox = document.getElementById('send_featured_email');
+
+    function toggleFeaturedEmail() {
+        if (featuredNameSelect && sendFeaturedEmailContainer) {
+            if (featuredNameSelect.value === 'home_featured') {
+                sendFeaturedEmailContainer.style.display = 'block';
+            } else {
+                sendFeaturedEmailContainer.style.display = 'none';
+                if (sendFeaturedEmailCheckbox) sendFeaturedEmailCheckbox.checked = false;
+            }
+        }
+    }
+
+    if (featuredNameSelect) {
+        featuredNameSelect.addEventListener('change', toggleFeaturedEmail);
+        toggleFeaturedEmail(); // Initial check
     }
   </script>
 

@@ -28,6 +28,7 @@ use Illuminate\Support\Carbon;      //  import Carbon here
 use App\Mail\AuctionStatusUpdated;
 use App\Models\NewNotification;
 use App\Models\ProductVariation;
+use App\Mail\FeaturedListingNotification;
 
 class AuctionController extends Controller
 {
@@ -266,6 +267,18 @@ class AuctionController extends Controller
             }
         }
 
+        // Send Featured Email Logic
+        if ($request->has('send_featured_email') && $request->input('featured_name') == 'home_featured') {
+            $user = User::find($auction->user_id);
+            if ($user) {
+                try {
+                    Mail::to($user->email)->send(new FeaturedListingNotification($user, $auction));
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send Featured Notification email: " . $e->getMessage());
+                }
+            }
+        }
+
         return redirect()->route('auctions.index')->with('success', 'Auction created successfully');
     }
 
@@ -465,6 +478,20 @@ class AuctionController extends Controller
                             'discount_value' => $variation['discount_value'] ?? null,
                         ]);
                     }
+                }
+            }
+        }
+
+
+
+        // Send Featured Email Logic
+        if ($request->has('send_featured_email') && $request->input('featured_name') == 'home_featured') {
+            $user = User::find($auction->user_id);
+            if ($user) {
+                try {
+                    Mail::to($user->email)->send(new FeaturedListingNotification($user, $auction));
+                } catch (\Exception $e) {
+                    \Log::error("Failed to send Featured Notification email: " . $e->getMessage());
                 }
             }
         }
@@ -1819,11 +1846,11 @@ class AuctionController extends Controller
                             ->orWhere('status', 'closed');
                     })
                     ->with([
-                            'bids' => function ($query) {
-                                $query->orderBy('bid_amount', 'desc')->limit(1);
-                            },
-                            'user:id,name,profile_pic'
-                        ])
+                        'bids' => function ($query) {
+                            $query->orderBy('bid_amount', 'desc')->limit(1);
+                        },
+                        'user:id,name,profile_pic'
+                    ])
                     ->get()
                     ->map(function ($auction) {
                         $highestBid = $auction->bids->first();
@@ -1853,11 +1880,11 @@ class AuctionController extends Controller
                             });
                     })
                     ->with([
-                            'bids' => function ($query) {
-                                $query->orderBy('bid_amount', 'desc')->limit(1);
-                            },
-                            'user:id,name,profile_pic'
-                        ])
+                        'bids' => function ($query) {
+                            $query->orderBy('bid_amount', 'desc')->limit(1);
+                        },
+                        'user:id,name,profile_pic'
+                    ])
                     ->get()
                     ->map(function ($auction) {
                         // Get highest bid
@@ -1887,11 +1914,11 @@ class AuctionController extends Controller
                         $query->whereRaw('bids.bid_amount > (SELECT MAX(bids.bid_amount) FROM bids WHERE bids.auction_id = auctions.id)');
                     })
                     ->with([
-                            'bids' => function ($query) {
-                                $query->orderBy('bid_amount', 'desc')->limit(1);
-                            },
-                            'user:id,name,profile_pic'
-                        ])
+                        'bids' => function ($query) {
+                            $query->orderBy('bid_amount', 'desc')->limit(1);
+                        },
+                        'user:id,name,profile_pic'
+                    ])
                     ->get()
                     ->map(function ($auction) {
                         // Get highest bid
