@@ -212,9 +212,7 @@ class BidController extends Controller
             ->where('user_id', '!=', $currentUserId)
             ->groupBy('user_id')
             ->orderBy('created_at', 'desc')
-            ->limit(5)
             ->pluck('user_id');
-
         // Loop through each bidder to create a DB notification and send an email
         foreach ($previousBidders as $bidderId) {
             // Create database notification
