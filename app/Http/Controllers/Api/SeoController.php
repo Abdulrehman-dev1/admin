@@ -47,6 +47,11 @@ public function show(string $slug): JsonResponse
             'meta_title'       => 'required|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords'    => 'nullable|string',
+            'canonical_url'    => 'nullable|string',
+            'schema_markup'    => 'nullable|string',
+            'og_title'         => 'nullable|string',
+            'og_description'   => 'nullable|string',
+            'og_image'         => 'nullable|string',
         ]);
 
         Seo::create($data);
@@ -70,6 +75,11 @@ public function show(string $slug): JsonResponse
             'meta_title'       => 'required|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords'    => 'nullable|string',
+            'canonical_url'    => 'nullable|string',
+            'schema_markup'    => 'nullable|string',
+            'og_title'         => 'nullable|string',
+            'og_description'   => 'nullable|string',
+            'og_image'         => 'nullable|string',
         ]);
 
         $seo->update($data);
