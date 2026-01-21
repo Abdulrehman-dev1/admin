@@ -199,16 +199,26 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        // Allow 'email' parameter to contain email or phone
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required', 
             'password' => 'required',
         ]);
 
-        // Check if email exists
-        $user = User::where('email', $request->email)->first();
+        $login = $request->email;
+        
+        $user = null;
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+             $user = User::where('email', $login)->first();
+        } else {
+             // Assume phone
+             // Strip + if present for consistency, or search both
+             $cleanPhone = str_replace('+', '', $login);
+             $user = User::where('phone', $login)->orWhere('phone', $cleanPhone)->orWhere('phone', '+' . $cleanPhone)->first();
+        }
 
         if (!$user) {
-            return response()->json(["status" => "error", "message" => "Email does not exist."], 422);
+            return response()->json(["status" => "error", "message" => "Account does not exist."], 422);
         }
         if ($user->status == "closed") {
             return response()->json(["status" => "error", "message" => "Account is closed. Please contact to support"], 403);

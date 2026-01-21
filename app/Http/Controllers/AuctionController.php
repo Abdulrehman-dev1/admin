@@ -757,8 +757,35 @@ class AuctionController extends Controller
             ];
         }
 
-        // Get related auctions with owner data
-        $relatedAuctions = Auction::where('id', '!=', $id)->where('status', 'active')->take(8)->get();
+        // Defined priority: Same Category -> 1 Rupee -> Latest
+        
+        // 1. Same Category
+        $sameCategory = Auction::where('category_id', $pro->category_id)
+            ->where('id', '!=', $id)
+            ->where('status', 'active')
+            ->latest()
+            ->take(12)
+            ->get();
+
+        // 2. 1 Rupee Auctions
+        $oneRupee = Auction::where('is_1_rupee', 1)
+            ->where('id', '!=', $id)
+            ->where('status', 'active')
+            ->latest()
+            ->take(12)
+            ->get();
+
+        // 3. Latest Products
+        $latest = Auction::where('id', '!=', $id)
+            ->where('status', 'active')
+            ->latest()
+            ->take(12)
+            ->get();
+
+        // Merge collections: Same Category first, then 1 Rupee, then Latest.
+        // unique('id') removes duplicates (keeping the first occurrence, which respects our priority).
+        // take(12) limits the final result.
+        $relatedAuctions = $sameCategory->concat($oneRupee)->concat($latest)->unique('id')->take(12);
 
         $relatedItemsArray = [];
         foreach ($relatedAuctions as $auction) {

@@ -13,10 +13,18 @@ use Illuminate\Support\Facades\DB;
 use App\Models\IndividualVerification;
 use App\Models\CorporateVerification;
 use App\Mail\BidOutbidNotification;
+use App\Services\MsgpkService;
 
 
 class BidController extends Controller
 {
+    protected $msgpkService;
+
+    public function __construct(MsgpkService $msgpkService)
+    {
+        $this->msgpkService = $msgpkService;
+    }
+
     public function getHighestBid($auctionId)
     {
         $highestBid = Bid::where('auction_id', $auctionId)
@@ -204,16 +212,18 @@ class BidController extends Controller
         $newHighestBid = Bid::where('auction_id', $auctionId)
             ->orderBy('bid_amount', 'desc')
             ->first()->bid_amount;
-        // Dashboard link for the user
-        $dashboardLink = url('https://www.xpertbid.com/userDashboard');
+        // Product link for the user
+        $productLink = 'https://www.xpertbid.com/product/' . $auction->slug;
 
         // Get last 5 unique bidders excluding the current user
         $previousBidders = Bid::where('auction_id', $auctionId)
             ->where('user_id', '!=', $currentUserId)
             ->groupBy('user_id')
             ->orderBy('created_at', 'desc')
+            ->take(5) // Limit to last 5 unique bidders
             ->pluck('user_id');
-        // Loop through each bidder to create a DB notification and send an email
+            
+        // Loop through each bidder to create a DB notification and send an email/SMS
         foreach ($previousBidders as $bidderId) {
             // Create database notification
             NewNotification::create([
@@ -225,17 +235,28 @@ class BidController extends Controller
                 'image_url' => '/assets/images/message-text.svg',
             ]);
 
-            // Get the highest bid amount that this bidder placed
-            $userBidAmount = Bid::where('auction_id', $auctionId)
-                ->where('user_id', $bidderId)
-                ->max('bid_amount');
-
             // Retrieve bidder details
             $user = User::find($bidderId);
-            if ($user && $user->email) {
-                // Send email using BidOutbidNotification mailable
-                Mail::to($user->email)
-                    ->send(new BidOutbidNotification($user->name, $auction->title, $userBidAmount, $newHighestBid, $dashboardLink));
+            
+            if ($user) {
+                if (!empty($user->email)) {
+                     // Get the highest bid amount that this bidder placed (needed for email template)
+                     $userBidAmount = Bid::where('auction_id', $auctionId)
+                        ->where('user_id', $bidderId)
+                        ->max('bid_amount');
+
+                    // Send email using BidOutbidNotification mailable
+                    try {
+                        Mail::to($user->email)
+                            ->send(new BidOutbidNotification($user->name, $auction->title, $userBidAmount, $newHighestBid, $productLink));
+                    } catch (\Exception $e) {
+                        \Log::error("Failed to send outbid email to {$user->email}: " . $e->getMessage());
+                    }
+                } elseif (!empty($user->phone)) {
+                    // Send SMS via Msgpk if email is missing but phone exists
+                    $message = "Alert: You've been outbid on '{$auction->title}'. New highest: {$newHighestBid}. Bid Now: {$productLink}";
+                    $this->msgpkService->sendMessage($user->phone, $message);
+                }
             }
         }
     }
