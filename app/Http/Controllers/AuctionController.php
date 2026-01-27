@@ -549,7 +549,7 @@ class AuctionController extends Controller
         $products = Auction::where('featured_name', 'home_featured')
             ->withMax('bids', 'bid_amount')
             ->where("status", "active")
-            ->latest()
+            ->inRandomOrder()
             ->get();
 
         // Add owner data for each product
