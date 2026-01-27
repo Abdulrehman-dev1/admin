@@ -546,11 +546,20 @@ class AuctionController extends Controller
 
     public function get_featured()
     {
-        $products = Auction::where('featured_name', 'home_featured')
+        // 1. Fetch ALL active featured products (no limit yet)
+        $allFeatured = Auction::where('featured_name', 'home_featured')
             ->withMax('bids', 'bid_amount')
             ->where("status", "active")
-            ->inRandomOrder()
+            ->latest() // Get latest first for potential sub-sorting
             ->get();
+
+        // 2. Group by category_id and pick one random from each group
+        $products = $allFeatured->groupBy('category_id')->map(function ($group) {
+            return $group->random();
+        })->values(); // Reset keys
+
+        // 3. Shuffle the final collection to randomize their order mostly
+        $products = $products->shuffle();
 
         // Add owner data for each product
         foreach ($products as $product) {
