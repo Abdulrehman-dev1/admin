@@ -241,6 +241,10 @@ class AuctionController extends Controller
             }
         }
 
+        if (!empty($data['end_date'])) {
+            $data['end_date'] = \Carbon\Carbon::parse($data['end_date'])->setTime(0, 0, 0)->format('Y-m-d H:i:s'); // 12 AM (Midnight)
+        }
+
         $data['image'] = $albumsArray[0] ?? null;
         $data['album'] = json_encode($albumsArray);
 
@@ -452,6 +456,11 @@ class AuctionController extends Controller
             if (empty($validated['product_condition'])) {
                 $validated['product_condition'] = 'old';
             }
+        }
+
+        // Set Time to 12 AM (00:00:00)
+        if (!empty($validated['end_date'])) {
+            $validated['end_date'] = \Carbon\Carbon::parse($validated['end_date'])->setTime(0, 0, 0)->format('Y-m-d H:i:s');
         }
 
         // NEW fields are already in $validated — just update:
@@ -800,6 +809,7 @@ class AuctionController extends Controller
                 'minimum_bid' => $auction->minimum_bid,
                 'start_date' => $auction->start_date,
                 'end_date' => $auction->end_date,
+                'list_type' => $auction->list_type,
                 'owner' => [
                     'name' => $owner->name ?? '',
                     'profile' => $owner->profile_pic ?? '',
@@ -1184,6 +1194,12 @@ class AuctionController extends Controller
         // ------------------------------------------------------------
         // 4) Create auction with all fields including new property fields
         // ------------------------------------------------------------
+        
+        // Set Time to 12 AM (00:00:00)
+        if (!empty($validatedData['end_date'])) {
+            $validatedData['end_date'] = \Carbon\Carbon::parse($validatedData['end_date'])->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+        }
+
         $auctionData = array_merge($validatedData, [
             'image' => $imagePath,  // cover image
             'album' => json_encode($finalAlbumArray),
@@ -1543,6 +1559,11 @@ class AuctionController extends Controller
             'status' => 'resubmit', // business rule
             'list_type' => $listType,
         ]);
+
+        // Set Time to 12 AM (00:00:00)
+        if (!empty($auctionData['end_date'])) {
+            $auctionData['end_date'] = \Carbon\Carbon::parse($auctionData['end_date'])->setTime(0, 0, 0)->format('Y-m-d H:i:s');
+        }
 
         // For normal_list, cleanup fields
         if ($listType === 'normal_list') {

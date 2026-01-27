@@ -43,14 +43,13 @@
                      <p>{{ $order->shipping_country }}</p>
               </div>
 
-              <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 20px 0;">
                      <h3 style="margin-top: 0; color: #23262F;">Items Ordered</h3>
                      <table style="width: 100%; border-collapse: collapse;">
                             <thead>
                                    <tr style="border-bottom: 1px solid #eee;">
                                           <th style="text-align: left; padding: 8px;">Item</th>
-                                          <th style="text-align: right; padding: 8px;">Price</th>
                                           <th style="text-align: right; padding: 8px;">Qty</th>
+                                          <th style="text-align: right; padding: 8px;">Price</th>
                                           <th style="text-align: right; padding: 8px;">Total</th>
                                    </tr>
                             </thead>
@@ -59,14 +58,20 @@
                                           <tr>
                                                  <td style="padding: 8px;">{{ $item->auction->title ?? 'Item' }} (ID:
                                                         {{ $item->auction_id }})</td>
+                                                 <td style="text-align: right; padding: 8px;">{{ $item->quantity }}</td>
                                                  <td style="text-align: right; padding: 8px;">
                                                         {{ number_format($item->price, 2) }}</td>
-                                                 <td style="text-align: right; padding: 8px;">{{ $item->quantity }}</td>
                                                  <td style="text-align: right; padding: 8px;">
                                                         {{ number_format($item->subtotal, 2) }}</td>
                                           </tr>
                                    @endforeach
                             </tbody>
+                            <tfoot>
+                                   <tr style="border-top: 1px solid #eee;">
+                                          <td colspan="3" style="text-align: right; padding: 8px;"><strong>Total:</strong></td>
+                                          <td style="text-align: right; padding: 8px;"><strong>{{ number_format($order->total, 2) }}</strong></td>
+                                   </tr>
+                            </tfoot>
                      </table>
               </div>
 
