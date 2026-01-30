@@ -479,4 +479,17 @@ Route::middleware('auth')->group(function () {
 });
 
 
+use App\Http\Controllers\PayFastTestController;
+
+// PayFast UAT Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/payfast/test', [PayFastTestController::class, 'form']);
+    Route::post('/payfast/start', [PayFastTestController::class, 'start']);
+});
+
+// PayFast Callbacks (Public)
+Route::match(['get', 'post'], '/payfast/notify', [PayFastTestController::class, 'notify']);
+Route::get('/payfast/success', [PayFastTestController::class, 'success']);
+Route::get('/payfast/failure', [PayFastTestController::class, 'failure']);
+
 require __DIR__ . '/auth.php';
