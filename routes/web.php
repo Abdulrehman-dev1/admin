@@ -22,6 +22,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SliderController;
 use App\Http\Controllers\PaymentRequestController;
 use App\Http\Controllers\BidController;
+use App\Http\Controllers\Admin\CustomerOutreachController;
 // routes/web.php
 use App\Http\Controllers\IdentityController;
 use App\Http\Controllers\SliderCategoryController;
@@ -475,6 +476,9 @@ Route::middleware('auth')->group(function () {
     Route::get('bids', [BidController::class, 'index'])->name('bids.index');
     Route::get('bids/{id}', [BidController::class, 'show'])->name('bids.show');
     Route::get('email-logs', [App\Http\Controllers\Admin\EmailLogController::class, 'index'])->name('email-logs.index');
+    
+    // CRM Route
+    Route::resource('crm', CustomerOutreachController::class)->only(['index', 'update']);
 
 });
 

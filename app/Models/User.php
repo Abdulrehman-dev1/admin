@@ -15,6 +15,7 @@ use App\Models\Address;
 use App\Models\IndividualVerification;
 use App\Models\CorporateVerification;
 use App\Models\NewNotification;
+use App\Models\CustomerOutreach;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -77,6 +78,9 @@ class User extends Authenticatable
         // wallet create on user creation
         static::created(function ($user) {
             $user->wallet()->create(['balance' => 0]);
+            $user->customerOutreach()->create([
+                'call_status' => 'Pending'
+            ]);
         });
 
         // soft-delete related auctions when user is soft-deleted
@@ -112,7 +116,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(IdentityVerification::class);
     }
-    public function IndividualVerification()
+    public function individualVerification()
     {
         return $this->hasOne(IndividualVerification::class);
     }
@@ -143,6 +147,11 @@ class User extends Authenticatable
     public function referrals()
     {
         return $this->hasMany(User::class, 'referred_by');
+    }
+
+    public function customerOutreach()
+    {
+        return $this->hasOne(CustomerOutreach::class);
     }
 
 

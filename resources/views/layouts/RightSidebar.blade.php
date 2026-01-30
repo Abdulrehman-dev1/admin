@@ -727,6 +727,24 @@
                                 </a>
                             </li>
                         @endcan
+
+                        <!-- CRM Link -->
+                        @role('admin')
+                            <li class="{{ request()->routeIs('crm.*') ? 'active' : '' }}">
+                                <a href="{{ route('crm.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <!-- CRM Icon (using User icon for now) -->
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">CRM</span>
+                                    </span>
+                                </a>
+                            </li>
+                        @endrole
                         @can('user-list')
                             <li class="{{ request()->routeIs('utm_campaign_users.index') ? 'active' : '' }}">
                                 <a href="{{ route('utm_campaign_users.index') }}">
