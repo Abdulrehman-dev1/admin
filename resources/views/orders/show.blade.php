@@ -12,8 +12,14 @@
         }
     </style>
     <div class="container">
-        <div class="mb-4">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
             <a href="{{ route('orders.index') }}" class="btn btn-secondary">← Back to Orders</a>
+            <form action="{{ route('orders.send-seller-email', $order->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to send the email to all sellers associated with this order?');">
+                @csrf
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-envelope"></i> Send Email to Sellers
+                </button>
+            </form>
         </div>
 
         <div class="card">

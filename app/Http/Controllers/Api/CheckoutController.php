@@ -500,6 +500,7 @@ class CheckoutController extends Controller
                 Mail::to('xpertbidofficial@gmail.com')->send(new AdminOrderNotification($order));
 
                 // 3. Send to Sellers (Vendors)
+                /*
                 // Group items by Seller (Auction Owner)
                 $sellerItems = [];
                 $order->load('items.auction.user'); // Eager load relation
@@ -526,6 +527,7 @@ class CheckoutController extends Controller
                         Mail::to($data['email'])->send(new SellerOrderNotification($order, $data['items']));
                     }
                 }
+                */
 
             } catch (\Exception $e) {
                 Log::error('Failed to send order emails: ' . $e->getMessage());

@@ -93,4 +93,50 @@ class OrderController extends Controller
         $order = Order::with(['user', 'items.auction'])->findOrFail($id);
         return view('orders.show', compact('order'));
     }
+
+    /**
+     * Send email to sellers manually
+     */
+    public function sendSellerEmail($id)
+    {
+        $order = Order::with(['items.auction.user'])->findOrFail($id);
+
+        try {
+            // Group items by Seller (Auction Owner)
+            $sellerItems = [];
+
+            foreach ($order->items as $item) {
+                if ($item->auction && $item->auction->user) {
+                    $sellerId = $item->auction->user->id;
+                    $sellerEmail = $item->auction->user->email;
+
+                    if (!isset($sellerItems[$sellerId])) {
+                        $sellerItems[$sellerId] = [
+                            'email' => $sellerEmail,
+                            'items' => []
+                        ];
+                    }
+                    $sellerItems[$sellerId]['items'][] = $item;
+                }
+            }
+
+            // Send email to each seller
+            $sentCount = 0;
+            foreach ($sellerItems as $sellerId => $data) {
+                if (!empty($data['email'])) {
+                    \Illuminate\Support\Facades\Mail::to($data['email'])->send(new \App\Mail\SellerOrderNotification($order, $data['items']));
+                    $sentCount++;
+                }
+            }
+            
+            if ($sentCount == 0) {
+                 return redirect()->back()->with('warning', 'No sellers found for this order to email.');
+            }
+
+            return redirect()->back()->with('success', 'Email sent to ' . $sentCount . ' sellers successfully.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to send email: ' . $e->getMessage());
+        }
+    }
 }

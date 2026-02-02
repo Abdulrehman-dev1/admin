@@ -282,6 +282,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('orders.show');
         Route::put('orders/{id}/update-status', [OrderController::class, 'updateStatus'])
             ->name('orders.update-status');
+        Route::post('orders/{id}/send-seller-email', [OrderController::class, 'sendSellerEmail'])
+            ->name('orders.send-seller-email');
     });
 });
 
