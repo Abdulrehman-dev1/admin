@@ -1,7 +1,12 @@
-                     A new order has been placed on XpertBid.
-              </p>
+       <div style="background-color: #f8f9fa; padding: 20px;">
+              <h2 style="color: #23262F; text-align: center; margin-bottom: 30px;">New Order Notification</h2>
 
               <div style="background-color: #fff; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                @if($order->is_promotion)
+                    <p style="color: #27ae60; font-weight: bold; font-size: 16px; text-align: center; border: 2px dashed #27ae60; padding: 10px; margin-bottom: 15px;">
+                        Order for featured listing
+                    </p>
+                @endif
                      <h3 style="margin-top: 0; color: #23262F;">Order Details</h3>
                      <p><strong>Order Number:</strong> {{ $order->order_number }}</p>
                      <p><strong>Order Date:</strong>

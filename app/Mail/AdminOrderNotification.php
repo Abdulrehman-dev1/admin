@@ -30,7 +30,13 @@ class AdminOrderNotification extends Mailable
      */
     public function build()
     {
-        return $this->subject('New Order Received - Order #' . $this->order->order_number)
+        $subject = 'New Order Received - Order #' . $this->order->order_number;
+        
+        if ($this->order->is_promotion) {
+            $subject .= ' (Order for featured listing)';
+        }
+
+        return $this->subject($subject)
                     ->view('emails.admin_order_notification')
                     ->with(['order' => $this->order]);
     }

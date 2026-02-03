@@ -202,6 +202,7 @@
                     <tr>
                         <th style="min-width: 150px;">User Details</th>
                         <th style="min-width: 200px;">Email & Phone</th>
+                        <th style="min-width: 150px;">Registered At</th>
                         <th style="min-width: 100px;">Status</th>
                         <th style="min-width: 160px;">Call Status</th>
                         <th style="min-width: 350px;">Feedback</th>
@@ -222,6 +223,16 @@
                             <td>
                                 <div style="color: #374557; font-size: 13px;">{{ $row->user ? $row->user->email : $row->email }}</div>
                                 <small style="color: #878F9A; font-size: 11px;">{{ $row->user ? $row->user->phone : $row->phone }}</small>
+                            </td>
+
+                            <!-- Registered At -->
+                            <td>
+                                <div style="color: #374557; font-size: 13px;">
+                                    {{ $row->user ? \Carbon\Carbon::parse($row->user->created_at)->format('d M, Y') : \Carbon\Carbon::parse($row->created_at)->format('d M, Y') }}
+                                </div>
+                                <small style="color: #878F9A; font-size: 11px;">
+                                    {{ $row->user ? \Carbon\Carbon::parse($row->user->created_at)->format('h:i A') : \Carbon\Carbon::parse($row->created_at)->format('h:i A') }}
+                                </small>
                             </td>
                             
                              <!-- Verification Status -->
@@ -297,4 +308,100 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast Container for Notifications -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    CRM Status Updated Successfully
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Select all save buttons
+            const saveButtons = document.querySelectorAll('.btn-save-row');
+
+            saveButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default form submission via browser
+
+                    const formId = this.getAttribute('form');
+                    const form = document.getElementById(formId);
+                    
+                    if (!form) return;
+
+                    // Add loading state
+                    const originalContent = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    this.disabled = true;
+
+                    // Collect data from inputs linked to this form
+                    const formData = new FormData(form);
+                    
+                    // Manually append inputs that are OUTSIDE the form tag but linked via 'form' attribute
+                    // because FormData(form) only captures children of the form element unless specified otherwise
+                    // NOTE: inputs with form="id" attribute are NOT automatically included in new FormData(element) unless the browser supports it fully or the inputs are children.
+                    // Let's rely on manual collection for the linked inputs to be safe.
+                    
+                    const linkedInputs = document.querySelectorAll(`[form="${formId}"]`);
+                    linkedInputs.forEach(input => {
+                        // Check if it's a select, textarea, or input
+                        if (input.name) {
+                            formData.set(input.name, input.value);
+                        }
+                    });
+
+                    fetch(form.action, {
+                        method: 'POST', 
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                            'Accept': 'application/json' // Explicitly ask for JSON
+                        },
+                        body: formData
+                    })
+                    .then(async response => {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            // Handle validation errors or 500s
+                            if (response.status === 422) {
+                                let errorMsg = 'Validation Error:\n';
+                                for (const [key, messages] of Object.entries(data.errors)) {
+                                    errorMsg += `${messages.join(', ')}\n`;
+                                }
+                                throw new Error(errorMsg);
+                            } else {
+                                throw new Error(data.message || 'Server Error');
+                            }
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // Show Toast
+                            const toastEl = document.getElementById('liveToast');
+                            const toast = new bootstrap.Toast(toastEl);
+                            toast.show();
+                        } else {
+                            throw new Error(data.message || 'Unknown error occurred');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert(error.message); // Show actual error message
+                    })
+                    .finally(() => {
+                        // Restore button state
+                        this.innerHTML = originalContent;
+                        this.disabled = false;
+                    });
+                });
+            });
+        });
+    </script>
 @endsection

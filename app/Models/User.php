@@ -79,8 +79,22 @@ class User extends Authenticatable
         static::created(function ($user) {
             $user->wallet()->create(['balance' => 0]);
             $user->customerOutreach()->create([
-                'call_status' => 'Pending'
+                'call_status' => 'Pending',
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
             ]);
+        });
+
+        // Sync updates to CustomerOutreach
+        static::updated(function ($user) {
+            if ($user->customerOutreach) {
+                $user->customerOutreach->update([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                ]);
+            }
         });
 
         // soft-delete related auctions when user is soft-deleted

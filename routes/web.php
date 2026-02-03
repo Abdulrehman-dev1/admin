@@ -402,7 +402,7 @@ Route::post('/login', [AuthController::class, 'login']); // Keep the POST route 
 Route::post('/login-with-password', [AuthController::class, 'loginWithPassword'])->name('loginWithPassword');
 Route::post('/send-verification-code', [AuthController::class, 'sendVerificationCode']);
 Route::post('/signup', [AuthController::class, 'signup']);
-Route::post('/verify-code', [AuthController::class, 'verifyCode']);
+Route::post('/verify-code', [App\Http\Controllers\VerificationCodeController::class, 'verifyCode']);
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware('auth')->name('dashboard');

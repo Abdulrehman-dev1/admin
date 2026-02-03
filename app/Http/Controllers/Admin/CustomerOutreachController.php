@@ -66,7 +66,7 @@ class CustomerOutreachController extends Controller
             $query->orderBy('created_at', 'desc'); // Default sort
         }
 
-        $outreaches = $query->paginate(20);
+        $outreaches = $query->paginate(20)->withQueryString();
         return view('crm.index', compact('outreaches'));
     }
 
@@ -85,6 +85,10 @@ class CustomerOutreachController extends Controller
             'customer_feedback_summary' => $request->customer_feedback_summary,
             'contract_date' => $request->contract_date,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'CRM Status Updated Successfully']);
+        }
 
         return redirect()->back()->with('success', 'CRM Status Updated Successfully');
     }
