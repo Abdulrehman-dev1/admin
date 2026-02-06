@@ -30,18 +30,22 @@ class BidController extends Controller
         $highestBid = Bid::where('auction_id', $auctionId)
             ->orderBy('bid_amount', 'desc')
             ->first();
+        
+        $auction = Auction::find($auctionId);
 
         if ($highestBid) {
             return response()->json([
                 'success' => true,
                 'highest_bid' => $highestBid->bid_amount,
                 'user' => $highestBid->user->name ?? 'Anonymous',
+                'end_date' => $auction ? $auction->end_date : null,
             ]);
         } else {
             return response()->json([
                 'success' => true,
                 'highest_bid' => 0,
                 'user' => null,
+                'end_date' => $auction ? $auction->end_date : null,
             ]);
         }
     }
@@ -182,6 +186,32 @@ class BidController extends Controller
                 'auction_id' => $auction->id,
                 'bid_amount' => $newAmount, // Expecting AED amount from frontend
             ]);
+
+            // Extend auction if within last 5 minutes
+            // The DB stores time in local time (Asia/Karachi) but App uses UTC.
+            // We interpret end_date as Karachi time to perform correct comparison.
+            $endDate = \Carbon\Carbon::parse($auction->end_date, 'Asia/Karachi');
+            $checkTime = now(); // Current time in UTC (or app default)
+
+            $logMessage = "Bid Extension Debug: Auction ID {$auction->id}\n" .
+                          "Current Time (UTC): " . $checkTime->format('Y-m-d H:i:s') . "\n" .
+                          "Current Time + 5m (UTC): " . $checkTime->copy()->addMinutes(5)->format('Y-m-d H:i:s') . "\n" .
+                          "Auction End Date (Parsed as Karachi): " . $endDate->format('Y-m-d H:i:s') . " (Offset: " . $endDate->offsetHours . ")\n" .
+                          "Auction End in UTC: " . $endDate->copy()->setTimezone('UTC')->format('Y-m-d H:i:s') . "\n" .
+                          // Compare: (Now + 5min) >= EndDate
+                          "Condition (Check+5m >= End): " . ($checkTime->copy()->addMinutes(5)->greaterThanOrEqualTo($endDate) ? 'TRUE' : 'FALSE') . "\n" .
+                          "--------------------------------------------------\n";
+                          
+            file_put_contents(storage_path('logs/temp_debug.log'), $logMessage, FILE_APPEND);
+
+            if ($checkTime->addMinutes(5)->greaterThanOrEqualTo($endDate)) {
+                // Add 15 minutes to the database value (which is strings)
+                // Since DB is effectively storing Karachi time, we just add 15 mins to the object and format it back
+                $newEndDate = $endDate->addMinutes(15);
+                $auction->end_date = $newEndDate->format('Y-m-d H:i:s');
+                $auction->save();
+                file_put_contents(storage_path('logs/temp_debug.log'), "Auction Extended. New End Date: " . $auction->end_date . "\n", FILE_APPEND);
+            }
 
             // Optional: notify or email
             $this->sendBidNotification($auction->id, $userId);
