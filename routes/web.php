@@ -482,6 +482,13 @@ Route::middleware('auth')->group(function () {
     // CRM Route
     Route::resource('crm', CustomerOutreachController::class)->only(['index', 'update']);
 
+    // Bidder Communication Tool
+    Route::get('bidder-communication', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'index'])->name('bidder-communication.index');
+    Route::get('bidder-communication/products', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'getProducts'])->name('bidder-communication.products');
+    Route::get('bidder-communication/bidders', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'getBidders'])->name('bidder-communication.bidders');
+    Route::get('bidder-communication/search-users', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'searchUsers'])->name('bidder-communication.search-users');
+    Route::post('bidder-communication/send', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'send'])->name('bidder-communication.send');
+
 });
 
 

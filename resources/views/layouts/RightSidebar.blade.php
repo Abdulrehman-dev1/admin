@@ -745,6 +745,22 @@
                                 </a>
                             </li>
                         @endrole
+
+                        @role('admin')
+                            <li class="{{ request()->routeIs('bidder-communication.*') ? 'active' : '' }}">
+                                <a href="{{ route('bidder-communication.index') }}">
+                                    <span class="menu-bar__text">
+                                        <span class="nftmax-menu-icon nftmax-svg-icon__v1">
+                                            <svg class="nftmax-svg-icon" xmlns="http://www.w3.org/2000/svg" width="16"
+                                                height="16" viewBox="0 0 16 16">
+                                                <path d="M2 2a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H2zm12 2L8 8.414 2 4h12z"/>
+                                            </svg>
+                                        </span>
+                                        <span class="menu-bar__name">Bidder Messaging</span>
+                                    </span>
+                                </a>
+                            </li>
+                        @endrole
                         @can('user-list')
                             <li class="{{ request()->routeIs('utm_campaign_users.index') ? 'active' : '' }}">
                                 <a href="{{ route('utm_campaign_users.index') }}">
