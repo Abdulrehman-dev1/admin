@@ -719,19 +719,27 @@ class AuctionController extends Controller
     public function get_one_rupee_auctions()
     {
         $products = Auction::where('is_1_rupee', 1)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'awarded'])
             ->withMax('bids', 'bid_amount')
             ->latest()
             ->take(12)
             ->get();
 
-        // Add owner data for each product
+        // Add owner and winner data for each product
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
+
+            if ($product->status == 'awarded' && $product->winner_id) {
+                $winner = User::find($product->winner_id);
+                $product->winner_details = [
+                    "name" => $winner->name ?? 'Unknown',
+                    "profile" => $winner->profile_pic ?? ''
+                ];
+            }
         }
 
         return response()->json(['product' => $products]);
@@ -772,6 +780,14 @@ class AuctionController extends Controller
             "name" => $user->name ?? '',
             "profile" => $user->profile_pic ?? '',
         ];
+
+        if ($pro->status == 'awarded' && $pro->winner_id) {
+            $winner = User::find($pro->winner_id);
+            $product['winner_details'][] = [
+                "name" => $winner->name ?? 'Unknown',
+                "profile" => $winner->profile_pic ?? ''
+            ];
+        }
 
         $product['bids'] = []; // Initialize bids array
         foreach ($bids as $bid) {
