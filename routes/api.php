@@ -285,6 +285,15 @@ Route::prefix('mobile')->name('api.auth.')->middleware(['auth:sanctum'])->group(
 
 
     Route::get('/user-profile', [ProfileController::class, 'getProfileMobile']);
+});
 
 
+// Chat Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/chat/conversations', [\App\Http\Controllers\Api\ChatController::class, 'index']);
+    Route::get('/chat/conversations/{id}', [\App\Http\Controllers\Api\ChatController::class, 'show']);
+    Route::post('/chat/initiate', [\App\Http\Controllers\Api\ChatController::class, 'initiate']);
+    Route::post('/chat/messages', [\App\Http\Controllers\Api\ChatController::class, 'store']);
+    Route::delete('/chat/conversations/{id}', [\App\Http\Controllers\Api\ChatController::class, 'deleteConversation']);
+    Route::post('/chat/conversations/{id}/important', [\App\Http\Controllers\Api\ChatController::class, 'toggleImportant']);
 });

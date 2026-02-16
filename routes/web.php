@@ -489,6 +489,10 @@ Route::middleware('auth')->group(function () {
     Route::get('bidder-communication/search-users', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'searchUsers'])->name('bidder-communication.search-users');
     Route::post('bidder-communication/send', [App\Http\Controllers\Admin\BidderCommunicationController::class, 'send'])->name('bidder-communication.send');
 
+    // Admin Chat Management
+    Route::get('chats', [App\Http\Controllers\Admin\ChatController::class, 'index'])->name('admin.chats.index');
+    Route::get('chats/{id}', [App\Http\Controllers\Admin\ChatController::class, 'show'])->name('admin.chats.show');
+
 });
 
 

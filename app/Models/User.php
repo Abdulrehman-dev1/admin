@@ -50,6 +50,7 @@ class User extends Authenticatable
         'utm_campaign',
         'is_phone_verified',
         'phone_verified_at',
+        'last_active_at',
     ];
 
     /**
@@ -71,6 +72,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_phone_verified' => 'boolean',
+            'last_active_at' => 'datetime',
         ];
     }
     protected static function booted()

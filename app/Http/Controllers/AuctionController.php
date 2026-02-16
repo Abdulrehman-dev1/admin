@@ -536,6 +536,7 @@ class AuctionController extends Controller
         foreach ($product as $products) {
             $user = User::find($products->user_id);
             $products->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -574,6 +575,7 @@ class AuctionController extends Controller
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -639,6 +641,7 @@ class AuctionController extends Controller
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -661,6 +664,7 @@ class AuctionController extends Controller
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -683,6 +687,7 @@ class AuctionController extends Controller
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -729,6 +734,7 @@ class AuctionController extends Controller
         foreach ($products as $product) {
             $user = User::find($product->user_id);
             $product->owner = [
+                "id" => $user->id ?? null,
                 "name" => $user->name ?? '',
                 "profile" => $user->profile_pic ?? ''
             ];
@@ -777,6 +783,7 @@ class AuctionController extends Controller
 
         $product['product'] = [$pro];
         $product['owner'][] = [
+            "id" => $user->id ?? null,
             "name" => $user->name ?? '',
             "profile" => $user->profile_pic ?? '',
         ];
