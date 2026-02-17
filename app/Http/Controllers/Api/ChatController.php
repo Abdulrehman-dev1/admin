@@ -168,6 +168,18 @@ class ChatController extends Controller
             // Continue without failing the request
         }
 
+        // Send Email Notification if recipient is offline (inactive for > 1 minute)
+        try {
+            $otherUserId = ($conversation->user_one_id == Auth::id()) ? $conversation->user_two_id : $conversation->user_one_id;
+            $recipient = User::find($otherUserId);
+
+            if ($recipient && (!$recipient->last_active_at || $recipient->last_active_at->diffInMinutes(now()) > 1)) {
+                Mail::to($recipient->email)->send(new UnreadMessageNotification($recipient, Auth::user(), $message));
+            }
+        } catch (\Exception $e) {
+            \Log::error("Email notification failed: " . $e->getMessage());
+        }
+
         return response()->json($message);
     }
 
