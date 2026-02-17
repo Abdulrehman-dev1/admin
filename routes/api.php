@@ -173,7 +173,7 @@ Route::get('/get-latest-auctions', [AuctionController::class, 'get_latest_auctio
 Route::get('/get-all-categories', [AuctionCategoryController::class, 'all_categories']);
 
 //Route::get('/wallet', [WalletController::class, 'balance']);
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\UpdateUserActivity::class])->group(function () {
 
     Route::post('/change-password', [ProfileController::class, 'updatePassword']);
     Route::post('/auctions_store', [AuctionController::class, 'api_store']);
@@ -289,7 +289,7 @@ Route::prefix('mobile')->name('api.auth.')->middleware(['auth:sanctum'])->group(
 
 
 // Chat Routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', \App\Http\Middleware\UpdateUserActivity::class])->group(function () {
     Route::get('/chat/conversations', [\App\Http\Controllers\Api\ChatController::class, 'index']);
     Route::get('/chat/conversations/{id}', [\App\Http\Controllers\Api\ChatController::class, 'show']);
     Route::post('/chat/initiate', [\App\Http\Controllers\Api\ChatController::class, 'initiate']);

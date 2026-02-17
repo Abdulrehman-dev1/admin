@@ -10,6 +10,8 @@ use App\Models\User;
 use App\Events\MessageSent; // We will create this event later
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\UnreadMessageNotification;
 
 class ChatController extends Controller
 {
@@ -23,11 +25,11 @@ class ChatController extends Controller
             $conversations = Conversation::with(['userOne', 'userTwo'])
                 ->where(function ($query) use ($userId) {
                     $query->where('user_one_id', $userId)
-                          ->where('user_one_deleted', false);
+                        ->where('user_one_deleted', false);
                 })
                 ->orWhere(function ($query) use ($userId) {
                     $query->where('user_two_id', $userId)
-                          ->where('user_two_deleted', false);
+                        ->where('user_two_deleted', false);
                 })
                 ->orderByDesc('updated_at')
                 ->get()
@@ -37,8 +39,8 @@ class ChatController extends Controller
                     $conversation->other_user = $otherUser;
 
                     // Determine is_important
-                    $conversation->is_important = ($conversation->user_one_id == $userId) 
-                        ? $conversation->user_one_important 
+                    $conversation->is_important = ($conversation->user_one_id == $userId)
+                        ? $conversation->user_one_important
                         : $conversation->user_two_important;
 
                     // Add last message if needed (can be optimized with relationship)
@@ -73,8 +75,8 @@ class ChatController extends Controller
         $conversation->other_user = $otherUser;
 
         // Determine is_important
-        $conversation->is_important = ($conversation->user_one_id == $userId) 
-            ? $conversation->user_one_important 
+        $conversation->is_important = ($conversation->user_one_id == $userId)
+            ? $conversation->user_one_important
             : $conversation->user_two_important;
 
         return response()->json($conversation);
@@ -98,13 +100,13 @@ class ChatController extends Controller
         // Ensure user_one_id < user_two_id for consistency check, 
         // OR just check both combinations if we don't enforce order.
         // Let's check if conversation exists.
-        
+
         $conversation = Conversation::where(function ($query) use ($authUserId, $otherUserId) {
             $query->where('user_one_id', $authUserId)->where('user_two_id', $otherUserId);
         })->orWhere(function ($query) use ($authUserId, $otherUserId) {
             $query->where('user_one_id', $otherUserId)->where('user_two_id', $authUserId);
         })->where('product_id', $request->product_id)
-        ->first();
+            ->first();
 
         if (!$conversation) {
             $conversation = Conversation::create([
@@ -164,7 +166,7 @@ class ChatController extends Controller
         } catch (\Exception $e) {
             \Log::error("Broadcast failed: " . $e->getMessage());
             // Continue without failing the request
-        } 
+        }
 
         return response()->json($message);
     }
