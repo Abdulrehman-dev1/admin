@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class UnreadMessageNotification extends Mailable implements ShouldQueue
+class UnreadMessageNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
