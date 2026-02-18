@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\UnreadMessageNotification;
+use App\Models\NewNotification;
+
 
 class ChatController extends Controller
 {
@@ -156,7 +158,6 @@ class ChatController extends Controller
             'type' => $type,
             'attachment_path' => $attachmentPath,
         ]);
-
         // Touch conversation updated_at
         $conversation->touch();
 
@@ -175,6 +176,15 @@ class ChatController extends Controller
 
             if ($recipient && (!$recipient->last_active_at || $recipient->last_active_at->diffInMinutes(now()) > 1)) {
                 Mail::to($recipient->email)->send(new UnreadMessageNotification($recipient, Auth::user(), $message));
+
+                // Create In-App Notification
+                NewNotification::create([
+                    'user_id' => $recipient->id,
+                    'title' => 'New Message',
+                    'message' => 'You have a new message from ' . Auth::user()->name,
+                    'type' => 'chat',
+                    'image_url' => '/assets/images/message-text.svg',
+                ]);
             }
         } catch (\Exception $e) {
             \Log::error("Email notification failed: " . $e->getMessage());
