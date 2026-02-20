@@ -102,7 +102,56 @@ $recentFailures = $pdo->query("SELECT * FROM failed_jobs ORDER BY failed_at DESC
             <h2><?php echo $failedJobsCount; ?></h2>
             <p>Total Failed Jobs</p>
         </div>
+        <div class="status-box" style="background: <?php echo ($pendingJobs > 0) ? '#e67e22' : '#34495e'; ?>;">
+            <h2><?php echo time(); ?></h2>
+            <p>Current Timestamp</p>
+        </div>
     </div>
+    
+    <?php if ($pendingJobs > 0): ?>
+        <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #856404;">
+            <strong>⚠️ Warning:</strong> You have <?php echo $pendingJobs; ?> jobs in the queue that have not been processed. 
+            This usually means the <code>php artisan queue:work</code> command is not running on your server.
+        </div>
+    <?php endif; ?>
+
+    <div style="text-align: center; margin-top: 10px; font-weight: bold; color: #7f8c8d;">
+        Server Time: <?php echo date('Y-m-d H:i:s'); ?> (<?php echo date_default_timezone_get(); ?>)
+    </div>
+</div>
+
+<div class="card">
+    <h2>Queue Detail</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Job Name</th>
+                <th>Count</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            $jobGroups = $pdo->query("SELECT payload FROM jobs")->fetchAll();
+            $grouped = [];
+            foreach ($jobGroups as $j) {
+                $p = json_decode($j['payload'], true);
+                $name = $p['displayName'] ?? 'Unknown';
+                if (!isset($grouped[$name])) $grouped[$name] = 0;
+                $grouped[$name]++;
+            }
+            foreach ($grouped as $name => $count): ?>
+                <tr>
+                    <td><code><?php echo htmlspecialchars($name); ?></code></td>
+                    <td><?php echo $count; ?></td>
+                    <td><span class="badge" style="background: #e67e22;">Waiting</span></td>
+                </tr>
+            <?php endforeach; ?>
+            <?php if (empty($grouped)): ?>
+                <tr><td colspan="3">No pending jobs.</td></tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
 </div>
 
 <div class="card">
