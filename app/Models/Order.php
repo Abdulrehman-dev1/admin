@@ -41,6 +41,7 @@ class Order extends Model
     ];
 
     protected $casts = [
+        'is_promotion' => 'boolean',
         'subtotal' => 'decimal:2',
         'tax' => 'decimal:2',
         'shipping_cost' => 'decimal:2',

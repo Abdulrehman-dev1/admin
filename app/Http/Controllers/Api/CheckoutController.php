@@ -66,7 +66,8 @@ class CheckoutController extends Controller
 
         Log::info('[Checkout] payment_method=' . ($orderData['payment_method'] ?? 'null') . ', items_count=' . (isset($orderData['items']) && is_array($orderData['items']) ? count($orderData['items']) : 'null'));
 
-        $hasPromotion = $orderData['has_promotion'] ?? false;
+        // Normalize to 0/1 (FormData sends 'false'/'true' as strings; MySQL expects integer)
+        $hasPromotion = filter_var($orderData['has_promotion'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $validator = Validator::make($orderData, [
             'items' => 'required|array|min:1',
@@ -282,7 +283,7 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => Order::generateOrderNumber(),
-                'is_promotion' => $hasPromotion,
+                'is_promotion' => $hasPromotion ? 1 : 0,
                 'billing_name' => $orderData['billing_name'],
                 'billing_email' => $orderData['billing_email'],
                 'billing_phone' => $orderData['billing_phone'],
