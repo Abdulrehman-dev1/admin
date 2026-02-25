@@ -178,11 +178,23 @@ class AuctionCategoryController extends Controller
         return redirect()->route('auction_categories.index')->with('success', 'Category deleted successfully!');
     }
 
-    public function getSubcategories($parentId)
+    public function getSubcategories(Request $request, $parentId)
     {
-        $subs = AuctionCategory::where('parent_id', $parentId)
-            ->whereNull('sub_category_id')
-            ->get(['id', 'name', 'slug']);
+        $query = AuctionCategory::where('parent_id', $parentId)
+            ->whereNull('sub_category_id');
+
+        // When ?active=1, return only subcategories that have at least one active auction (self or children)
+        if ($request->query('active') === '1') {
+            $query->where(function ($q) {
+                $q->whereHas('auctions', function ($a) {
+                    $a->where('status', 'active');
+                })->orWhereHas('childCategories.auctions', function ($a) {
+                    $a->where('status', 'active');
+                });
+            });
+        }
+
+        $subs = $query->get(['id', 'name', 'slug', 'image']);
         return response()->json(['subcategories' => $subs]);
     }
 

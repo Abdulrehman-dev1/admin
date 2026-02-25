@@ -1264,7 +1264,34 @@ class AuctionController extends Controller
             $auctionData['end_date'] = null;
         }
 
-        $auction = Auction::create($auctionData);
+        $draftId = $request->input('draft_id');
+        $auction = null;
+
+        if ($draftId) {
+            // Publish draft: convert to same auction (preserve ID), don't create duplicate
+            $draft = Auction1::where('id', $draftId)
+                ->where('user_id', auth()->id())
+                ->first();
+            if ($draft) {
+                $auction = new Auction();
+                foreach ($auctionData as $key => $value) {
+                    if (in_array($key, $auction->getFillable())) {
+                        $auction->{$key} = $value;
+                    }
+                }
+                $auction->id = $draft->id;
+                $auction->created_at = $draft->created_at ?? now();
+                $auction->updated_at = now();
+                $auction->incrementing = false;
+                $auction->save();
+                $auction->incrementing = true;
+                $draft->forceDelete();
+            }
+        }
+
+        if (!$auction) {
+            $auction = Auction::create($auctionData);
+        }
 
         // Handle Variations
         if ($listType === 'normal_list' && $request->has('variations')) {
@@ -2130,6 +2157,18 @@ class AuctionController extends Controller
     {
         $q = Auction::query()->where('status', 'active');
         ;
+
+        // list_type filter: auction | normal_list (listing). When omitted, return both.
+        if ($request->filled('list_type') || $request->filled('listType')) {
+            $listType = $request->input('list_type') ?? $request->input('listType');
+            if ($listType === 'auction') {
+                $q->where(function ($sq) {
+                    $sq->where('list_type', 'auction')->orWhereNull('list_type');
+                });
+            } elseif ($listType === 'normal_list') {
+                $q->where('list_type', 'normal_list');
+            }
+        }
 
         // category filters
         if ($request->filled('category') && $request->input('category') != 'all') {
