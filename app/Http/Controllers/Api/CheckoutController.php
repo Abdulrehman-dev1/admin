@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
-use Stripe\Stripe;
-use Stripe\PaymentIntent;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\User;
@@ -28,79 +26,14 @@ use Illuminate\Support\Facades\Password;
 class CheckoutController extends Controller
 {
     /**
-     * Create payment intent for Stripe
+     * Create payment intent for Stripe (DISABLED – using COD & Bank Transfer only)
      */
     public function createPaymentIntent(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:1',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            // Get Stripe secret key from env
-            $stripeSecret = env('STRIPE_SECRET');
-
-            // Validate that we have a secret key (must start with 'sk_')
-            if (empty($stripeSecret)) {
-                // If not set, use hardcoded test key (same as PaymentController line 84)
-                $stripeSecret = 'sk_test_6fErHC2ev2jizSKlYJozlfb500CPZYW2La';
-                Log::info('STRIPE_SECRET not set in .env, using fallback test key.');
-            } elseif (strpos($stripeSecret, 'pk_') === 0) {
-                // If it's a publishable key, that's wrong - return error
-                Log::error('STRIPE_SECRET in .env is set to publishable key (pk_). Must use secret key (sk_).');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Configuration Error: STRIPE_SECRET must be a secret key (sk_...) not publishable key (pk_...). Please check your .env file.',
-                ], 500);
-            } elseif (strpos($stripeSecret, 'sk_') !== 0) {
-                // If it doesn't start with sk_, use fallback
-                Log::warning('STRIPE_SECRET format invalid, using fallback test key.');
-                $stripeSecret = 'sk_test_6fErHC2ev2jizSKlYJozlfb500CPZYW2La';
-            }
-
-            // Ensure we have a valid secret key before proceeding
-            if (strpos($stripeSecret, 'sk_') !== 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid Stripe configuration. Please check STRIPE_SECRET in .env file.',
-                ], 500);
-            }
-
-            Stripe::setApiKey($stripeSecret);
-
-            $amountInCents = (int) ($request->amount * 100); // Convert to cents
-
-            // Handle Guest or Auth User ID for Metadata
-            $userId = $request->user() ? $request->user()->id : 'guest';
-
-            $paymentIntent = PaymentIntent::create([
-                'amount' => $amountInCents,
-                'currency' => 'usd', // Stripe standard currency
-                'payment_method_types' => ['card'],
-                'metadata' => [
-                    'user_id' => $userId,
-                ],
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'clientSecret' => $paymentIntent->client_secret,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Stripe Payment Intent Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create payment intent: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Card payments are currently disabled. Please use Cash on Delivery or Bank Transfer.',
+        ], 410);
     }
 
     /**
@@ -108,6 +41,9 @@ class CheckoutController extends Controller
      */
     public function processCheckout(Request $request)
     {
+        // Log incoming request for mobile debugging (Content-Type, source, keys)
+        Log::info('[Checkout] Request: method=' . $request->method() . ', contentType=' . ($request->header('Content-Type') ?? 'null') . ', keys=' . implode(',', array_keys($request->all())));
+
         // Handle FormData - Parse order_data if sent as JSON string
         $orderData = $request->all();
         if ($request->has('order_data')) {
@@ -117,10 +53,18 @@ class CheckoutController extends Controller
             }
         }
 
-        // Merge items if sent separately
+        // Merge items if sent separately (mobile sends items as JSON string in FormData)
         if ($request->has('items') && is_string($request->items)) {
-            $orderData['items'] = json_decode($request->items, true);
+            $decoded = json_decode($request->items, true);
+            if (is_array($decoded)) {
+                $orderData['items'] = $decoded;
+                Log::info('[Checkout] Parsed items from JSON: count=' . count($decoded));
+            } else {
+                Log::error('[Checkout] items JSON decode failed: ' . substr($request->items, 0, 200));
+            }
         }
+
+        Log::info('[Checkout] payment_method=' . ($orderData['payment_method'] ?? 'null') . ', items_count=' . (isset($orderData['items']) && is_array($orderData['items']) ? count($orderData['items']) : 'null'));
 
         $hasPromotion = $orderData['has_promotion'] ?? false;
 
@@ -152,8 +96,8 @@ class CheckoutController extends Controller
             'shipping_postal_code' => 'nullable|string|max:20',
             'shipping_country' => $hasPromotion ? 'nullable|string|max:100' : 'required|string|max:100',
 
-            // Payment Details
-            'payment_method' => 'required|in:stripe,cod,bank_transfer',
+            // Payment Details (Stripe disabled – cod and bank_transfer only)
+            'payment_method' => 'required|in:cod,bank_transfer',
             'receipt_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB max
             'transaction_id' => 'nullable|string|max:255', // Required for Stripe
             'payment_intent_id' => 'nullable|string|max:255', // For Stripe verification
@@ -204,70 +148,6 @@ class CheckoutController extends Controller
                     Log::error('Failed to send password reset link to new guest user: ' . $e->getMessage());
                     // Continue with order creation even if email fails
                 }
-            }
-        }
-
-        // Verify Stripe payment if payment method is Stripe
-        if (($orderData['payment_method'] ?? null) === 'stripe') {
-            if (!($orderData['payment_intent_id'] ?? null)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Payment intent ID is required for Stripe payments',
-                ], 400);
-            }
-
-            try {
-                // Get Stripe secret key from env
-                $stripeSecret = env('STRIPE_SECRET');
-
-                // Validate that we have a secret key (must start with 'sk_')
-                if (empty($stripeSecret)) {
-                    // If not set, use hardcoded test key
-                    $stripeSecret = 'sk_test_6fErHC2ev2jizSKlYJozlfb500CPZYW2La';
-                } elseif (strpos($stripeSecret, 'pk_') === 0) {
-                    // If it's a publishable key, that's wrong - return error
-                    Log::error('STRIPE_SECRET in .env is set to publishable key (pk_). Must use secret key (sk_).');
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Configuration Error: STRIPE_SECRET must be a secret key (sk_...) not publishable key (pk_...).',
-                    ], 500);
-                } elseif (strpos($stripeSecret, 'sk_') !== 0) {
-                    // If it doesn't start with sk_, use fallback
-                    $stripeSecret = 'sk_test_6fErHC2ev2jizSKlYJozlfb500CPZYW2La';
-                }
-
-                // Ensure we have a valid secret key before proceeding
-                if (strpos($stripeSecret, 'sk_') !== 0) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid Stripe configuration.',
-                    ], 500);
-                }
-
-                Stripe::setApiKey($stripeSecret);
-                $paymentIntent = PaymentIntent::retrieve($orderData['payment_intent_id']);
-
-                if ($paymentIntent->status !== 'succeeded') {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Payment was not successful. Please try again.',
-                    ], 400);
-                }
-
-                // Verify amount matches
-                $expectedAmount = (int) ($orderData['total'] * 100);
-                if ($paymentIntent->amount !== $expectedAmount) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Payment amount mismatch',
-                    ], 400);
-                }
-            } catch (\Exception $e) {
-                Log::error('Stripe Payment Verification Error: ' . $e->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to verify payment: ' . $e->getMessage(),
-                ], 500);
             }
         }
 
@@ -332,9 +212,7 @@ class CheckoutController extends Controller
 
             // Determine payment status
             $paymentStatus = 'pending';
-            if ($orderData['payment_method'] === 'stripe') {
-                $paymentStatus = 'paid';
-            } elseif ($orderData['payment_method'] === 'bank_transfer') {
+            if ($orderData['payment_method'] === 'bank_transfer') {
                 $paymentStatus = 'pending';
             } elseif ($orderData['payment_method'] === 'cod') {
                 $paymentStatus = 'pending';
@@ -385,9 +263,7 @@ class CheckoutController extends Controller
             $paymentStatus = 'pending';
             $orderStatus = 'pending';
 
-            if ($orderData['payment_method'] === 'stripe') {
-                $paymentStatus = 'paid';
-            } elseif ($orderData['payment_method'] === 'bank_transfer') {
+            if ($orderData['payment_method'] === 'bank_transfer') {
                 $paymentStatus = 'pending';
             } elseif ($orderData['payment_method'] === 'cod') {
                 $paymentStatus = 'pending';
@@ -553,16 +429,22 @@ class CheckoutController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Checkout Error: ' . $e->getMessage());
-            Log::error('Checkout Stack: ' . $e->getTraceAsString());
+            $errMsg = $e->getMessage();
+            $errClass = get_class($e);
+            Log::error('[Checkout] ERROR: ' . $errClass . ' - ' . $errMsg);
+            Log::error('[Checkout] Stack: ' . $e->getTraceAsString());
+
             $userMessage = 'Failed to process checkout. Please try again.';
-            if (str_contains($e->getMessage(), 'payment_method') || str_contains($e->getMessage(), 'Data truncated')) {
-                $userMessage = 'Payment method configuration error. Please contact support.';
-            }
-            return response()->json([
+            $response = [
                 'success' => false,
                 'message' => $userMessage,
-            ], 500);
+            ];
+            // Include error detail in response for debugging (when APP_DEBUG=true)
+            if (config('app.debug')) {
+                $response['debug_error'] = $errMsg;
+                $response['debug_class'] = $errClass;
+            }
+            return response()->json($response, 500);
         }
     }
 

@@ -78,6 +78,14 @@ class CartController extends Controller
      */
     public function add(Request $request)
     {
+        // Normalize: treat variation_id 0, empty string as null to avoid validation issues
+        $variationId = $request->variation_id;
+        if ($variationId === '' || $variationId === '0' || (is_numeric($variationId) && (int) $variationId === 0)) {
+            $request->merge(['variation_id' => null]);
+        }
+
+        \Log::info('[Cart] Add request: ' . json_encode($request->only(['auction_id', 'type', 'variation_id'])));
+
         $validator = Validator::make($request->all(), [
             'auction_id' => 'required|integer|exists:auctions,id',
             'type' => 'nullable|string|in:product,featured',
@@ -85,6 +93,7 @@ class CartController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::warning('[Cart] Validation failed: ' . json_encode($validator->errors()->toArray()));
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -93,19 +102,28 @@ class CartController extends Controller
         }
 
         $user = $request->user();
-        $auction = Auction::findOrFail($request->auction_id);
+        $auction = Auction::with('variations')->findOrFail($request->auction_id);
+        $variationId = $request->variation_id;
 
         // Check if product is already in cart
         $existingCartItem = Cart::where('user_id', $user->id)
             ->where('auction_id', $auction->id)
             ->where('type', $request->type ?? 'product')
-            ->where('variation_id', $request->variation_id)
+            ->where(function ($q) use ($variationId) {
+                if ($variationId === null) {
+                    $q->whereNull('variation_id');
+                } else {
+                    $q->where('variation_id', $variationId);
+                }
+            })
             ->first();
 
         if ($existingCartItem) {
+            \Log::info('[Cart] Already in cart: auction_id=' . $auction->id);
             return response()->json([
                 'success' => false,
                 'message' => 'Product already in cart',
+                'reason' => 'duplicate',
             ], 400);
         }
 
@@ -113,23 +131,35 @@ class CartController extends Controller
         if ($request->type === 'featured') {
             $price = 15000; // Fixed PKR base price for Featured Listing promotion
         } else {
-            if ($request->variation_id) {
-                $variation = ProductVariation::find($request->variation_id);
+            if ($variationId) {
+                $variation = ProductVariation::find($variationId);
                 if ($variation && $variation->auction_id == $auction->id) {
                     $originalPrice = $variation->price;
                     $discountType = $variation->discount_type;
                     $discountValue = $variation->discount_value;
                 } else {
+                    \Log::warning('[Cart] Invalid variation: variation_id=' . $variationId . ', auction_id=' . $auction->id);
                     return response()->json([
                         'success' => false,
                         'message' => 'Invalid variation selected',
+                        'reason' => 'invalid_variation',
                     ], 400);
                 }
             } else {
                 // use buy_now_price if available, otherwise minimum_bid for regular products
                 $originalPrice = $auction->buy_now_price ?? $auction->minimum_bid ?? 0;
-                $discountType = $auction->discount_type;
-                $discountValue = $auction->discount_value;
+                $discountType = $auction->discount_type ?? null;
+                $discountValue = $auction->discount_value ?? 0;
+
+                // When auction-level price is 0 but product has variations, use min variation price
+                if ($originalPrice <= 0 && $auction->variations && $auction->variations->isNotEmpty()) {
+                    $minVar = $auction->variations->sortBy('price')->first();
+                    if ($minVar && $minVar->price > 0) {
+                        $originalPrice = $minVar->price;
+                        $discountType = $minVar->discount_type;
+                        $discountValue = $minVar->discount_value ?? 0;
+                    }
+                }
             }
 
             // Calculate Discount
@@ -141,21 +171,24 @@ class CartController extends Controller
                     $price = $originalPrice - $discountValue;
                 }
             }
-            if ($price < 0)
+            if ($price < 0) {
                 $price = 0;
+            }
         }
 
         if ($price <= 0) {
+            \Log::warning('[Cart] Invalid price: auction_id=' . $auction->id . ', buy_now=' . ($auction->buy_now_price ?? 'null') . ', min_bid=' . ($auction->minimum_bid ?? 'null'));
             return response()->json([
                 'success' => false,
-                'message' => 'Product does not have a valid price',
+                'message' => 'This item cannot be added to cart. It does not have a valid purchase price.',
+                'reason' => 'invalid_price',
             ], 400);
         }
 
         $cartItem = Cart::create([
             'user_id' => $user->id,
             'auction_id' => $auction->id,
-            'variation_id' => $request->variation_id,
+            'variation_id' => $variationId,
             'type' => $request->type ?? 'product',
             'quantity' => 1,
             'price' => $price,

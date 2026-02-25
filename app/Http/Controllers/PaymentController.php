@@ -37,6 +37,11 @@ class PaymentController extends Controller
         }
         public function stripePayment(Request $request)
         {
+            return response()->json([
+                'success' => false,
+                'message' => 'Card payments are disabled. Please use Cash on Delivery or Bank Transfer.',
+            ], 410);
+            /*
             $request->validate([
                 'amount' => 'required|numeric|min:1',
                 'stripeToken' => 'required',
@@ -67,10 +72,16 @@ class PaymentController extends Controller
             ]);
 
             return response()->json(['balance' => $wallet->balance]);
+        */
         }
 
         public function createPaymentIntent(Request $request)
         {
+            return response()->json([
+                'success' => false,
+                'message' => 'Card payments are disabled. Please use Cash on Delivery or Bank Transfer.',
+            ], 410);
+            /*
           $request->validate(
     ['amount' => 'required|numeric|min:50'],
     [
@@ -130,6 +141,7 @@ class PaymentController extends Controller
                     'error' => $e->getMessage(),
                 ], 500);
             }
+            */
         }
 
         public function processPayPalPayment(Request $request)
@@ -323,9 +335,12 @@ public function deletePaymentMethod($id)
         $wallet = Wallet::firstOrCreate(['user_id' => $user->id]);
         $paymentMethod = PaymentMethod::find($request->payment_method_id);
 
-        if ($paymentMethod->type === 'Stripe') {
-            return $this->stripePayment($request, $paymentMethod);
-        } elseif ($paymentMethod->type === 'PayPal') {
+        if ($paymentMethod->type === 'Stripe' || $paymentMethod->paymentMethod === 'Stripe') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Card payments are disabled. Please use Bank Transfer or PayPal.',
+            ], 410);
+        } elseif ($paymentMethod->type === 'PayPal' || $paymentMethod->paymentMethod === 'PayPal') {
             return $this->processPayPalPayment($request);
         }
 

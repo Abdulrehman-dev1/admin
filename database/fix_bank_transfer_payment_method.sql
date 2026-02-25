@@ -1,5 +1,14 @@
--- Fix: Bank Transfer checkout SQL error (payment_method enum only allowed 'stripe','cod')
--- Run this manually if migration does not work: php artisan migrate
--- Or execute in phpMyAdmin / MySQL client:
-
+-- Fix: Bank Transfer checkout SQL error (payment_method ENUM only allowed 'stripe','cod')
+-- This allows 'bank_transfer' and future payment methods.
+--
+-- Run on the SAME database your API uses (e.g. admin.xpertbid.com):
+--
+-- Option 1 - Artisan (recommended):
+--   cd admin && php artisan bank-transfer:fix
+--
+-- Option 2 - Run migrations:
+--   php artisan migrate
+--
+-- Option 3 - Execute directly in phpMyAdmin / MySQL:
+--
 ALTER TABLE orders MODIFY COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'cod';
