@@ -554,9 +554,14 @@ class CheckoutController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Checkout Error: ' . $e->getMessage());
+            Log::error('Checkout Stack: ' . $e->getTraceAsString());
+            $userMessage = 'Failed to process checkout. Please try again.';
+            if (str_contains($e->getMessage(), 'payment_method') || str_contains($e->getMessage(), 'Data truncated')) {
+                $userMessage = 'Payment method configuration error. Please contact support.';
+            }
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to process checkout: ' . $e->getMessage(),
+                'message' => $userMessage,
             ], 500);
         }
     }
