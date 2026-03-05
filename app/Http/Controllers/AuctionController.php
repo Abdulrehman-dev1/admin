@@ -2257,6 +2257,7 @@ class AuctionController extends Controller
         $page = $request->input('page', 1);
 
         $paginator = $q->withMax('bids', 'bid_amount')
+            ->orderByRaw("CASE WHEN featured_name = 'home_featured' THEN 0 ELSE 1 END ASC")
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 

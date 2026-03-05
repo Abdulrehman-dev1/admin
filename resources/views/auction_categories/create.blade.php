@@ -193,24 +193,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const parentSelect = document.getElementById('parent_id');
   const subSelect    = document.getElementById('sub_category_id');
 
+  // Function to clear and load categories
+  const loadCategories = (parentId, targetSelect, urlPath) => {
+    targetSelect.innerHTML = '<option value="">— Loading... —</option>';
+    
+    fetch(`${urlPath}/${parentId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        targetSelect.innerHTML = '<option value="">— None —</option>';
+        const categories = data.subcategories || data.categories || [];
+        categories.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.id;
+          opt.text = item.name;
+          targetSelect.appendChild(opt);
+        });
+      })
+      .catch(err => {
+        console.error('Fetch error:', err);
+        targetSelect.innerHTML = '<option value="">— Error loading —</option>';
+      });
+  };
+
   parentSelect.addEventListener('change', () => {
     const parentId = parentSelect.value;
     subSelect.innerHTML = '<option value="">— None —</option>';
-
     if (!parentId) return;
-
-    fetch(`/get-subcategories/${parentId}`)
-      .then(res => res.json())
-      .then(data => {
-        data.subcategories.forEach(sub => {
-          const opt = document.createElement('option');
-          opt.value   = sub.id;
-          opt.text    = sub.name;
-          subSelect.appendChild(opt);
-        });
-      })
-      .catch(console.error);
+    loadCategories(parentId, subSelect, "{{ url('/get-subcategories') }}");
   });
+
+  // Check if we need to load subcategories on page load (for edit view)
+  if (parentSelect.value && subSelect.options.length <= 1) {
+     // This is handled by Blade @foreach normally, but good to have as fallback or if we want to refresh
+  }
 });
 </script>
 

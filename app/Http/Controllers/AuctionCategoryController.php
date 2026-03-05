@@ -98,17 +98,7 @@ class AuctionCategoryController extends Controller
         // ek dedicated Blade view banani padegi: resources/views/auction_categories/show.blade.php
         return view('auction_categories.show', compact('category'));
     }
-    public function getSubCategoriess($parentId)
-    {
-        $subcategories = AuctionCategory::where('parent_id', $parentId)->get(['id', 'name', 'slug']);
-        return response()->json(compact('subcategories'));
-    }
 
-    public function getChildCategoriess($subId)
-    {
-        $childcategories = AuctionCategory::where('parent_id', $subId)->get(['id', 'name', 'slug']);
-        return response()->json(compact('childcategories'));
-    }
 
     // Update category with an image
     public function update(Request $request, $id)
@@ -255,7 +245,7 @@ class AuctionCategoryController extends Controller
     }
 
 
-    public function getChildern($id)
+    public function getChildren($id)
     {
         // same logic as before…
         if (is_numeric($id)) {
@@ -272,80 +262,54 @@ class AuctionCategoryController extends Controller
 
     public function all_categories()
     {
-        // Change these if your priority changes
-        // 222 first, then 311, then by id ASC
+        // Helper subquery to check if a category ID has any active auctions
+        $hasActiveAuctions = function ($query) {
+            $query->whereExists(function ($sub) {
+                $sub->select(\DB::raw(1))
+                    ->from('auctions')
+                    ->where('status', 'active')
+                    ->whereRaw('auctions.category_id = auction_categories.id OR auctions.sub_category_id = auction_categories.id OR auctions.child_category_id = auction_categories.id');
+            });
+        };
+
         $categories = AuctionCategory::query()
             ->whereNull('parent_id')
             ->whereNull('sub_category_id')
-
-            // ✅ Include ONLY roots that have active items at ANY depth (root / sub / child)
-            ->where(function ($q) {
-                $q->whereHas('auctions', function ($a) {
-                    $a->where('status', 'active'); // adjust column if needed
-                })
-                    ->orWhereHas('subCategories.auctions', function ($a) {
-                        $a->where('status', 'active');
-                    })
-                    ->orWhereHas('subCategories.childCategories.auctions', function ($a) {
-                        $a->where('status', 'active');
+            // Only show main category if it OR its descendants have active auctions
+            ->where(function ($q) use ($hasActiveAuctions) {
+                $q->where($hasActiveAuctions)
+                ->orWhereHas('subCategories', function ($sq) use ($hasActiveAuctions) {
+                    $sq->where($hasActiveAuctions)
+                    ->orWhereHas('childCategories', function ($cq) use ($hasActiveAuctions) {
+                        $cq->where($hasActiveAuctions);
                     });
+                });
             })
-
-            // ✅ Eager load ONLY subcategories that have active items (self or children)
             ->with([
-                'subCategories' => function ($q) {
-                    // Explicitly select all fields including SEO fields
+                'subCategories' => function ($q) use ($hasActiveAuctions) {
                     $q->select([
-                        'id',
-                        'name',
-                        'slug',
-                        'image',
-                        'parent_id',
-                        'sub_category_id',
-                        'meta_title',
-                        'meta_description',
-                        'seo_content',
-                        'seo_short_content',
-                        'schema_markup',
-                        'created_at',
-                        'updated_at'
+                        'id', 'name', 'slug', 'image', 'parent_id', 'sub_category_id',
+                        'meta_title', 'meta_description', 'seo_content', 'seo_short_content', 'schema_markup'
                     ])
-                        ->where(function ($qq) {
-                        $qq->whereHas('auctions', function ($a) {
-                            $a->where('status', 'active');
-                        })
-                            ->orWhereHas('childCategories.auctions', function ($a) {
-                                $a->where('status', 'active');
-                            });
-                    })
-                        // ✅ Eager load ONLY child categories that have active items
-                        ->with([
-                            'childCategories' => function ($cq) {
-                        // Explicitly select all fields including SEO fields
-                        $cq->select([
-                            'id',
-                            'name',
-                            'slug',
-                            'image',
-                            'parent_id',
-                            'sub_category_id',
-                            'meta_title',
-                            'meta_description',
-                            'seo_content',
-                            'seo_short_content',
-                            'schema_markup',
-                            'created_at',
-                            'updated_at'
-                        ])
-                            ->whereHas('auctions', function ($a) {
-                            $a->where('status', 'active');
+                    // Only show subcategory if it OR its children have active auctions
+                    ->where(function ($sq) use ($hasActiveAuctions) {
+                        $sq->where($hasActiveAuctions)
+                        ->orWhereHas('childCategories', function ($cq) use ($hasActiveAuctions) {
+                            $cq->where($hasActiveAuctions);
                         });
-                    }
-                        ]);
+                    })
+                    ->with([
+                        'childCategories' => function ($cq) use ($hasActiveAuctions) {
+                            $cq->select([
+                                'id', 'name', 'slug', 'image', 'parent_id', 'sub_category_id',
+                                'meta_title', 'meta_description', 'seo_content', 'seo_short_content', 'schema_markup'
+                            ])
+                            // Only show child category if it has active auctions
+                            ->where($hasActiveAuctions);
+                        }
+                    ]);
                 },
             ])
-
-            // ✅ Priority order: 222, 311, then id ASC
             ->orderByRaw("FIELD(id, 222, 311) DESC")
             ->orderBy('id')
             ->get();

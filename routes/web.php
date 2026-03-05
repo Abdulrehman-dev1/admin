@@ -414,7 +414,7 @@ Route::middleware('auth')->group(function () {
     Route::post('users/{user}/roles', [RoleController::class, 'assignRole'])->name('users.roles.store')->middleware('permission:role-edit');
     Route::resource('permissions', PermissionsController::class)->middleware('permission:permission-list');
     Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSubcategories']);
-    Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildern']);
+    Route::get('/get-children/{id}', [AuctionCategoryController::class, 'getChildren']);
     Route::get('utm-campaign-users', [UserController::class, 'utmCampaign'])->name('utm_campaign_users.index')->middleware('permission:user-list');
     Route::get('users/export', [UserController::class, 'export'])->name('users.export');
     Route::resource('users', UserController::class)->middleware('permission:user-list');
@@ -438,8 +438,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('buy-now-inquiries/{id}', [BuyNowInquiryController::class, 'destroy'])->name('buy-now-inquiries.destroy');
     });
 
-    Route::get('/get-subcategories/{parent}', [AuctionCategoryController::class, 'getSubCategories']);
-    Route::get('/get-childcategories/{sub}', [AuctionCategoryController::class, 'getChildCategories']);
+
 
     // Route::get('/test-mail', function () {
 //     try {

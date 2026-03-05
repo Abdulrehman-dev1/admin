@@ -66,6 +66,5 @@ class AuctionCategory extends Model
     {
         return $this->hasMany(\App\Models\Auction::class, 'category_id');
     }
-
 }
 
