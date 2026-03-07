@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 <?php
 namespace App\Http\Controllers;
 
@@ -147,8 +145,9 @@ class BidController extends Controller
 
         // 2) Load auction and ensure active & not ended
         $auction = Auction::findOrFail($request->auction_id);
+        $effectiveEndDate = $auction->getEffectiveEndDate();
 
-        if ($auction->status !== 'active' || now()->greaterThan($auction->end_date)) {
+        if ($auction->status !== 'active' || ($effectiveEndDate && now()->greaterThan($effectiveEndDate))) {
             return response()->json([
                 'success' => false,
                 'message' => 'This auction has ended or is no longer active.',
@@ -190,29 +189,18 @@ class BidController extends Controller
             ]);
 
             // Extend auction if within last 5 minutes
-            // The DB stores time in local time (Asia/Karachi) but App uses UTC.
-            // We interpret end_date as Karachi time to perform correct comparison.
-            $endDate = \Carbon\Carbon::parse($auction->end_date, 'Asia/Karachi');
-            $checkTime = now(); // Current time in UTC (or app default)
-
-            $logMessage = "Bid Extension Debug: Auction ID {$auction->id}\n" .
-                          "Current Time (UTC): " . $checkTime->format('Y-m-d H:i:s') . "\n" .
-                          "Current Time + 5m (UTC): " . $checkTime->copy()->addMinutes(5)->format('Y-m-d H:i:s') . "\n" .
-                          "Auction End Date (Parsed as Karachi): " . $endDate->format('Y-m-d H:i:s') . " (Offset: " . $endDate->offsetHours . ")\n" .
-                          "Auction End in UTC: " . $endDate->copy()->setTimezone('UTC')->format('Y-m-d H:i:s') . "\n" .
-                          // Compare: (Now + 5min) >= EndDate
-                          "Condition (Check+5m >= End): " . ($checkTime->copy()->addMinutes(5)->greaterThanOrEqualTo($endDate) ? 'TRUE' : 'FALSE') . "\n" .
-                          "--------------------------------------------------\n";
-                          
-            file_put_contents(storage_path('logs/temp_debug.log'), $logMessage, FILE_APPEND);
-
-            if ($checkTime->addMinutes(5)->greaterThanOrEqualTo($endDate)) {
-                // Add 15 minutes to the database value (which is strings)
-                // Since DB is effectively storing Karachi time, we just add 15 mins to the object and format it back
-                $newEndDate = $endDate->addMinutes(15);
-                $auction->end_date = $newEndDate->format('Y-m-d H:i:s');
-                $auction->save();
-                file_put_contents(storage_path('logs/temp_debug.log'), "Auction Extended. New End Date: " . $auction->end_date . "\n", FILE_APPEND);
+            // We use the effective end date (Karachi time) to perform correct comparison.
+            if ($effectiveEndDate) {
+                $checkTime = now()->setTimezone('Asia/Karachi'); 
+                
+                if ($checkTime->copy()->addMinutes(5)->greaterThanOrEqualTo($effectiveEndDate)) {
+                    // Add 15 minutes to the effective end date and save it back to end_date
+                    $newEndDate = $effectiveEndDate->copy()->addMinutes(15);
+                    $auction->end_date = $newEndDate->format('Y-m-d H:i:s');
+                    $auction->save();
+                    
+                    file_put_contents(storage_path('logs/temp_debug.log'), "Auction ID {$auction->id} Extended. New End Date: " . $auction->end_date . "\n", FILE_APPEND);
+                }
             }
 
             // Optional: notify or email
@@ -252,6 +240,7 @@ class BidController extends Controller
             ->where('user_id', '!=', $currentUserId)
             ->groupBy('user_id')
             ->orderBy('created_at', 'desc')
+            ->take(5) // Limit to last 5 unique bidders
             ->pluck('user_id');
             
         // Loop through each bidder to create a DB notification and send an email/SMS
@@ -366,4 +355,3 @@ class BidController extends Controller
         return view('bids.show', compact('bid', 'auctionBids'));
     }
 }
->>>>>>> Stashed changes
