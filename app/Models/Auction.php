@@ -150,5 +150,21 @@ class Auction extends Model
         return $this->hasMany(ProductVariation::class);
     }
 
+    /**
+     * Helper to get the actual end date of the auction.
+     * Prioritizes 'end_date' field, falls back to live auction end time if live is enabled.
+     */
+    public function getEffectiveEndDate()
+    {
+        if ($this->end_date && $this->end_date !== 'Not set') {
+            return \Carbon\Carbon::parse($this->end_date, 'Asia/Karachi');
+        }
+
+        if ($this->is_live_auction && $this->live_auction_date && $this->live_auction_end_time) {
+            return \Carbon\Carbon::parse($this->live_auction_date . ' ' . $this->live_auction_end_time, 'Asia/Karachi');
+        }
+
+        return null;
+    }
 }
 

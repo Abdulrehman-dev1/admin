@@ -95,5 +95,21 @@ class Auction1 extends Model
     {
         return $this->belongsTo(AuctionCategory::class, 'child_category_id');
     }
+
+    /**
+     * Helper to get the actual end date of the auction.
+     */
+    public function getEffectiveEndDate()
+    {
+        if ($this->end_date && $this->end_date !== 'Not set') {
+            return \Carbon\Carbon::parse($this->end_date, 'Asia/Karachi');
+        }
+
+        if ($this->is_live_auction && $this->live_auction_date && $this->live_auction_end_time) {
+            return \Carbon\Carbon::parse($this->live_auction_date . ' ' . $this->live_auction_end_time, 'Asia/Karachi');
+        }
+
+        return null;
+    }
 }
 
