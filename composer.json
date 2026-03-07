@@ -8,6 +8,7 @@
     "require": {
         "php": "^8.2",
         "berkayk/onesignal-laravel": "^2.3",
+        "firebase/php-jwt": "^6.11",
         "google/apiclient": "^2.18",
         "laravel/framework": "^11.31",
         "laravel/sanctum": "^4.0",
