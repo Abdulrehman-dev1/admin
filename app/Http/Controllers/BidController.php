@@ -188,9 +188,8 @@ class BidController extends Controller
                 'bid_amount' => $newAmount, // Expecting AED amount from frontend
             ]);
 
-            // Extend auction if within last 5 minutes
-            // We use the effective end date (Karachi time) to perform correct comparison.
-            if ($effectiveEndDate) {
+            // Extend auction if within last 5 minutes (Only for non-live auctions)
+            if ($effectiveEndDate && !$auction->is_live_auction) {
                 $checkTime = now()->setTimezone('Asia/Karachi'); 
                 
                 if ($checkTime->copy()->addMinutes(5)->greaterThanOrEqualTo($effectiveEndDate)) {
