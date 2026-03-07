@@ -35,10 +35,24 @@ class CheckAuctionStatusCommand extends Command
     {
         $this->info('🔄 Starting Auction Status Check Process...');
 
-        // 1. Fetch auctions where end_date < now AND status = 'active'
+        // 1. Fetch auctions where (standard end_date < now AND is_live_auction=0) 
+        // OR (live_auction_date + live_auction_end_time < now AND is_live_auction=1)
+        // AND status = 'active'
         $expiredAuctions = Auction::where('status', 'active')
-            ->where('end_date', '<', Carbon::now())
+            ->where(function ($query) {
+                $now = Carbon::now();
+                $query->where(function ($q) use ($now) {
+                    $q->where('is_live_auction', 0)
+                      ->where('end_date', '<', $now);
+                })->orWhere(function ($q) use ($now) {
+                    $q->where('is_live_auction', 1)
+                      ->whereNotNull('live_auction_date')
+                      ->whereNotNull('live_auction_end_time')
+                      ->whereRaw("CONCAT(live_auction_date, ' ', live_auction_end_time) < ?", [$now->format('Y-m-d H:i:s')]);
+                });
+            })
             ->get();
+
 
         if ($expiredAuctions->isEmpty()) {
             $this->info('✅ No expired auctions found.');

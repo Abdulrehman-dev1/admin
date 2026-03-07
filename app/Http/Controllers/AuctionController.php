@@ -138,14 +138,25 @@ class AuctionController extends Controller
         ];
 
         // Auction-specific rules
-        if ($listType === 'auction') {
+        if ($listType === 'auction' && !$request->input('is_live_auction')) {
             $rules['start_date'] = ['required', 'date'];
             $rules['end_date'] = ['required', 'date', 'after_or_equal:start_date'];
             $rules['reserve_price'] = ['required', 'numeric'];
             $rules['minimum_bid'] = ['required', 'numeric'];
             $rules['product_year'] = ['required'];
             $rules['status'] = ['required'];
+        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+            $rules['start_date'] = ['nullable', 'date'];
+            $rules['end_date'] = ['nullable', 'date'];
+            $rules['reserve_price'] = ['required', 'numeric'];
+            $rules['minimum_bid'] = ['required', 'numeric'];
+            $rules['product_year'] = ['required'];
+            $rules['status'] = ['required'];
+            $rules['live_auction_date'] = ['required', 'date'];
+            $rules['live_auction_start_time'] = ['required'];
+            $rules['live_auction_end_time'] = ['required'];
         }
+
 
         // Normal List-specific rules
         if ($listType === 'normal_list') {
@@ -165,12 +176,12 @@ class AuctionController extends Controller
             'government_fee' => ['nullable', 'string'],
             'nearby_location' => ['nullable', 'string'],
             'amenities' => ['nullable', 'string'],
-            'amenities' => ['nullable', 'string'],
             'facilities' => ['nullable', 'string'],
             // Discount fields
             'discount_type' => ['nullable', 'string', 'in:percent,flat'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
             'is_1_rupee' => ['nullable', 'boolean'],
+            'is_live_auction' => ['nullable', 'boolean'],
         ];
 
         $validated = $request->validate($rules);
@@ -221,7 +232,12 @@ class AuctionController extends Controller
             'discount_type',
             'discount_value',
             'is_1_rupee',
+            'is_live_auction',
+            'live_auction_date',
+            'live_auction_start_time',
+            'live_auction_end_time',
         ]);
+
 
         // For normal_list, set default values
         if ($listType === 'normal_list') {
@@ -375,12 +391,16 @@ class AuctionController extends Controller
         // Auction-specific rules
         if ($listType === 'auction') {
             $rules['start_date'] = ['nullable', 'date']; // Changed to nullable for edit page - no current date validation
-            $rules['end_date'] = ['required', 'date', 'after_or_equal:start_date'];
+            $rules['end_date'] = ['required_unless:is_live_auction,true,1', 'nullable', 'date', 'after_or_equal:start_date'];
             $rules['reserve_price'] = ['required', 'numeric'];
             $rules['minimum_bid'] = ['required', 'numeric'];
             $rules['product_year'] = ['required'];
             $rules['status'] = ['required'];
+            $rules['live_auction_date'] = ['required_if:is_live_auction,true,1', 'nullable', 'date'];
+            $rules['live_auction_start_time'] = ['required_if:is_live_auction,true,1', 'nullable'];
+            $rules['live_auction_end_time'] = ['required_if:is_live_auction,true,1', 'nullable'];
         }
+
 
         // Normal List-specific rules
         if ($listType === 'normal_list') {
@@ -400,9 +420,9 @@ class AuctionController extends Controller
             'government_fee' => ['nullable', 'string'],
             'nearby_location' => ['nullable', 'string'],
             'amenities' => ['nullable', 'string'],
-            'amenities' => ['nullable', 'string'],
             'facilities' => ['nullable', 'string'],
             // Discount fields
+
             'discount_type' => ['nullable', 'string', 'in:percent,flat'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
         ];
@@ -434,6 +454,11 @@ class AuctionController extends Controller
         $validated['discount_type'] = $request->input('discount_type');
         $validated['discount_value'] = $request->input('discount_value');
         $validated['is_1_rupee'] = $request->has('is_1_rupee') ? 1 : 0;
+        $validated['is_live_auction'] = $request->has('is_live_auction') ? 1 : 0;
+        $validated['live_auction_date'] = $request->input('live_auction_date');
+        $validated['live_auction_start_time'] = $request->input('live_auction_start_time');
+        $validated['live_auction_end_time'] = $request->input('live_auction_end_time');
+
 
         // For normal_list, set default values
         if ($listType === 'normal_list') {
@@ -1049,15 +1074,25 @@ class AuctionController extends Controller
             'facilities' => 'nullable|string',
             'discount_type' => 'nullable|in:percent,flat',
             'discount_value' => 'nullable|numeric',
+            'is_live_auction' => 'nullable|boolean',
+            'live_auction_date' => 'required_if:is_live_auction,true,1|nullable|date',
+            'live_auction_start_time' => 'required_if:is_live_auction,true,1|nullable',
+            'live_auction_end_time' => 'required_if:is_live_auction,true,1|nullable',
         ];
 
         // Auction-specific rules
-        if ($listType === 'auction') {
+        if ($listType === 'auction' && !$request->input('is_live_auction')) {
             $rules['start_date'] = 'required|date';
             $rules['end_date'] = 'required|date|after_or_equal:start_date';
             $rules['reserve_price'] = 'required|numeric';
             $rules['minimum_bid'] = 'required|numeric';
+        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+            $rules['start_date'] = 'nullable|date';
+            $rules['end_date'] = 'nullable|date';
+            $rules['reserve_price'] = 'required|numeric';
+            $rules['minimum_bid'] = 'required|numeric';
         }
+
 
         // Normal List-specific rules
         if ($listType === 'normal_list') {
@@ -1095,7 +1130,11 @@ class AuctionController extends Controller
             'location_url.url' => 'Please enter a valid URL.',
             'number_of_buildings.integer' => 'Number of buildings must be a whole number.',
             'number_of_buildings.min' => 'Number of buildings cannot be negative.',
+            'live_auction_date.required_if' => 'Live auction date is required.',
+            'live_auction_start_time.required_if' => 'Live auction start time is required.',
+            'live_auction_end_time.required_if' => 'Live auction end time is required.',
         ];
+
 
         $validatedData = $request->validate($rules, $messages);
 
@@ -1248,9 +1287,14 @@ class AuctionController extends Controller
             'status' => 'inactive', // default status
             'create_category' => $request->input('create_category'),
             'list_type' => $listType,
+            'is_live_auction' => $request->has('is_live_auction') ? 1 : 0,
+            'live_auction_date' => $validatedData['live_auction_date'] ?? null,
+            'live_auction_start_time' => $validatedData['live_auction_start_time'] ?? null,
+            'live_auction_end_time' => $validatedData['live_auction_end_time'] ?? null,
             // The new property fields and category_id are already included in $validatedData
             // They will be automatically added to the auction record
         ]);
+
 
         // For normal_list, set default values
         if ($listType === 'normal_list') {
@@ -1372,6 +1416,10 @@ class AuctionController extends Controller
             'facilities' => 'nullable|string',
             'discount_type' => 'nullable|in:percent,flat',
             'discount_value' => 'nullable|numeric',
+            'is_live_auction' => 'nullable|boolean',
+            'live_auction_date' => 'required_if:is_live_auction,true,1|nullable|date',
+            'live_auction_start_time' => 'required_if:is_live_auction,true,1|nullable',
+            'live_auction_end_time' => 'required_if:is_live_auction,true,1|nullable',
         ];
 
         // Conditional Rules
@@ -1381,7 +1429,13 @@ class AuctionController extends Controller
             $rules['start_date'] = 'nullable|date';
             $rules['end_date'] = 'nullable|date';
             $rules['reserve_price'] = 'nullable|numeric';
+        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+            $rules['start_date'] = 'nullable|date';
+            $rules['end_date'] = 'nullable|date';
+            $rules['reserve_price'] = 'required|numeric';
+            $rules['minimum_bid'] = 'required|numeric';
         } else {
+
             // Auction default
             $rules['start_date'] = 'nullable|date'; // Use existing if not provided
             $rules['end_date'] = 'required|date';
@@ -1626,7 +1680,12 @@ class AuctionController extends Controller
             'create_category' => $request->input('create_category'),
             'status' => 'resubmit', // business rule
             'list_type' => $listType,
+            'is_live_auction' => $request->has('is_live_auction') ? 1 : 0,
+            'live_auction_date' => $validatedData['live_auction_date'] ?? null,
+            'live_auction_start_time' => $validatedData['live_auction_start_time'] ?? null,
+            'live_auction_end_time' => $validatedData['live_auction_end_time'] ?? null,
         ]);
+
 
         // Set Time to 12 AM (00:00:00)
         if (!empty($auctionData['end_date'])) {
@@ -2340,7 +2399,12 @@ class AuctionController extends Controller
                 'nearby_location',
                 'amenities',
                 'facilities',
+                'is_live_auction',
+                'live_auction_date',
+                'live_auction_start_time',
+                'live_auction_end_time',
             ];
+
 
             foreach ($fields as $field) {
                 if ($request->has($field) && $request->input($field) !== null && $request->input($field) !== '') {

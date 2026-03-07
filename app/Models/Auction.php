@@ -64,7 +64,9 @@ class Auction extends Model
         'discount_type',
         'discount_value',
         'is_1_rupee',
+        'is_live_auction',
     ];
+
 
     public function user()
     {

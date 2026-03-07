@@ -245,20 +245,29 @@ class AuctionCategoryController extends Controller
     }
 
 
-    public function getChildren($id)
+    public function getChildern($id)
     {
-        // same logic as before…
         if (is_numeric($id)) {
             $category = AuctionCategory::find($id);
         } else {
             $category = AuctionCategory::where('name', $id)->first();
         }
+
         if (!$category) {
             return response()->json(['error' => 'Category not found'], 404);
         }
+
         $subs = AuctionCategory::where('sub_category_id', $category->id)->get();
         return response()->json(['subcategories' => $subs]);
     }
+
+    public function getChildren($id)
+    {
+        return $this->getChildern($id);
+    }
+
+
+
 
     public function all_categories()
     {

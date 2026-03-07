@@ -61,7 +61,10 @@ class Auction1 extends Model
         'nearby_location',
         'amenities',
         'facilities',
+        'is_1_rupee',
+        'is_live_auction',
     ];
+
 
     protected static function booted()
     {
