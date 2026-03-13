@@ -239,7 +239,6 @@ class BidController extends Controller
             ->where('user_id', '!=', $currentUserId)
             ->groupBy('user_id')
             ->orderBy('created_at', 'desc')
-            ->take(5) // Limit to last 5 unique bidders
             ->pluck('user_id');
             
         // Loop through each bidder to create a DB notification and send an email/SMS
