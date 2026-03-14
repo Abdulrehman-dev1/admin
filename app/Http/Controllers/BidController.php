@@ -52,85 +52,6 @@ class BidController extends Controller
 
     public function placeBid(Request $request)
     {
-        // ------------------------------------------------------------
-        // Verification gate: allow if EITHER Individual OR Corporate is approved
-        // ------------------------------------------------------------
-        $userIdForGate = auth()->id();
-
-        $individualGate = IndividualVerification::where('user_id', $userIdForGate)->first();
-        $corporateGate = CorporateVerification::where('user_id', $userIdForGate)->first();
-
-        // helper closures
-        $isApprovedGate = function ($rec) {
-            if (!$rec)
-                return false;
-            return in_array(strtolower($rec->status), ['approved', 'verified'], true);
-        };
-        $isPendingGate = function ($rec) {
-            if (!$rec)
-                return false;
-            return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
-        };
-        $isRejectedGate = function ($rec) {
-            if (!$rec)
-                return false;
-            return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
-        };
-
-        $verificationUrlGate = 'https://xpertbid.com/account?tab=identity_verification';
-
-        // Case A: neither record exists
-        if (!$individualGate && !$corporateGate) {
-
-            return response()->json([
-                'success' => false,
-                'is_verified' => false,
-                'message' => 'You need to complete verification before placing a bid. Please verify your identity (individual or corporate).',
-                'verify_url' => $verificationUrlGate,
-                'which' => 'none',
-            ], 403);
-        }
-
-        // Case B: approved if either side approved
-        if ($isApprovedGate($individualGate) || $isApprovedGate($corporateGate)) {
-            // pass
-        } else {
-            // Not approved anywhere — tell most relevant state
-            if ($isPendingGate($individualGate) || $isPendingGate($corporateGate)) {
-
-                return response()->json([
-                    'success' => false,
-                    'is_verified' => false,
-                    'message' => 'Your verification has been submitted and is currently pending review.',
-                    'verify_url' => $verificationUrlGate,
-                    'which' => $isPendingGate($corporateGate) ? 'corporate' : 'individual',
-                ], 403);
-            }
-
-            if ($isRejectedGate($individualGate) || $isRejectedGate($corporateGate)) {
-                return response()->json([
-                    'success' => false,
-                    'is_verified' => false,
-                    'message' => 'Your verification was rejected. Please resubmit the required documents.',
-                    'verify_url' => $verificationUrlGate,
-                    'which' => $isRejectedGate($corporateGate) ? 'corporate' : 'individual',
-                ], 403);
-            }
-
-            // Fallback: some unknown status
-            return response()->json([
-                'success' => false,
-                'is_verified' => false,
-                'message' => 'Verification is not complete. Please complete verification to proceed.',
-                'verify_url' => $verificationUrlGate,
-                'which' => ($individualGate ? 'individual' : 'corporate'),
-                'debug_status' => [
-                    'individual' => $individualGate->status ?? null,
-                    'corporate' => $corporateGate->status ?? null,
-                ],
-            ], 403);
-        }
-
         // 1) Validate input
         $request->validate([
             'auction_id' => 'required|exists:auctions,id',
@@ -141,10 +62,89 @@ class BidController extends Controller
             'bid_amount.min' => 'Your bid must be at least 1.',
         ]);
 
+        $auction = Auction::findOrFail($request->auction_id);
         $userId = auth()->id();
 
-        // 2) Load auction and ensure active & not ended
-        $auction = Auction::findOrFail($request->auction_id);
+        // ------------------------------------------------------------
+        // Verification gate: allow if EITHER Individual OR Corporate is approved
+        // Only required for non-live auctions
+        // ------------------------------------------------------------
+        if (!$auction->is_live_auction) {
+            $individualGate = IndividualVerification::where('user_id', $userId)->first();
+            $corporateGate = CorporateVerification::where('user_id', $userId)->first();
+
+            // helper closures
+            $isApprovedGate = function ($rec) {
+                if (!$rec)
+                    return false;
+                return in_array(strtolower($rec->status), ['approved', 'verified'], true);
+            };
+            $isPendingGate = function ($rec) {
+                if (!$rec)
+                    return false;
+                return in_array(strtolower($rec->status), ['pending', 'not_verified', 'submitted'], true);
+            };
+            $isRejectedGate = function ($rec) {
+                if (!$rec)
+                    return false;
+                return in_array(strtolower($rec->status), ['rejected', 'declined'], true);
+            };
+
+            $verificationUrlGate = 'https://xpertbid.com/account?tab=identity_verification';
+
+            // Case A: neither record exists
+            if (!$individualGate && !$corporateGate) {
+
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'You need to complete verification before placing a bid. Please verify your identity (individual or corporate).',
+                    'verify_url' => $verificationUrlGate,
+                    'which' => 'none',
+                ], 403);
+            }
+
+            // Case B: approved if either side approved
+            if ($isApprovedGate($individualGate) || $isApprovedGate($corporateGate)) {
+                // pass
+            } else {
+                // Not approved anywhere — tell most relevant state
+                if ($isPendingGate($individualGate) || $isPendingGate($corporateGate)) {
+
+                    return response()->json([
+                        'success' => false,
+                        'is_verified' => false,
+                        'message' => 'Your verification has been submitted and is currently pending review.',
+                        'verify_url' => $verificationUrlGate,
+                        'which' => $isPendingGate($corporateGate) ? 'corporate' : 'individual',
+                    ], 403);
+                }
+
+                if ($isRejectedGate($individualGate) || $isRejectedGate($corporateGate)) {
+                    return response()->json([
+                        'success' => false,
+                        'is_verified' => false,
+                        'message' => 'Your verification was rejected. Please resubmit the required documents.',
+                        'verify_url' => $verificationUrlGate,
+                        'which' => $isRejectedGate($corporateGate) ? 'corporate' : 'individual',
+                    ], 403);
+                }
+
+                // Fallback: some unknown status
+                return response()->json([
+                    'success' => false,
+                    'is_verified' => false,
+                    'message' => 'Verification is not complete. Please complete verification to proceed.',
+                    'verify_url' => $verificationUrlGate,
+                    'which' => ($individualGate ? 'individual' : 'corporate'),
+                    'debug_status' => [
+                        'individual' => $individualGate->status ?? null,
+                        'corporate' => $corporateGate->status ?? null,
+                    ],
+                ], 403);
+            }
+        }
+
         $effectiveEndDate = $auction->getEffectiveEndDate();
 
         if ($auction->status !== 'active' || ($effectiveEndDate && now()->greaterThan($effectiveEndDate))) {
