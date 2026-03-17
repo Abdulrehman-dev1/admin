@@ -2262,13 +2262,18 @@ class AuctionController extends Controller
             // Get the highest bid (winner)
             $highestBid = $auction->bids()->orderByDesc('bid_amount')->first();
             if (!$highestBid) {
-                return response()->json(['error' => 'No bids found for this auction.'], 400);
+                $auction->update([
+                    'status' => 'closed',
+                    'winner_id' => null,
+                ]);
+
+                return response()->json(['message' => 'Auction closed because no bids were found.']);
             }
             $winner = $highestBid->user;
 
             // Update the auction status and record the winner
             $auction->update([
-                'status' => 'completed',
+                'status' => 'awarded',
                 'winner_id' => $winner->id,
             ]);
 

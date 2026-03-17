@@ -54,8 +54,8 @@ class CheckAuctionStatusJob implements ShouldQueue
                 ->orderBy('bid_amount', 'desc')
                 ->first();
 
-            // 3. Compare highest bid amount with reserve_price (or minimum_bid if you prefer)
-            if ($highestBid && $highestBid->bid_amount >= $auction->reserve_price) {
+            // 3. If any bid exists, award the auction to the highest bidder.
+            if ($highestBid) {
                 // Auction is awarded to the highest bidder
                 $auction->status = 'awarded';
                 $auction->winner_id = $highestBid->user_id; // if you keep track of winner
@@ -67,7 +67,7 @@ class CheckAuctionStatusJob implements ShouldQueue
                 // (a) via email (Laravel Mail or Notification)
                 // (b) via OneSignal push if you have that integrated
             } else {
-                // Otherwise, no valid bids => mark as closed
+                // Otherwise, no bids => mark as closed
                 $auction->status = 'closed';
                 $auction->save();
             }
