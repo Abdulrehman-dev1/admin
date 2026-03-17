@@ -167,4 +167,3 @@ class Auction extends Model
         return null;
     }
 }
-

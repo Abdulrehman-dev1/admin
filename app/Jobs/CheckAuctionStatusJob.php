@@ -20,8 +20,8 @@ class CheckAuctionStatusJob implements ShouldQueue
     {   //echo "job code run";
         // 1. Fetch auctions where (standard end_date < now AND is_live_auction=0) 
         // OR (live_auction_date + live_auction_end_time < now AND is_live_auction=1)
-        // AND status = 'active'
-        $expiredAuctions = Auction::where('status', 'active')
+        // AND status is eligible for running auction lifecycle
+        $expiredAuctions = Auction::whereIn('status', ['active', 'private'])
             ->where(function ($query) {
                 $now = Carbon::now('Asia/Karachi'); // Use Karachi time for comparison
                 

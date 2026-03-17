@@ -40,7 +40,7 @@
                 </td>
                 <td>
                     <div class="d-flex">
-                        <a href="{{ route('auctionstatus.edit', $auction->id) }}" class="action-icon edit" title="Verify / Edit"><i class="fas fa-edit"></i></a>
+                        <a href="{{ route('auctionstatus.edit', ['auctionstatus' => $auction->id, 'tab' => $verificationTab ?? request('tab', 'regular')]) }}" class="action-icon edit" title="Verify / Edit"><i class="fas fa-edit"></i></a>
                     </div>
                 </td>
             </tr>

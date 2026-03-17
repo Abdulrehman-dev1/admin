@@ -13,9 +13,19 @@ class AuctionStatusController extends Controller
    // INDEX: List all auctions with status
     public function index(Request $request)
     {
+        $verificationTab = $request->get('tab', 'regular');
         $allowedStatuses = ['inactive', 'decline', 'resubmit'];
         $query = Auction::with(['user', 'category'])
             ->whereIn('status', $allowedStatuses);
+
+        if ($verificationTab === 'private') {
+            $query->where('list_type', 'private_auction');
+        } else {
+            $query->where(function ($q) {
+                $q->where('list_type', '!=', 'private_auction')
+                    ->orWhereNull('list_type');
+            });
+        }
 
         // Search functionality
         if ($request->has('q') && !empty($request->q)) {
@@ -74,14 +84,22 @@ class AuctionStatusController extends Controller
         $auctions = $query->paginate(10)->withQueryString();
 
         if ($request->ajax()) {
-            return view('auctionstatus.table_partial', compact('auctions'))->render();
+            return view('auctionstatus.table_partial', compact('auctions', 'verificationTab'))->render();
         }
 
-        $categories = \App\Models\AuctionCategory::whereHas('auctions', function($q) use ($allowedStatuses) {
+        $categories = \App\Models\AuctionCategory::whereHas('auctions', function($q) use ($allowedStatuses, $verificationTab) {
             $q->whereIn('status', $allowedStatuses);
+            if ($verificationTab === 'private') {
+                $q->where('list_type', 'private_auction');
+            } else {
+                $q->where(function ($sq) {
+                    $sq->where('list_type', '!=', 'private_auction')
+                        ->orWhereNull('list_type');
+                });
+            }
         })->get();
 
-        return view('auctionstatus.index', compact('auctions', 'allowedStatuses', 'categories'));
+        return view('auctionstatus.index', compact('auctions', 'allowedStatuses', 'categories', 'verificationTab'));
     }
     public function edit($id)
 {
@@ -95,7 +113,9 @@ class AuctionStatusController extends Controller
     'vehicle_verification',  // use snake_case
     ])->findOrFail($id);
 
-    return view('auctionstatus.edit', compact('auction'));
+    $verificationTab = request()->get('tab', $auction->list_type === 'private_auction' ? 'private' : 'regular');
+
+    return view('auctionstatus.edit', compact('auction', 'verificationTab'));
 }
 
     public function update(Request $request, $id)
@@ -117,7 +137,7 @@ class AuctionStatusController extends Controller
     }
 
     
-  public function decline(Request $request, $id)
+public function decline(Request $request, $id)
 {
     $request->validate([
         'decline_reason' => 'required|string|max:1000',
@@ -146,13 +166,15 @@ class AuctionStatusController extends Controller
         Mail::to($user->email)->send(new AuctionDeclinedMail($auction, $editUrl));
     }
 
-    return redirect()->route('auctionstatus.index')->with('success', 'Auction declined and user notified!');
+    $verificationTab = $request->get('tab', $auction->list_type === 'private_auction' ? 'private' : 'regular');
+
+    return redirect()->route('auctionstatus.index', ['tab' => $verificationTab])->with('success', 'Auction declined and user notified!');
 }
 
-public function accept($id)
+public function accept(Request $request, $id)
 {
     $auction = \App\Models\Auction::findOrFail($id);
-    $auction->status = 'active';
+    $auction->status = $auction->list_type === 'private_auction' ? 'private' : 'active';
     $auction->decline_reason = null;
     $auction->save();
 
@@ -160,7 +182,9 @@ public function accept($id)
     \App\Models\NewNotification::create([
         'user_id'   => $auction->user_id,
         'title'     => 'Auction Accepted',
-        'message'   => "Your auction \"{$auction->title}\" has been approved and is now live.",
+        'message'   => $auction->list_type === 'private_auction'
+            ? "Your private auction \"{$auction->title}\" has been approved."
+            : "Your auction \"{$auction->title}\" has been approved and is now live.",
         'type'      => 'auction',
         'image_url' => \App\Models\NewNotification::getImageForType('auction'),
         'read_at'   => null,
@@ -172,7 +196,14 @@ public function accept($id)
         Mail::to($user->email)->send(new AuctionAcceptedMail($auction));
     }
 
-    return redirect()->route('auctionstatus.index')->with('success', 'Auction accepted and user notified.');
+    $verificationTab = $request->get('tab', $auction->list_type === 'private_auction' ? 'private' : 'regular');
+
+    return redirect()->route('auctionstatus.index', ['tab' => $verificationTab])->with(
+        'success',
+        $auction->list_type === 'private_auction'
+            ? 'Private auction accepted and user notified.'
+            : 'Auction accepted and user notified.'
+    );
 }
 
 }

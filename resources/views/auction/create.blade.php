@@ -32,6 +32,8 @@
         <select name="list_type" id="list_type" class="form-control" required>
           <option value="auction" {{ old('list_type', $auction->list_type ?? 'auction') == 'auction' ? 'selected' : '' }}>
             Auction</option>
+          <option value="private_auction" {{ old('list_type', $auction->list_type ?? '') == 'private_auction' ? 'selected' : '' }}>
+            Private Auction</option>
           <option value="normal_list" {{ old('list_type', $auction->list_type ?? '') == 'normal_list' ? 'selected' : '' }}>
             Normal List</option>
         </select>
@@ -324,7 +326,7 @@
     // List Type Toggle Function
     function toggleListTypeFields() {
       const listType = document.getElementById('list_type').value;
-      const isAuction = listType === 'auction';
+      const isAuction = listType === 'auction' || listType === 'private_auction';
       const isNormalList = listType === 'normal_list';
 
       // Auction fields
@@ -471,7 +473,7 @@
     function applyCategoryUI() {
       const val = parseInt(catSelect?.value || '0', 10);
       const listType = document.getElementById('list_type').value;
-      const show = (val === CAT_222 && listType === 'auction');
+      const show = (val === CAT_222 && (listType === 'auction' || listType === 'private_auction'));
 
       if (catSection) catSection.style.display = show ? '' : 'none';
 
@@ -483,7 +485,7 @@
       catSelect.addEventListener('change', function () {
         applyCategoryUI();
         // Also trigger list type toggle if needed
-        if (document.getElementById('list_type').value === 'auction') {
+        if (['auction', 'private_auction'].includes(document.getElementById('list_type').value)) {
           toggleListTypeFields();
         }
       });
@@ -678,5 +680,3 @@
   })();
   </script>
 @endpush
-
-

@@ -259,22 +259,22 @@ class DashboardController extends Controller
 
     protected function getAuctionListingCount(): int
     {
-        return Auction::where('list_type', 'auction')->count();
+        return Auction::whereIn('list_type', ['auction', 'private_auction'])->count();
     }
 
     protected function getAuctionListingMonthlyData(): array
     {
-        return $this->getGenericMonthlyData(Auction::where('list_type', 'auction'));
+        return $this->getGenericMonthlyData(Auction::whereIn('list_type', ['auction', 'private_auction']));
     }
 
     protected function getNormalListingCount(): int
     {
-         return Auction::where('list_type', '!=', 'auction')->count(); 
+         return Auction::where('list_type', 'normal_list')->count(); 
     }
 
     protected function getNormalListingMonthlyData(): array
     {
-         return $this->getGenericMonthlyData(Auction::where('list_type', '!=', 'auction'));
+         return $this->getGenericMonthlyData(Auction::where('list_type', 'normal_list'));
     }
 
     protected function getTotalBidsCount(): int

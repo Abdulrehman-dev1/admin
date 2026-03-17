@@ -202,9 +202,10 @@
 
     {{-- Action Buttons --}}
     <div class="mt-4">
-        <a href="{{ route('auctionstatus.index') }}" class="btn btn-secondary">Back</a>
+        <a href="{{ route('auctionstatus.index', ['tab' => $verificationTab ?? ($auction->list_type === 'private_auction' ? 'private' : 'regular')]) }}" class="btn btn-secondary">Back</a>
        <form action="{{ route('auctionstatus.accept', $auction->id) }}" method="POST" style="display:inline;">
     @csrf
+    <input type="hidden" name="tab" value="{{ $verificationTab ?? ($auction->list_type === 'private_auction' ? 'private' : 'regular') }}">
     <button class="btn btn-success mx-2" type="submit">Accept</button>
 </form>
 
@@ -214,6 +215,7 @@
     {{-- Decline Section --}}
    <form action="{{ route('auctionstatus.decline', $auction->id) }}" method="POST">
     @csrf
+    <input type="hidden" name="tab" value="{{ $verificationTab ?? ($auction->list_type === 'private_auction' ? 'private' : 'regular') }}">
     <textarea name="decline_reason" class="form-control my-4" rows="3" required placeholder="Enter decline reason..."></textarea>
     <button class="btn btn-primary">Submit</button>
 </form>

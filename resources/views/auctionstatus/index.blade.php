@@ -245,10 +245,28 @@
         </div>
     </div>
 
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <a
+            href="{{ route('auctionstatus.index', ['tab' => 'regular']) }}"
+            class="btn {{ ($verificationTab ?? 'regular') === 'regular' ? 'btn-primary' : 'btn-outline-primary' }}"
+            style="border-radius: 10px; font-weight: 600;"
+        >
+            Lot Verification
+        </a>
+        <a
+            href="{{ route('auctionstatus.index', ['tab' => 'private']) }}"
+            class="btn {{ ($verificationTab ?? 'regular') === 'private' ? 'btn-primary' : 'btn-outline-primary' }}"
+            style="border-radius: 10px; font-weight: 600;"
+        >
+            Private Auction Verification
+        </a>
+    </div>
+
     <!-- Compact Filter Form -->
     <div class="card nftmax-filter-card">
         <div class="card-body p-3">
             <form id="filterForm" action="{{ route('auctionstatus.index') }}" method="GET">
+                <input type="hidden" name="tab" value="{{ $verificationTab ?? 'regular' }}">
                 <div class="row g-2 mb-3">
                     <div class="col-lg col-md-4">
                         <label class="filter-group-label">Search</label>
@@ -292,7 +310,7 @@
                         <button type="submit" class="btn btn-filter-submit">Apply Filters</button>
                     </div>
                     <div class="col-auto">
-                        <a href="{{ route('auctionstatus.index') }}" class="btn btn-filter-reset">Reset Filters</a>
+                        <a href="{{ route('auctionstatus.index', ['tab' => $verificationTab ?? 'regular']) }}" class="btn btn-filter-reset">Reset Filters</a>
                     </div>
                 </div>
             </form>

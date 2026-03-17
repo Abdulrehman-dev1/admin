@@ -66,10 +66,10 @@ class BidController extends Controller
         $userId = auth()->id();
 
         // ------------------------------------------------------------
-        // Verification gate: allow if EITHER Individual OR Corporate is approved
-        // Only required for non-live auctions
+        // Verification gate: allow if EITHER Individual OR Corporate is approved.
+        // Only private auctions may receive bids without verification.
         // ------------------------------------------------------------
-        if (!$auction->is_live_auction) {
+        if ($auction->list_type !== 'private_auction') {
             $individualGate = IndividualVerification::where('user_id', $userId)->first();
             $corporateGate = CorporateVerification::where('user_id', $userId)->first();
 
@@ -147,7 +147,7 @@ class BidController extends Controller
 
         $effectiveEndDate = $auction->getEffectiveEndDate();
 
-        if ($auction->status !== 'active' || ($effectiveEndDate && now()->greaterThan($effectiveEndDate))) {
+        if (!in_array($auction->status, ['active', 'private'], true) || ($effectiveEndDate && now()->greaterThan($effectiveEndDate))) {
             return response()->json([
                 'success' => false,
                 'message' => 'This auction has ended or is no longer active.',

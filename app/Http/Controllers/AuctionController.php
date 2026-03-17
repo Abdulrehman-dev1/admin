@@ -134,18 +134,18 @@ class AuctionController extends Controller
             'sub_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
             'child_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
             'description' => ['required', 'string'],
-            'list_type' => ['required', 'in:auction,normal_list'],
+            'list_type' => ['required', 'in:auction,normal_list,private_auction'],
         ];
 
         // Auction-specific rules
-        if ($listType === 'auction' && !$request->input('is_live_auction')) {
+        if (in_array($listType, ['auction', 'private_auction'], true) && !$request->input('is_live_auction')) {
             $rules['start_date'] = ['required', 'date'];
             $rules['end_date'] = ['required', 'date', 'after_or_equal:start_date'];
             $rules['reserve_price'] = ['required', 'numeric'];
             $rules['minimum_bid'] = ['required', 'numeric'];
             $rules['product_year'] = ['required'];
             $rules['status'] = ['required'];
-        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+        } elseif (in_array($listType, ['auction', 'private_auction'], true) && $request->input('is_live_auction')) {
             $rules['start_date'] = ['nullable', 'date'];
             $rules['end_date'] = ['nullable', 'date'];
             $rules['reserve_price'] = ['required', 'numeric'];
@@ -385,11 +385,11 @@ class AuctionController extends Controller
             'sub_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
             'child_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
             'description' => ['required', 'string'],
-            'list_type' => ['required', 'in:auction,normal_list'],
+            'list_type' => ['required', 'in:auction,normal_list,private_auction'],
         ];
 
         // Auction-specific rules
-        if ($listType === 'auction') {
+        if (in_array($listType, ['auction', 'private_auction'], true)) {
             $rules['start_date'] = ['nullable', 'date']; // Changed to nullable for edit page - no current date validation
             $rules['end_date'] = ['required_unless:is_live_auction,true,1', 'nullable', 'date', 'after_or_equal:start_date'];
             $rules['reserve_price'] = ['required', 'numeric'];
@@ -725,7 +725,7 @@ class AuctionController extends Controller
     public function get_latest_auctions()
     {
         $products = Auction::where(function ($query) {
-            $query->where('list_type', 'auction')
+            $query->whereIn('list_type', ['auction', 'private_auction'])
                 ->orWhereNull('list_type');
         })
             ->where('status', 'active')
@@ -1043,8 +1043,8 @@ class AuctionController extends Controller
 
     public function canBid(Auction $auction)
     {
-        // If current time is past end_date or status != active
-        return now()->isBefore($auction->end_date) && $auction->status === 'active';
+        // Private auctions should remain bid-able until expiry just like active auctions.
+        return now()->isBefore($auction->end_date) && in_array($auction->status, ['active', 'private'], true);
     }
     public function api_store(Request $request)
     {
@@ -1058,7 +1058,7 @@ class AuctionController extends Controller
             'sub_category_id' => 'nullable|integer|exists:auction_categories,id',
             'child_category_id' => 'nullable|integer|exists:auction_categories,id',
             'description' => 'required',
-            'list_type' => 'required|in:auction,normal_list',
+            'list_type' => 'required|in:auction,normal_list,private_auction',
             'product_year' => 'required',
             'product_location' => 'nullable',
             // Add new property fields
@@ -1081,12 +1081,12 @@ class AuctionController extends Controller
         ];
 
         // Auction-specific rules
-        if ($listType === 'auction' && !$request->input('is_live_auction')) {
+        if (in_array($listType, ['auction', 'private_auction'], true) && !$request->input('is_live_auction')) {
             $rules['start_date'] = 'required|date';
             $rules['end_date'] = 'required|date|after_or_equal:start_date';
             $rules['reserve_price'] = 'required|numeric';
             $rules['minimum_bid'] = 'required|numeric';
-        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+        } elseif (in_array($listType, ['auction', 'private_auction'], true) && $request->input('is_live_auction')) {
             $rules['start_date'] = 'nullable|date';
             $rules['end_date'] = 'nullable|date';
             $rules['reserve_price'] = 'required|numeric';
@@ -1125,7 +1125,7 @@ class AuctionController extends Controller
             'product_condition.required' => 'Please select product condition (new or old).',
             'product_condition.in' => 'Product condition must be either new or old.',
             'list_type.required' => 'Please select a list type.',
-            'list_type.in' => 'List type must be either auction or normal_list.',
+            'list_type.in' => 'List type must be auction, private_auction, or normal_list.',
             // Add custom error messages for new fields
             'location_url.url' => 'Please enter a valid URL.',
             'number_of_buildings.integer' => 'Number of buildings must be a whole number.',
@@ -1429,7 +1429,7 @@ class AuctionController extends Controller
             $rules['start_date'] = 'nullable|date';
             $rules['end_date'] = 'nullable|date';
             $rules['reserve_price'] = 'nullable|numeric';
-        } elseif ($listType === 'auction' && $request->input('is_live_auction')) {
+        } elseif (in_array($listType, ['auction', 'private_auction'], true) && $request->input('is_live_auction')) {
             $rules['start_date'] = 'nullable|date';
             $rules['end_date'] = 'nullable|date';
             $rules['reserve_price'] = 'required|numeric';
@@ -1985,6 +1985,114 @@ class AuctionController extends Controller
         return response()->json(['auction' => $allListings]);
     }
 
+    public function publicProfile($name)
+    {
+        $profileKey = trim((string) $name);
+        $profileSlug = Str::slug($profileKey);
+
+        $user = User::select('id', 'name', 'username', 'profile_pic')
+            ->where(function ($query) use ($profileKey, $profileSlug) {
+                $query->where('username', $profileKey)
+                    ->orWhere('username', $profileSlug)
+                    ->orWhere('name', $profileKey);
+            })
+            ->first();
+
+        if (!$user) {
+            $user = User::select('id', 'name', 'username', 'profile_pic')
+                ->get()
+                ->filter(function ($candidate) use ($profileKey, $profileSlug) {
+                    $candidateUsername = trim((string) ($candidate->username ?? ''));
+                    $candidateName = trim((string) ($candidate->name ?? ''));
+
+                    return $candidateUsername === $profileKey
+                        || Str::slug($candidateUsername) === $profileSlug
+                        || Str::slug($candidateName) === $profileSlug;
+                })
+                ->sortByDesc(function ($candidate) {
+                    return Auction::where('user_id', $candidate->id)
+                        ->where(function ($query) {
+                            $query->where(function ($q) {
+                                $q->where('status', 'active')
+                                    ->where(function ($sq) {
+                                        $sq->where('list_type', '!=', 'private_auction')
+                                            ->orWhereNull('list_type');
+                                    });
+                            })->orWhere(function ($q) {
+                                $q->where('status', 'private')
+                                    ->where('list_type', 'private_auction');
+                            });
+                        })
+                        ->count();
+                })
+                ->first();
+        }
+
+        if (!$user) {
+            return response()->json(['message' => 'Profile not found'], 404);
+        }
+
+        $listings = Auction::where('user_id', $user->id)
+            ->with('bids')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($auction) {
+                $highestBid = $auction->bids->max('bid_amount');
+
+                return [
+                    'id' => $auction->id,
+                    'slug' => $auction->slug,
+                    'title' => $auction->title,
+                    'image' => $auction->image,
+                    'album' => $auction->album,
+                    'start_date' => $auction->start_date,
+                    'end_date' => $auction->end_date,
+                    'featured_name' => $auction->featured_name,
+                    'status' => $auction->status,
+                    'currentBid' => $highestBid,
+                    'highest_bid' => $highestBid,
+                    'is_draft' => false,
+                    'created_at' => $auction->created_at,
+                    'list_type' => $auction->list_type,
+                    'minimum_bid' => $auction->minimum_bid,
+                    'reserve_price' => $auction->reserve_price,
+                    'discount_type' => $auction->discount_type,
+                    'discount_value' => $auction->discount_value,
+                    'is_live_auction' => $auction->is_live_auction,
+                    'live_auction_date' => $auction->live_auction_date,
+                    'live_auction_start_time' => $auction->live_auction_start_time,
+                    'live_auction_end_time' => $auction->live_auction_end_time,
+                ];
+            })
+            ->values();
+
+        $publicListings = $listings->filter(function ($listing) {
+            $status = strtolower(trim((string) ($listing['status'] ?? '')));
+            $listType = strtolower(trim((string) ($listing['list_type'] ?? 'auction')));
+
+            return $status === 'active' && $listType !== 'private_auction';
+        })->values();
+
+        $privateListings = $listings->filter(function ($listing) {
+            $status = strtolower(trim((string) ($listing['status'] ?? '')));
+            $listType = strtolower(trim((string) ($listing['list_type'] ?? '')));
+
+            return $status === 'private' && $listType === 'private_auction';
+        })->values();
+
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'username' => $user->username,
+                'profile_slug' => $user->username ?: Str::slug((string) $user->name),
+                'profile_pic' => $user->profile_pic,
+            ],
+            'public_listings' => $publicListings,
+            'private_listings' => $privateListings,
+        ]);
+    }
+
 
     public function dashboard()
     {
@@ -2222,9 +2330,9 @@ class AuctionController extends Controller
         // list_type filter: auction | normal_list (listing). When omitted, return both.
         if ($request->filled('list_type') || $request->filled('listType')) {
             $listType = $request->input('list_type') ?? $request->input('listType');
-            if ($listType === 'auction') {
+            if (in_array($listType, ['auction', 'private_auction'], true)) {
                 $q->where(function ($sq) {
-                    $sq->where('list_type', 'auction')->orWhereNull('list_type');
+                    $sq->whereIn('list_type', ['auction', 'private_auction'])->orWhereNull('list_type');
                 });
             } elseif ($listType === 'normal_list') {
                 $q->where('list_type', 'normal_list');

@@ -157,6 +157,7 @@ Route::get('/get-subcategories/{id}', [AuctionCategoryController::class, 'getSub
 
 Route::get('/get-products', [AuctionController::class, 'get_products']);
 Route::get('/product/{slug}', [AuctionController::class, 'products_details']);
+Route::get('/public-profile/{name}', [AuctionController::class, 'publicProfile']);
 Route::get('/account-settings', [UserController::class, 'account_settings']);
 Route::get('/get-featured', [AuctionController::class, 'get_featured']);
 Route::get('/get-featured-vehicle', [AuctionController::class, 'get_featured_vehicle']);
