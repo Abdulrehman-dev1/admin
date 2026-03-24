@@ -221,8 +221,17 @@
 
                             <!-- Contact -->
                             <td>
-                                <div style="color: #374557; font-size: 13px;">{{ $row->user ? $row->user->email : $row->email }}</div>
-                                <small style="color: #878F9A; font-size: 11px;">{{ $row->user ? $row->user->phone : $row->phone }}</small>
+                                @php
+                                    $displayEmail = $row->user?->email
+                                        ?: $row->user?->individualVerification?->email_address
+                                        ?: $row->email;
+
+                                    $displayPhone = $row->user?->phone
+                                        ?: $row->user?->individualVerification?->contact_number
+                                        ?: $row->phone;
+                                @endphp
+                                <div style="color: #374557; font-size: 13px;">{{ $displayEmail ?: '-' }}</div>
+                                <small style="color: #878F9A; font-size: 11px;">{{ $displayPhone ?: '-' }}</small>
                             </td>
 
                             <!-- Registered At -->
