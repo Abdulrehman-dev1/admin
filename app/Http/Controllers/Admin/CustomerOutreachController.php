@@ -61,6 +61,11 @@ class CustomerOutreachController extends Controller
                 $query->orderBy('created_at', 'desc');
             } elseif ($request->sort == 'oldest') {
                 $query->orderBy('created_at', 'asc');
+            } elseif ($request->sort == 'verification') {
+                $query->where(function ($q) {
+                    $q->whereHas('user.individualVerification')
+                      ->orWhereHas('user.corporateVerification');
+                })->orderBy('created_at', 'desc');
             }
         } else {
             $query->orderBy('created_at', 'desc'); // Default sort

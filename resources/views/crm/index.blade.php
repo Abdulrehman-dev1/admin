@@ -172,6 +172,7 @@
                             <select name="sort" class="form-select nftmax-filter-input" style="height: 40px; background-color: #FAFAFB; border: 1px solid #E3E4E8; border-radius: 8px; padding: 8px 12px; font-size: 13px;">
                                 <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest to Oldest</option>
                                 <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest to Newest</option>
+                                <option value="verification" {{ request('sort') == 'verification' ? 'selected' : '' }}>Verification Submitted</option>
                             </select>
                         </div>
                     </div>
