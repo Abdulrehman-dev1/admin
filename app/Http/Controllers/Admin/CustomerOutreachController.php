@@ -65,7 +65,12 @@ class CustomerOutreachController extends Controller
                 $query->where(function ($q) {
                     $q->whereHas('user.individualVerification')
                       ->orWhereHas('user.corporateVerification');
-                })->orderBy('created_at', 'desc');
+                })->orderByRaw("
+                    COALESCE(
+                        (SELECT created_at FROM individual_verifications WHERE individual_verifications.user_id = customer_outreaches.user_id LIMIT 1),
+                        (SELECT created_at FROM corporate_verifications WHERE corporate_verifications.user_id = customer_outreaches.user_id LIMIT 1)
+                    ) DESC
+                ");
             }
         } else {
             $query->orderBy('created_at', 'desc'); // Default sort
