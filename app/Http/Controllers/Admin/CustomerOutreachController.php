@@ -12,7 +12,7 @@ class CustomerOutreachController extends Controller
      */
     public function index(Request $request)
     {
-        $query = \App\Models\CustomerOutreach::with(['user.individualVerification']);
+        $query = \App\Models\CustomerOutreach::with(['user.individualVerification', 'user.corporateVerification']);
 
         // Search by Name, Email, or Phone
         if ($request->has('search') && !empty($request->search)) {

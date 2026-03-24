@@ -203,6 +203,7 @@
                         <th style="min-width: 150px;">User Details</th>
                         <th style="min-width: 200px;">Email & Phone</th>
                         <th style="min-width: 150px;">Registered At</th>
+                        <th style="min-width: 150px;">Verify Sub At</th>
                         <th style="min-width: 100px;">Status</th>
                         <th style="min-width: 160px;">Call Status</th>
                         <th style="min-width: 350px;">Feedback</th>
@@ -236,12 +237,32 @@
 
                             <!-- Registered At -->
                             <td>
+                                @php
+                                    $registeredAt = $row->user?->created_at ?: $row->created_at;
+                                @endphp
                                 <div style="color: #374557; font-size: 13px;">
-                                    {{ $row->user ? \Carbon\Carbon::parse($row->user->created_at)->format('d M, Y') : \Carbon\Carbon::parse($row->created_at)->format('d M, Y') }}
+                                    {{ \Carbon\Carbon::parse($registeredAt)->format('d M, Y') }}
                                 </div>
                                 <small style="color: #878F9A; font-size: 11px;">
-                                    {{ $row->user ? \Carbon\Carbon::parse($row->user->created_at)->format('h:i A') : \Carbon\Carbon::parse($row->created_at)->format('h:i A') }}
+                                    {{ \Carbon\Carbon::parse($registeredAt)->format('h:i A') }}
                                 </small>
+                            </td>
+
+                            <td>
+                                @php
+                                    $verificationSubmittedAt = $row->user?->individualVerification?->created_at
+                                        ?: $row->user?->corporateVerification?->created_at;
+                                @endphp
+                                @if($verificationSubmittedAt)
+                                    <div style="color: #374557; font-size: 13px;">
+                                        {{ \Carbon\Carbon::parse($verificationSubmittedAt)->format('d M, Y') }}
+                                    </div>
+                                    <small style="color: #878F9A; font-size: 11px;">
+                                        {{ \Carbon\Carbon::parse($verificationSubmittedAt)->format('h:i A') }}
+                                    </small>
+                                @else
+                                    <div style="color: #878F9A; font-size: 13px;">-</div>
+                                @endif
                             </td>
                             
                              <!-- Verification Status -->
