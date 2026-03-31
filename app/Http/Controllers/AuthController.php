@@ -21,6 +21,8 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        $signupSource = $request->input('signup_source', 'web');
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
@@ -52,6 +54,7 @@ class AuthController extends Controller
             'provider' => 'email',   // default provider
             'provider_id' => null,
             'profile_pic' => null,
+            'signup_source' => $signupSource,
             'utm_source' => $request->utm_source,
             'utm_medium' => $request->utm_medium,
             'utm_campaign' => $request->utm_campaign,
@@ -90,6 +93,8 @@ class AuthController extends Controller
 
     public function appleLogin(Request $request)
     {
+        $signupSource = $request->input('signup_source', 'web');
+
         $request->validate([
             'identity_token' => 'required|string',
         ]);
@@ -150,6 +155,7 @@ class AuthController extends Controller
                     'email' => $email, // safe now
                     'provider' => 'apple',
                     'provider_id' => $appleId,
+                    'signup_source' => $signupSource,
                     'password' => Hash::make(Str::random(16)),
                     'referral_code' => $referralCode,
                     'utm_source' => $request->utm_source,
@@ -249,6 +255,8 @@ class AuthController extends Controller
 
     public function googleLogin(Request $request)
     {
+        $signupSource = $request->input('signup_source', 'web');
+
         $request->validate([
             'token' => 'required|string',
         ]);
@@ -283,6 +291,7 @@ class AuthController extends Controller
                 'email' => $payload->email,
                 'provider' => 'google',
                 'provider_id' => $payload->id,
+                'signup_source' => $signupSource,
                 'profile_pic' => $payload->picture ?? null,
                 'password' => Hash::make(Str::random(16)),
                 'utm_source' => $request->utm_source,
@@ -326,6 +335,8 @@ class AuthController extends Controller
 
     public function googleRegister(Request $request)
     {
+        $signupSource = $request->input('signup_source', 'web');
+
         $accessToken = $request->token;
 
         if (!$accessToken) {
@@ -360,6 +371,7 @@ class AuthController extends Controller
                 'email' => $googleUser->email,
                 'provider' => 'google',
                 'provider_id' => $googleUser->id,
+                'signup_source' => $signupSource,
                 'profile_pic' => $googleUser->picture ?? null,
                 'password' => Hash::make(Str::random(16)),
                 'referral_code' => $referralCode,

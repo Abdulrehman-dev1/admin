@@ -63,6 +63,8 @@ class PhoneAuthController extends Controller
 
     public function verifyOtp(Request $request)
     {
+        $signupSource = $request->input('signup_source', 'web');
+
         $request->validate([
             'phone' => 'required|numeric|min:10',
             'otp' => 'required|numeric|digits:6',
@@ -96,6 +98,7 @@ class PhoneAuthController extends Controller
                         'password' => Hash::make($request->password ?? Str::random(16)), // Use provided password
                         'referral_code' => $referralCode,
                         'provider' => 'phone',
+                        'signup_source' => $signupSource,
                         'is_phone_verified' => true,
                         'phone_verified_at' => now(),
                     ]);

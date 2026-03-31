@@ -226,6 +226,7 @@ class UserController extends Controller
         ]);
 
         $data['password'] = bcrypt($data['password']);
+        $data['signup_source'] = 'admin';
 
         $user = User::create($data);
         $user->assignRole($data['role']);
@@ -376,7 +377,6 @@ class UserController extends Controller
         return response()->json($user, 200);
     }
 }
-
 
 
 

@@ -45,6 +45,7 @@ class User extends Authenticatable
         'company_name',
         'referral_code',
         'api_token',  // add karein
+        'signup_source',
         'utm_source',
         'utm_medium',
         'utm_campaign',

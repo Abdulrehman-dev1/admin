@@ -4,6 +4,7 @@
             <th>Name</th>
             <th>Email</th>
             <th>Verification</th>
+            <th>Signup Source</th>
             <th>UTM Campaign</th>
             <th style="min-width: 140px;">Joined Date</th>
             <th>Actions</th>
@@ -30,6 +31,17 @@
                     @endif
                 </td>
                 <td>
+                    @php
+                        $source = strtolower($user->signup_source ?? 'web');
+                        $badgeClass = match($source) {
+                            'app' => 'approved',
+                            'admin' => 'pending',
+                            default => 'pending',
+                        };
+                    @endphp
+                    <span class="custom-badge {{ $badgeClass }}">{{ ucfirst($source) }}</span>
+                </td>
+                <td>
                     <code style="background: rgba(83, 86, 251, 0.05); color: #5356FB; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;">
                         {{ $user->utm_campaign ?? '-' }}
                     </code>
@@ -54,7 +66,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="6" class="text-center text-muted p-5">No users found based on your filters.</td>
+                <td colspan="7" class="text-center text-muted p-5">No users found based on your filters.</td>
             </tr>
         @endforelse
     </tbody>
