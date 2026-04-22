@@ -28,6 +28,8 @@ use App\Http\Controllers\VehicleVerificationController;
 use App\Http\Controllers\Api\BlogApiController;
 use App\Http\Controllers\Api\CurrencyController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Api\BuyNowInquiryController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CheckoutController;
@@ -126,6 +128,56 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/example', function () {
     return response()->json(['message' => 'API route is working']);
+});
+
+// Debug endpoint: hit this route to verify email sending and get exact error (if any).
+Route::post('/test-email', function (Request $request) {
+    $request->validate([
+        'to' => 'required|email',
+        'subject' => 'nullable|string|max:255',
+        'message' => 'nullable|string|max:5000',
+    ]);
+
+    $to = $request->input('to');
+    $subject = $request->input('subject', 'XpertBid Test Email');
+    $body = $request->input(
+        'message',
+        'This is a test email sent from XpertBid test route.'
+    );
+
+    try {
+        Mail::raw($body, function ($mail) use ($to, $subject) {
+            $mail->to($to)->subject($subject);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test email sent successfully.',
+            'to' => $to,
+            'mail_mailer' => config('mail.default'),
+            'mail_host' => config('mail.mailers.smtp.host'),
+            'mail_port' => config('mail.mailers.smtp.port'),
+            'sent_at' => now()->toDateTimeString(),
+        ], 200);
+    } catch (\Throwable $e) {
+        Log::error('Test email route failed', [
+            'to' => $to,
+            'error' => $e->getMessage(),
+            'exception' => get_class($e),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to send test email.',
+            'to' => $to,
+            'error' => $e->getMessage(),
+            'exception' => get_class($e),
+            'mail_mailer' => config('mail.default'),
+            'mail_host' => config('mail.mailers.smtp.host'),
+            'mail_port' => config('mail.mailers.smtp.port'),
+            'from_address' => config('mail.from.address'),
+        ], 500);
+    }
 });
 
 Route::post('/oauth-login', [OAuthController::class, 'login']);
