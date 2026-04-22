@@ -131,19 +131,10 @@ Route::get('/example', function () {
 });
 
 // Debug endpoint: hit this route to verify email sending and get exact error (if any).
-Route::post('/test-email', function (Request $request) {
-    $request->validate([
-        'to' => 'required|email',
-        'subject' => 'nullable|string|max:255',
-        'message' => 'nullable|string|max:5000',
-    ]);
-
-    $to = $request->input('to');
-    $subject = $request->input('subject', 'XpertBid Test Email');
-    $body = $request->input(
-        'message',
-        'This is a test email sent from XpertBid test route.'
-    );
+Route::get('/test-email', function (Request $request) {
+    $to = 'connecttoabdulrehman01@gmail.com';
+    $subject = $request->query('subject', 'XpertBid Test Email');
+    $body = $request->query('message', 'This is a test email sent from XpertBid test route.');
 
     try {
         Mail::raw($body, function ($mail) use ($to, $subject) {
