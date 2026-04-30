@@ -1,6 +1,51 @@
 @extends('layouts.app')
 
 @section('content')
+  <style>
+    .user-search-wrap {
+      position: relative;
+    }
+
+    .user-search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1050;
+      display: none;
+      max-height: 240px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
+    }
+
+    .user-search-results.show {
+      display: block;
+    }
+
+    .user-search-option {
+      display: block;
+      width: 100%;
+      padding: 9px 12px;
+      border: 0;
+      background: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .user-search-option:hover,
+    .user-search-option.active {
+      background: #f1f5f9;
+    }
+
+    .user-search-empty {
+      padding: 9px 12px;
+      color: #6c757d;
+    }
+  </style>
+
   <div class="container">
     @php $isEdit = isset($auction) && !empty($auction->id); @endphp
 
@@ -23,8 +68,33 @@
         @error('title') <small class="text-danger">{{ $message }}</small> @enderror
       </div>
 
-      <!-- Hidden User -->
-      <input type="hidden" name="user_id" value="{{ Auth::id() }}">
+      <!-- User -->
+      <div class="form-group">
+        <label for="user_search">User</label>
+        @php
+          $selectedUserId = old('user_id', $auction->user_id ?? Auth::id());
+          $selectedUser = $users->firstWhere('id', (int) $selectedUserId);
+          $selectedUserLabel = $selectedUser
+            ? trim($selectedUser->name . ($selectedUser->email ? ' - ' . $selectedUser->email : ''))
+            : '';
+        @endphp
+        <div class="user-search-wrap">
+          <input type="text" id="user_search" class="form-control @error('user_id') is-invalid @enderror"
+            value="{{ $selectedUserLabel }}" placeholder="Search user by name or email" autocomplete="off">
+          <input type="hidden" name="user_id" id="user_id" value="{{ $selectedUserId }}" required>
+          <div id="user_search_results" class="user-search-results">
+            @foreach($users as $user)
+              @php $userLabel = trim($user->name . ($user->email ? ' - ' . $user->email : '')); @endphp
+              <button type="button" class="user-search-option" data-user-id="{{ $user->id }}"
+                data-user-label="{{ $userLabel }}" data-search="{{ strtolower($user->name . ' ' . $user->email) }}">
+                {{ $userLabel }}
+              </button>
+            @endforeach
+            <div class="user-search-empty" style="display:none;">No user found</div>
+          </div>
+        </div>
+        @error('user_id') <small class="text-danger">{{ $message }}</small> @enderror
+      </div>
 
       <!-- List Type -->
       <div class="form-group">
@@ -323,6 +393,48 @@
 
 
   <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const userSearch = document.getElementById('user_search');
+      const userId = document.getElementById('user_id');
+      const results = document.getElementById('user_search_results');
+      const options = Array.from(document.querySelectorAll('.user-search-option'));
+      const empty = document.querySelector('.user-search-empty');
+
+      function filterUsers() {
+        const query = userSearch.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        options.forEach(option => {
+          const isVisible = !query || option.dataset.search.includes(query);
+          option.style.display = isVisible ? 'block' : 'none';
+          if (isVisible) visibleCount++;
+        });
+
+        empty.style.display = visibleCount ? 'none' : 'block';
+        results.classList.add('show');
+      }
+
+      userSearch.addEventListener('focus', filterUsers);
+      userSearch.addEventListener('input', function () {
+        userId.value = '';
+        filterUsers();
+      });
+
+      options.forEach(option => {
+        option.addEventListener('click', function () {
+          userSearch.value = this.dataset.userLabel;
+          userId.value = this.dataset.userId;
+          results.classList.remove('show');
+        });
+      });
+
+      document.addEventListener('click', function (event) {
+        if (!event.target.closest('.user-search-wrap')) {
+          results.classList.remove('show');
+        }
+      });
+    });
+
     // List Type Toggle Function
     function toggleListTypeFields() {
       const listType = document.getElementById('list_type').value;

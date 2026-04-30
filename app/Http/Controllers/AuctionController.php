@@ -381,6 +381,7 @@ class AuctionController extends Controller
         $listType = $request->input('list_type', $auction->list_type ?? 'auction');
         $rules = [
             'title' => ['required', 'string', 'min:2', 'max:100'],
+            'user_id' => ['required', 'integer', 'exists:users,id'],
             'category_id' => ['required', 'integer', 'exists:auction_categories,id'],
             'sub_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
             'child_category_id' => ['nullable', 'integer', 'exists:auction_categories,id'],
