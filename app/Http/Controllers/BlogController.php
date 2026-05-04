@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Blog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class BlogController extends Controller
 {
@@ -23,6 +22,7 @@ class BlogController extends Controller
     {
         $data = $request->validate([
             'title'   => 'required|string|max:255',
+            'slug'    => 'required|string|max:255|alpha_dash|unique:blogs,slug',
             'content' => 'required',
             'image'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -34,7 +34,6 @@ class BlogController extends Controller
             $data['image'] = 'assets/images/blogs/'.$filename;
         }
 
-        $data['slug']    = Str::slug($request->title);
         $data['user_id'] = auth()->id();
 
         Blog::create($data);
@@ -56,6 +55,7 @@ class BlogController extends Controller
     {
         $data = $request->validate([
             'title'   => 'required|string|max:255',
+            'slug'    => 'required|string|max:255|alpha_dash|unique:blogs,slug,' . $blog->id,
             'content' => 'required',
             'image'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -71,8 +71,6 @@ class BlogController extends Controller
             $file->move(public_path('assets/images/blogs'), $filename);
             $data['image'] = 'assets/images/blogs/'.$filename;
         }
-
-        $data['slug'] = Str::slug($request->title);
 
         $blog->update($data);
 

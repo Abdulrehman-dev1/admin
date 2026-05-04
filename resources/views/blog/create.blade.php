@@ -20,6 +20,19 @@
             @enderror
         </div>
 
+        {{-- Slug --}}
+        <div class="form-group mb-3">
+            <label>Slug</label>
+            <input type="text"
+                   name="slug"
+                   class="form-control"
+                   value="{{ old('slug') }}"
+                   required>
+            @error('slug')
+                <span class="text-danger">{{ $message }}</span>
+            @enderror
+        </div>
+
         {{-- Content --}}
         <div class="form-group mb-3">
             <label>Content</label>

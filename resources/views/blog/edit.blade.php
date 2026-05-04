@@ -12,6 +12,15 @@
             <input type="text" name="title" value="{{ old('title',$blog->title) }}" class="form-control" required>
         </div>
 
+        {{-- Slug --}}
+        <div class="form-group mb-3">
+            <label>Slug</label>
+            <input type="text" name="slug" value="{{ old('slug',$blog->slug) }}" class="form-control" required>
+            @error('slug')
+                <span class="text-danger">{{ $message }}</span>
+            @enderror
+        </div>
+
         {{-- Content --}}
         <div class="form-group mb-3">
             <label>Content</label>
